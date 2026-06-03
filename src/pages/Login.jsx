@@ -1,97 +1,82 @@
 import { useState } from 'react'
-import { useAuth } from '../context/AuthContext'
-import { useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 
 export default function Login() {
-  const { login } = useAuth()
-  const navigate   = useNavigate()
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
 
-  async function handleSubmit(e) {
+  async function handleLogin(e) {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const err = await login(email, password)
-    if (err) { setError('Email o contraseña incorrectos'); setLoading(false) }
-    else navigate('/')
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) setError('Correo o contraseña incorrectos')
+    setLoading(false)
   }
 
   return (
     <div style={{
-      minHeight:'100vh', background:'var(--bg)',
-      display:'flex', alignItems:'center', justifyContent:'center',
-      padding:'1rem'
+      minHeight:'100vh', display:'flex', alignItems:'center',
+      justifyContent:'center', background:'#060d1f',
+      fontFamily:"'DM Sans', system-ui, sans-serif"
     }}>
-      <div style={{ width:'100%', maxWidth:400 }}>
-
-        {/* Logo */}
-        <div style={{ textAlign:'center', marginBottom:'2rem' }}>
+      <div style={{
+        background:'#0d1a35', border:'1px solid #1e3058',
+        borderRadius:16, padding:'48px 40px', width:'100%', maxWidth:400
+      }}>
+        <div style={{ textAlign:'center', marginBottom:36 }}>
           <div style={{
-            width:52, height:52, background:'var(--dk)', borderRadius:14,
             display:'inline-flex', alignItems:'center', justifyContent:'center',
-            marginBottom:12
+            width:56, height:56, borderRadius:14,
+            background:'linear-gradient(135deg,#0066ff,#0044bb)', marginBottom:16
           }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-              <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" fill="white" opacity=".9"/>
-            </svg>
+            <span style={{ fontSize:24, color:'#fff', fontWeight:700 }}>i</span>
           </div>
-          <div style={{ fontSize:22, fontWeight:700, color:'var(--dk)', letterSpacing:'-.02em' }}>
+          <h1 style={{ color:'#fff', fontSize:22, fontWeight:600, margin:'0 0 4px' }}>
             iCali Portal
-          </div>
-          <div style={{ fontSize:13, color:'var(--muted)', marginTop:4 }}>
-            Sistema comercial interno
-          </div>
+          </h1>
+          <p style={{ color:'#5a7aaa', fontSize:13, margin:0 }}>
+            Sistema de gestión comercial
+          </p>
         </div>
-
-        {/* Formulario */}
-        <div className="card">
-          <form onSubmit={handleSubmit}>
-            {error && <div className="alert alert-danger">{error}</div>}
-
-            <div className="form-group">
-              <label className="label">Correo electrónico</label>
-              <input
-                className="input"
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="tu@icali.co"
-                required
-                autoFocus
-              />
-            </div>
-
-            <div className="form-group" style={{ marginBottom:'1.5rem' }}>
-              <label className="label">Contraseña</label>
-              <input
-                className="input"
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="btn btn-primary"
-              style={{ width:'100%', justifyContent:'center', padding:'10px' }}
-              disabled={loading}
-            >
-              {loading
-                ? <span className="spinner" style={{ width:16, height:16 }} />
-                : 'Ingresar'}
-            </button>
-          </form>
-        </div>
-
-        <p style={{ textAlign:'center', fontSize:12, color:'var(--hint)', marginTop:'1.5rem' }}>
-          ¿No tienes cuenta? Pide acceso al administrador.
-        </p>
+        <form onSubmit={handleLogin}>
+          <div style={{ marginBottom:16 }}>
+            <label style={{ display:'block', color:'#8aabcc', fontSize:12,
+              fontWeight:500, marginBottom:6, textTransform:'uppercase',
+              letterSpacing:'0.06em' }}>Correo</label>
+            <input type="email" value={email} required
+              onChange={e => setEmail(e.target.value)}
+              style={{ width:'100%', boxSizing:'border-box',
+                background:'#0a1628', border:'1px solid #1e3058',
+                borderRadius:8, padding:'10px 14px', color:'#fff', fontSize:14 }} />
+          </div>
+          <div style={{ marginBottom:24 }}>
+            <label style={{ display:'block', color:'#8aabcc', fontSize:12,
+              fontWeight:500, marginBottom:6, textTransform:'uppercase',
+              letterSpacing:'0.06em' }}>Contraseña</label>
+            <input type="password" value={password} required
+              onChange={e => setPassword(e.target.value)}
+              style={{ width:'100%', boxSizing:'border-box',
+                background:'#0a1628', border:'1px solid #1e3058',
+                borderRadius:8, padding:'10px 14px', color:'#fff', fontSize:14 }} />
+          </div>
+          {error && (
+            <div style={{ background:'rgba(255,60,60,0.1)',
+              border:'1px solid rgba(255,60,60,0.25)',
+              borderRadius:8, padding:'10px 14px',
+              color:'#ff6b6b', fontSize:13, marginBottom:16 }}>{error}</div>
+          )}
+          <button type="submit" disabled={loading} style={{
+            width:'100%', padding:'12px',
+            background: loading ? '#1e3058' : 'linear-gradient(135deg,#0066ff,#0044bb)',
+            border:'none', borderRadius:8, color:'#fff',
+            fontSize:15, fontWeight:600, cursor: loading ? 'not-allowed' : 'pointer'
+          }}>
+            {loading ? 'Ingresando...' : 'Ingresar'}
+          </button>
+        </form>
       </div>
     </div>
   )
