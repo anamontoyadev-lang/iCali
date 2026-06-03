@@ -1,102 +1,63 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider } from './context/AuthContext'
-import { PrivateRoute } from './components/PrivateRoute'
+import { AuthProvider, useAuth } from './lib/AuthContext'
 import Login       from './pages/Login'
+import Layout      from './components/Layout'
 import Dashboard   from './pages/Dashboard'
-import SubirDatos  from './pages/SubirDatos'
-import './styles/global.css'
+import Ventas      from './pages/Ventas'
+import NuevaVenta  from './pages/NuevaVenta'
+import Despachos   from './pages/Despachos'
+import Retomas     from './pages/Retomas'
+import Financieras from './pages/Financieras'
+import Extractos   from './pages/Extractos'
+import Reportes    from './pages/Reportes'
 
-// Placeholders para módulos futuros
-const Placeholder = ({ title }) => (
-  <div>
-    <div className="topbar">
-      <div style={{ fontWeight:600, fontSize:15 }}>{title}</div>
+function ProtectedRoute({ children, roles }) {
+  const { session, perfil, loading } = useAuth()
+  if (loading) return (
+    <div style={{
+      height:'100vh', display:'flex', alignItems:'center',
+      justifyContent:'center', background:'#0a0f1e', color:'#fff',
+      fontFamily:'system-ui', fontSize:14
+    }}>
+      Cargando...
     </div>
-    <div className="page-body">
-      <div className="card">
-        <div className="empty-state">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
-          </svg>
-          <p style={{ fontSize:15, fontWeight:500, marginBottom:6 }}>Módulo en construcción</p>
-          <p>Este módulo estará disponible en la próxima versión del portal.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-)
+  )
+  if (!session) return <Navigate to="/login" replace />
+  if (roles && perfil && !roles.includes(perfil.rol)) return <Navigate to="/" replace />
+  return children
+}
 
-export default function App() {
+function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-
           <Route path="/" element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          } />
-
-          <Route path="/ventas" element={
-            <PrivateRoute>
-              <Placeholder title="Ventas y equipos" />
-            </PrivateRoute>
-          } />
-
-          <Route path="/comisiones" element={
-            <PrivateRoute>
-              <Placeholder title="Comisiones" />
-            </PrivateRoute>
-          } />
-
-          <Route path="/cuadre" element={
-            <PrivateRoute adminOnly>
-              <Placeholder title="Cuadre diario" />
-            </PrivateRoute>
-          } />
-
-          <Route path="/pendientes" element={
-            <PrivateRoute>
-              <Placeholder title="Pendientes" />
-            </PrivateRoute>
-          } />
-
-          <Route path="/medios-pago" element={
-            <PrivateRoute adminOnly>
-              <Placeholder title="Medios de pago" />
-            </PrivateRoute>
-          } />
-
-          <Route path="/contraentregas" element={
-            <PrivateRoute>
-              <Placeholder title="Contraentregas" />
-            </PrivateRoute>
-          } />
-
-          <Route path="/horas-extras" element={
-            <PrivateRoute>
-              <Placeholder title="Horas extras" />
-            </PrivateRoute>
-          } />
-
-          <Route path="/equipo" element={
-            <PrivateRoute adminOnly>
-              <Placeholder title="Equipo" />
-            </PrivateRoute>
-          } />
-
-          <Route path="/subir-datos" element={
-            <PrivateRoute adminOnly>
-              <SubirDatos />
-            </PrivateRoute>
-          } />
-
+            <ProtectedRoute><Layout /></ProtectedRoute>
+          }>
+            <Route index element={<Dashboard />} />
+            <Route path="ventas" element={<Ventas />} />
+            <Route path="ventas/nueva" element={<NuevaVenta />} />
+            <Route path="despachos" element={<Despachos />} />
+            <Route path="retomas" element={<Retomas />} />
+            <Route path="financieras" element={
+              <ProtectedRoute roles={['admin','lider_admin','contadora','lider_comercial']}>
+                <Financieras />
+              </ProtectedRoute>
+            } />
+            <Route path="extractos" element={
+              <ProtectedRoute roles={['admin','lider_admin','contadora']}>
+                <Extractos />
+              </ProtectedRoute>
+            } />
+            <Route path="reportes" element={<Reportes />} />
+          </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
   )
 }
+
+export default App

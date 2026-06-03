@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
-export const supabase = createClient(
-  'https://rkejcjfczpatvgirgyza.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJrZWpjamZjenBhdHZnaXJneXphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMDczNjMsImV4cCI6MjA5MzU4MzM2M30.lHTAxwiougaVQHHB8cozpizDv8pdQhydaisTeUbdkNs',
-  { auth: { persistSession: true, autoRefreshToken: true } }
-)
+const url = process.env.REACT_APP_SUPABASE_URL
+const key = process.env.REACT_APP_SUPABASE_ANON_KEY
+
+export const supabase = createClient(url, key, {
+  auth: { persistSession: true, autoRefreshToken: true }
+})
