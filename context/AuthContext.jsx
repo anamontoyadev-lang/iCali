@@ -4,58 +4,51 @@ import { supabase } from '../lib/supabase'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [session, setSession]   = useState(null)
-  const [perfil,  setPerfil]    = useState(null)
-  const [loading, setLoading]   = useState(true)
+  const [session, setSession] = useState(null)
+  const [perfil, setPerfil]   = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      if (data.session) fetchPerfil(data.session.user.id)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      if (session) fetchPerfil(session.user.id)
       else setLoading(false)
     })
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setSession(session)
       if (session) fetchPerfil(session.user.id)
       else { setPerfil(null); setLoading(false) }
     })
-
-    return () => listener.subscription.unsubscribe()
+    return () => subscription.unsubscribe()
   }, [])
 
-  async function fetchPerfil(userId) {
-    const { data } = await supabase
-      .from('perfiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+  async function fetchPerfil(uid) {
+    const { data } = await supabase.from('perfiles').select('*').eq('id', uid).single()
     setPerfil(data)
     setLoading(false)
   }
 
-  async function login(email, password) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return error
-  }
+  const rol = perfil?.rol ?? null
 
-  async function logout() {
-    await supabase.auth.signOut()
-    setPerfil(null)
-  }
-
-  const isAdmin = perfil?.rol === 'admin'
-  const isAsesor = perfil?.rol === 'asesor'
+  // Helpers de permisos
+  const esAdmin        = rol === 'admin'
+  const esLiderAdmin   = ['admin','lider_admin'].includes(rol)
+  const esLiderCom     = ['admin','lider_comercial'].includes(rol)
+  const esContadora    = ['admin','contadora'].includes(rol)
+  const esAsesor       = ['asesor_mostrador','asesor_call_center'].includes(rol)
+  const puedeVerFinancieras = ['admin','lider_admin','contadora','lider_comercial'].includes(rol)
+  const puedeVerDespachos   = ['admin','lider_admin','lider_comercial','contadora',
+                               'asesor_mostrador','asesor_call_center'].includes(rol)
 
   return (
-    <AuthContext.Provider value={{ session, perfil, loading, isAdmin, isAsesor, login, logout }}>
+    <AuthContext.Provider value={{
+      session, perfil, rol, loading,
+      esAdmin, esLiderAdmin, esLiderCom, esContadora, esAsesor,
+      puedeVerFinancieras, puedeVerDespachos
+    }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
-export const useAuth = () => {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth debe usarse dentro de AuthProvider')
-  return ctx
-}
+export const useAuth = () => useContext(AuthContext)
