@@ -43,7 +43,7 @@ export default function Reportes() {
     setError('')
     try {
       const desde = periodo + '-01'
-      const hasta = periodo + '-31'
+      const hasta = new Date(Number(periodo.split('-')[0]), Number(periodo.split('-')[1]), 0).toISOString().split('T')[0]
 
       let query = supabase
         .from('ventas')
