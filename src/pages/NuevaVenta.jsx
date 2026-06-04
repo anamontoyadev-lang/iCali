@@ -5,13 +5,14 @@ import { useAuth } from '../lib/AuthContext'
 
 const ASESORES = {
   call_center: [
-    'Sofia. Call','Carlos B. Call','Bryan O. Call','Stefany. Call',
-    'Sergio. Call','Kevin. Call','Carlos A. Call','Emanuel. Call'
+    'Kevin David. Call','Alberto. Call','Gloria Steffany. Call',
+    'Brayan O. Call','Ana Sofia. Call','Carlos Andres. Call',
+    'Emanuel. Call','Diana. Call','Sergio. Call'
   ],
   mostrador: [
-    'Laura M. Mostrador','Carolina. Mostrador','Alejandro M. Mostrador',
-    'Alexandra G. Mostrador','Felipe T. Mostrador','Maleja. Mostrador',
-    'Valentina A. Mostrador'
+    'Alexandra. Mostrador','Valentina. Mostrador','Maria Alejandra. Mostrador',
+    'Laura. Mostrador','Carolina. Mostrador','Alejandro M. Mostrador',
+    'Felipe. Mostrador','Juan Felipe. Mostrador','Cristian. Mostrador'
   ]
 }
 const TODOS_ASESORES = [...ASESORES.call_center, ...ASESORES.mostrador]
