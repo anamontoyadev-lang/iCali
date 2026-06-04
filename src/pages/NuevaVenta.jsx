@@ -316,16 +316,16 @@ export default function NuevaVenta() {
       detalle:        `${form.producto} | ${form.nombre_cliente} | $${num(form.valor_venta).toLocaleString('es-CO')}`,
       tabla:          'ventas',
       registro_id:    venta.id
-    }).catch(() => {})
+    })
 
     // Sincronizar con Google Drive
-    logVenta({ ...venta, asesor_nombre: form.asesor_nombre }).catch(() => {})
+    logVenta({ ...venta, asesor_nombre: form.asesor_nombre })
     logActividad({
       usuario: form.asesor_nombre,
       accion: 'NUEVA_VENTA',
       detalle: `${form.producto} | ${form.nombre_cliente} | $${num(form.valor_venta).toLocaleString('es-CO')}`,
       tabla: 'ventas'
-    }).catch(() => {})
+    })
 
     setSuccess(true)
     setSaving(false)
