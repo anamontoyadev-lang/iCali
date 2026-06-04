@@ -9,6 +9,8 @@ const ROLES = [
   { value:'contadora',          label:'Contadora',          color:'#3b82f6' },
   { value:'asesor_mostrador',   label:'Asesor Mostrador',   color:'#94a3b8' },
   { value:'asesor_call_center', label:'Asesor Call Center', color:'#64748b' },
+  { value:'garantias',          label:'Garantías',            color:'#ec4899' },
+  { value:'laboratorio',        label:'Laboratorio',          color:'#f97316' },
 ]
 
 const SUPABASE_URL  = process.env.REACT_APP_SUPABASE_URL
