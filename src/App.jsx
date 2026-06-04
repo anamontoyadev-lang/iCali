@@ -14,6 +14,8 @@ import Reportes    from './pages/Reportes'
 import Proveedores from './pages/Proveedores'
 import Inventario from './pages/Inventario'
 
+
+
 function ProtectedRoute({ children, roles }) {
   const { session, perfil, loading } = useAuth()
   if (loading) return (
@@ -73,7 +75,4 @@ function App() {
 }
 
 export default App
-import Inventario from './pages/Inventario'
-// dentro de rutas:
-<Route path="inventario" element={<Inventario />} />
 
