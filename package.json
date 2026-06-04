@@ -4,14 +4,15 @@
   "private": true,
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
+    "date-fns": "^3.0.0",
+    "html5-qrcode": "^2.3.8",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.20.0",
-    "recharts": "^2.10.0",
-    "xlsx": "^0.18.5",
-    "date-fns": "^3.0.0",
     "react-dropzone": "^14.2.3",
-    "react-scripts": "5.0.1"
+    "react-router-dom": "^6.20.0",
+    "react-scripts": "5.0.1",
+    "recharts": "^2.10.0",
+    "xlsx": "^0.18.5"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -19,7 +20,12 @@
     "test": "react-scripts test"
   },
   "browserslist": {
-    "production": [">0.2%", "not dead"],
-    "development": ["last 1 chrome version"]
+    "production": [
+      ">0.2%",
+      "not dead"
+    ],
+    "development": [
+      "last 1 chrome version"
+    ]
   }
 }

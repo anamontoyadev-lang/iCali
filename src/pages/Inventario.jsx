@@ -1,3 +1,4 @@
+import EscanerIMEI from '../components/EscanerIMEI'
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
@@ -422,7 +423,16 @@ export default function Inventario() {
         )}
       </div>
 
-      {/* MODAL ESCÁNER */}
+      {escaner && (
+  <EscanerIMEI
+    onResult={(codigo) => {
+      setForm(f => ({ ...f, [campoImei]: codigo }))
+      setEscaner(false)
+      setShowForm(true)
+    }}
+    onClose={() => setEscaner(false)}
+  />
+)}
       {escaner && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.92)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', zIndex:1000, gap:16, padding:20 }}>
           <div style={{ color:'#fff', fontSize:15, fontWeight:500, textAlign:'center' }}>
