@@ -1,3 +1,4 @@
+import Usuarios from './pages/Usuarios'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/AuthContext'
 import Login       from './pages/Login'
@@ -10,6 +11,7 @@ import Retomas     from './pages/Retomas'
 import Financieras from './pages/Financieras'
 import Extractos   from './pages/Extractos'
 import Reportes    from './pages/Reportes'
+import Proveedores from './pages/Proveedores'
 
 function ProtectedRoute({ children, roles }) {
   const { session, perfil, loading } = useAuth()
@@ -40,6 +42,7 @@ function App() {
             <Route path="ventas" element={<Ventas />} />
             <Route path="ventas/nueva" element={<NuevaVenta />} />
             <Route path="despachos" element={<Despachos />} />
+            <Route path="proveedores" element={<Proveedores />} />
             <Route path="retomas" element={<Retomas />} />
             <Route path="financieras" element={
               <ProtectedRoute roles={['admin','lider_admin','contadora','lider_comercial']}>
@@ -51,13 +54,24 @@ function App() {
                 <Extractos />
               </ProtectedRoute>
             } />
+            <Route path="proveedores" element={<Proveedores />} />
             <Route path="reportes" element={<Reportes />} />
+            <Route path="usuarios" element={
+  <ProtectedRoute roles={['admin']}>
+    <Usuarios />
+  </ProtectedRoute>
+} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+      
       </BrowserRouter>
     </AuthProvider>
   )
 }
 
 export default App
+import Inventario from './pages/Inventario'
+// dentro de rutas:
+<Route path="inventario" element={<Inventario />} />
+

@@ -87,6 +87,16 @@ export default function Layout() {
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.6"/></svg>
             Retomas
           </NavLink>
+          
+          <NavLink to="/proveedores" style={navStyle}>
+  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+  Proveedores
+</NavLink>
+
+       <NavLink to="/inventario" style={navStyle}>
+  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M5 8h14M5 8a2 2 0 1 0 0-4h14a2 2 0 1 0 0 4M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/></svg>
+  Inventario
+</NavLink>
 
           {puedeVerFinancieras && <>
             <div style={{ color:'#3a5a7a', fontSize:10, fontWeight:600,
@@ -113,6 +123,12 @@ export default function Layout() {
             Reportes
           </NavLink>
         </nav>
+
+      <div className="nav-section">Admin</div>
+<NavLink to="/usuarios" style={navStyle}>
+  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+  Usuarios
+</NavLink>
 
         {/* Usuario */}
         <div style={{

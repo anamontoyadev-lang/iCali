@@ -12,8 +12,12 @@ export default function Login() {
     setLoading(true)
     setError('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) setError('Correo o contraseña incorrectos')
-    setLoading(false)
+    if (error) {
+      setError('Correo o contraseña incorrectos')
+      setLoading(false)
+    } else {
+      window.location.href = '/'
+    }
   }
 
   return (
@@ -50,7 +54,8 @@ export default function Login() {
               onChange={e => setEmail(e.target.value)}
               style={{ width:'100%', boxSizing:'border-box',
                 background:'#0a1628', border:'1px solid #1e3058',
-                borderRadius:8, padding:'10px 14px', color:'#fff', fontSize:14 }} />
+                borderRadius:8, padding:'10px 14px', color:'#fff', fontSize:14,
+                outline:'none' }} />
           </div>
           <div style={{ marginBottom:24 }}>
             <label style={{ display:'block', color:'#8aabcc', fontSize:12,
@@ -60,7 +65,8 @@ export default function Login() {
               onChange={e => setPassword(e.target.value)}
               style={{ width:'100%', boxSizing:'border-box',
                 background:'#0a1628', border:'1px solid #1e3058',
-                borderRadius:8, padding:'10px 14px', color:'#fff', fontSize:14 }} />
+                borderRadius:8, padding:'10px 14px', color:'#fff', fontSize:14,
+                outline:'none' }} />
           </div>
           {error && (
             <div style={{ background:'rgba(255,60,60,0.1)',
