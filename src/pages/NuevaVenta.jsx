@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
+import { logActividad, logVenta } from '../lib/drive'
 
 const ASESORES = {
   call_center: [
@@ -315,6 +316,15 @@ export default function NuevaVenta() {
       detalle:        `${form.producto} | ${form.nombre_cliente} | $${num(form.valor_venta).toLocaleString('es-CO')}`,
       tabla:          'ventas',
       registro_id:    venta.id
+    }).catch(() => {})
+
+    // Sincronizar con Google Drive
+    logVenta({ ...venta, asesor_nombre: form.asesor_nombre }).catch(() => {})
+    logActividad({
+      usuario: form.asesor_nombre,
+      accion: 'NUEVA_VENTA',
+      detalle: `${form.producto} | ${form.nombre_cliente} | $${num(form.valor_venta).toLocaleString('es-CO')}`,
+      tabla: 'ventas'
     }).catch(() => {})
 
     setSuccess(true)
