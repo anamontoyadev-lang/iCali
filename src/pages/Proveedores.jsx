@@ -73,7 +73,7 @@ export default function Proveedores() {
   }
 
   async function loadDetalle(provId) {
-    const [{ data: comprasData }, { data: abonosData }] = await Promise.all([
+    const [{ data: comprasData }, abonosResult] = await Promise.all([
       supabase.from('compras_proveedor')
         .select('*')
         .eq('proveedor_id', provId)
@@ -82,8 +82,8 @@ export default function Proveedores() {
         .select('*')
         .eq('proveedor_id', provId)
         .order('fecha', { ascending: false })
-        .catch(() => ({ data: [] }))
     ])
+    const abonosData = abonosResult.data || []
     setCompras(comprasData || [])
     setAbonos(abonosData || [])
 

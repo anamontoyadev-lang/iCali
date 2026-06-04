@@ -12,6 +12,7 @@ import Financieras from './pages/Financieras'
 import Extractos   from './pages/Extractos'
 import Reportes    from './pages/Reportes'
 import Proveedores from './pages/Proveedores'
+import Inventario from './pages/Inventario'
 
 function ProtectedRoute({ children, roles }) {
   const { session, perfil, loading } = useAuth()
@@ -44,6 +45,7 @@ function App() {
             <Route path="despachos" element={<Despachos />} />
             <Route path="proveedores" element={<Proveedores />} />
             <Route path="retomas" element={<Retomas />} />
+            <Route path="inventario" element={<Inventario />} />
             <Route path="financieras" element={
               <ProtectedRoute roles={['admin','lider_admin','contadora','lider_comercial']}>
                 <Financieras />
