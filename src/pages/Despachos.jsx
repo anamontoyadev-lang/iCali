@@ -1,3 +1,4 @@
+import { logDespacho } from '../lib/drive'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
@@ -61,6 +62,7 @@ export default function Despachos() {
 
   async function guardarEdicion() {
     await supabase.from('despachos').update({
+      logDespacho({ usuario: 'admin', accion:'ACTUALIZAR_DESPACHO', cliente: editando, estado: editForm.estado, producto:'—', ciudad: editForm.ciudad_destino||'—' }).catch(()=>{})
       estado:              editForm.estado,
       mensajero:           editForm.mensajero,
       transportadora:      editForm.transportadora,
