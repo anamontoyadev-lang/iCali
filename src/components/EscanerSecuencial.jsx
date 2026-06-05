@@ -44,8 +44,13 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
   const [flash,   setFlash]   = useState(false)
 
   useEffect(() => {
-    loadQuagga().then(initQuagga).catch(() => {})
-    return () => stopQuagga()
+    const timer = setTimeout(() => {
+      loadQuagga().then(initQuagga).catch(() => {})
+    }, 300)
+    return () => {
+      clearTimeout(timer)
+      stopQuagga()
+    }
   }, [])
 
   // Reiniciar buffer cuando cambia el paso
