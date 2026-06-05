@@ -425,6 +425,7 @@ export default function Inventario() {
 
       {escaner && (
   <EscanerIMEI
+    campo={campoImei === 'imei' ? 'IMEI 1' : campoImei === 'imei2' ? 'IMEI 2' : 'Serial de caja'}
     onResult={(codigo) => {
       setForm(f => ({ ...f, [campoImei]: codigo }))
       setEscaner(false)
