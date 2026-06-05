@@ -21,7 +21,7 @@ export default function EscanerIMEI({ onResult, onClose }) {
       streamRef.current = stream
       if (videoRef.current) {
         videoRef.current.srcObject = stream
-        videoRef.current.play()
+        videoRef.current.play().catch(() => {})
         videoRef.current.onloadedmetadata = () => {
           setStatus('Apunta al código de barras del IMEI')
           scanLoop()
