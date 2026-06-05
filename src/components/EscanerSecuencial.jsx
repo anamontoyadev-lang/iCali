@@ -35,6 +35,7 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
   const locked       = useRef(false)
   const started      = useRef(false)
   const pasoRef      = useRef(0)
+  const valoresRef = useRef({ imei: '', imei2: '', serial_caja: '' })
 
   const [paso,    setPaso]    = useState(0)
   const [valores, setValores] = useState({ imei: '', imei2: '', serial_caja: '' })
@@ -135,22 +136,25 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
   }
 
   function confirmar(code) {
-    setFlash(true)
-    setTimeout(() => setFlash(false), 600)
+  setFlash(true)
+  setTimeout(() => setFlash(false), 600)
 
-    const p = PASOS[pasoRef.current]
-    const nuevos = { ...valores, [p.key]: code }
-    setValores(nuevos)
+  const p = PASOS[pasoRef.current]
+  valoresRef.current = { ...valoresRef.current, [p.key]: code }
+  setValores({ ...valoresRef.current })
 
-    const siguiente = pasoRef.current + 1
-    if (siguiente < PASOS.length) {
-      setPaso(siguiente)
-    } else {
-      // Todos los campos escaneados — cerrar escáner y abrir formulario
-      stopQuagga()
-      onComplete(nuevos)
-    }
+  const siguiente = pasoRef.current + 1
+  pasoRef.current = siguiente
+
+  if (siguiente < PASOS.length) {
+    setPaso(siguiente)
+    detBuf.current = []
+    locked.current = false
+  } else {
+    stopQuagga()
+    onComplete({ ...valoresRef.current })
   }
+}
 
   function saltar() {
     const siguiente = paso + 1
