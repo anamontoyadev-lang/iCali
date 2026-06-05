@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import * as XLSX from 'xlsx'
+import EscanerSecuencial from '../components/EscanerSecuencial'
 
 const PRODUCTOS = [
   'iPhone 11 64GB','iPhone 11 128GB',
@@ -90,12 +91,9 @@ export default function Inventario() {
   const [msgOk, setMsgOk]         = useState('')
   const [msgErr, setMsgErr]       = useState('')
 
+  
   // Escáner
-  const [escaner, setEscaner]         = useState(false)
-  const [campoImei, setCampoImei]     = useState('imei') // cual campo llena
-  const [imeiEscaneado, setImeiEscaneado] = useState('')
-  const videoRef  = useRef()
-  const streamRef = useRef()
+const [escaner, setEscaner] = useState(false)
 
   // Carga masiva Excel
   const [showExcel, setShowExcel]       = useState(false)
@@ -123,30 +121,13 @@ export default function Inventario() {
     setLoading(false)
   }
 
-  // ESCÁNER
-  async function iniciarEscaner(campo = 'imei') {
-    setCampoImei(campo)
-    setEscaner(true)
-    setImeiEscaneado('')
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' } })
-      streamRef.current = stream
-      if (videoRef.current) videoRef.current.srcObject = stream
-    } catch { /* sin cámara, ingreso manual */ }
-  }
+  // ESCANER
+function iniciarEscaner() {
+  setEscaner(true)
+}
 
-  function cerrarEscaner() {
-    setEscaner(false)
-    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null }
-  }
 
-  function usarIMEI() {
-    if (imeiEscaneado.trim().length >= 6) {
-      setForm(f => ({ ...f, [campoImei]: imeiEscaneado.trim() }))
-      cerrarEscaner()
-      setShowForm(true)
-    }
-  }
+
 
   // FOTOS MÚLTIPLES
   function handleFotos(e) {
@@ -465,26 +446,15 @@ export default function Inventario() {
 
       {/* MODAL ESCÁNER */}
       {escaner && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.92)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', zIndex:1000, gap:16, padding:20 }}>
-          <div style={{ color:'#fff', fontSize:15, fontWeight:500, textAlign:'center' }}>
-            📷 Escaneando {campoImei === 'imei' ? 'IMEI 1' : campoImei === 'imei2' ? 'IMEI 2' : 'Serial de caja'}
-          </div>
-          <video ref={videoRef} autoPlay playsInline style={{ width:'100%', maxWidth:380, borderRadius:12, background:'#000' }} />
-          <div style={{ width:'100%', maxWidth:380 }}>
-            <div style={{ color:'#8aabcc', fontSize:12, textAlign:'center', marginBottom:8 }}>O ingresa manualmente:</div>
-            <input style={{ ...inp, textAlign:'center', fontSize:16, letterSpacing:2 }}
-              placeholder="Ingresa el código..." value={imeiEscaneado}
-              onChange={e => setImeiEscaneado(e.target.value)} autoFocus />
-          </div>
-          <div style={{ display:'flex', gap:10 }}>
-            <button onClick={cerrarEscaner} style={{ padding:'10px 24px', background:'transparent', border:'1px solid #4a6a8a', borderRadius:8, color:'#8aabcc', fontSize:13, cursor:'pointer' }}>Cancelar</button>
-            <button onClick={usarIMEI} disabled={imeiEscaneado.trim().length < 6} style={{
-              padding:'10px 24px', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer',
-              background: imeiEscaneado.trim().length >= 6 ? 'linear-gradient(135deg,#0066ff,#0044bb)' : '#1e3058'
-            }}>Usar este código →</button>
-          </div>
-        </div>
-      )}
+  <EscanerSecuencial
+    onComplete={(valores) => {
+      setForm(f => ({ ...f, ...valores }))
+      setEscaner(false)
+      setShowForm(true)
+    }}
+    onClose={() => setEscaner(false)}
+  />
+)}
 
       {/* MODAL INGRESAR EQUIPO */}
       {showForm && (
