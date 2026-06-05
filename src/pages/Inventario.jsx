@@ -466,32 +466,23 @@ export default function Inventario() {
                   </select>
                 </div>
 
-                {/* IMEI 1 */}
-                <div>
-                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI 1</label>
-                  <div style={{ display:'flex', gap:6 }}>
-                    <input style={{ ...inp, flex:1 }} value={form.imei} onChange={e => setForm(f=>({...f, imei:e.target.value}))} placeholder="15 dígitos" />
-                    <button type="button" onClick={() => iniciarEscaner('imei')} style={{ padding:'8px 10px', background:'#1a2f52', border:'none', borderRadius:8, color:'#8aabcc', fontSize:14, cursor:'pointer' }}>📷</button>
-                  </div>
-                </div>
+       {/* IMEI 1 */}
+<div>
+  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI 1</label>
+  <input style={inp} value={form.imei} onChange={e => setForm(f=>({...f, imei:e.target.value}))} placeholder="15 dígitos" />
+</div>
 
-                {/* IMEI 2 */}
-                <div>
-                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI 2</label>
-                  <div style={{ display:'flex', gap:6 }}>
-                    <input style={{ ...inp, flex:1 }} value={form.imei2} onChange={e => setForm(f=>({...f, imei2:e.target.value}))} placeholder="Opcional" />
-                    <button type="button" onClick={() => iniciarEscaner('imei2')} style={{ padding:'8px 10px', background:'#1a2f52', border:'none', borderRadius:8, color:'#8aabcc', fontSize:14, cursor:'pointer' }}>📷</button>
-                  </div>
-                </div>
+{/* IMEI 2 */}
+<div>
+  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI 2</label>
+  <input style={inp} value={form.imei2} onChange={e => setForm(f=>({...f, imei2:e.target.value}))} placeholder="Opcional" />
+</div>
 
-                {/* Serial caja */}
-                <div>
-                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Serial de caja</label>
-                  <div style={{ display:'flex', gap:6 }}>
-                    <input style={{ ...inp, flex:1 }} value={form.serial_caja} onChange={e => setForm(f=>({...f, serial_caja:e.target.value}))} placeholder="Escanea la caja" />
-                    <button type="button" onClick={() => iniciarEscaner('serial_caja')} style={{ padding:'8px 10px', background:'#1a2f52', border:'none', borderRadius:8, color:'#8aabcc', fontSize:14, cursor:'pointer' }}>📷</button>
-                  </div>
-                </div>
+{/* Serial caja */}
+<div>
+  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Serial de caja</label>
+  <input style={inp} value={form.serial_caja} onChange={e => setForm(f=>({...f, serial_caja:e.target.value}))} placeholder="Escanea la caja" />
+</div>
 
                 {/* Almacenamiento */}
                 <div>
