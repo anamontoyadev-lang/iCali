@@ -60,23 +60,32 @@ export default function Despachos() {
     setLoading(false)
   }
 
-  async function guardarEdicion() {
-    await supabase.from('despachos').update({
-      logDespacho({ usuario: 'admin', accion:'ACTUALIZAR_DESPACHO', cliente: editando, estado: editForm.estado, producto:'—', ciudad: editForm.ciudad_destino||'—' }).catch(()=>{})
-      estado:              editForm.estado,
-      mensajero:           editForm.mensajero,
-      transportadora:      editForm.transportadora,
-      numero_guia:         editForm.numero_guia,
-      valor_flete:         Number(editForm.valor_flete) || 0,
-      quien_paga_flete:    editForm.quien_paga_flete,
-      fecha_despacho:      editForm.fecha_despacho || null,
-      fecha_entrega_real:  editForm.fecha_entrega_real || null,
-      novedad_descripcion: editForm.novedad_descripcion,
-      observaciones:       editForm.observaciones
-    }).eq('id', editando)
-    setEditando(null)
-    loadDespachos()
-  }
+ async function guardarEdicion() {
+  await supabase.from('despachos').update({
+    estado:              editForm.estado,
+    mensajero:           editForm.mensajero,
+    transportadora:      editForm.transportadora,
+    numero_guia:         editForm.numero_guia,
+    valor_flete:         Number(editForm.valor_flete) || 0,
+    quien_paga_flete:    editForm.quien_paga_flete,
+    fecha_despacho:      editForm.fecha_despacho || null,
+    fecha_entrega_real:  editForm.fecha_entrega_real || null,
+    novedad_descripcion: editForm.novedad_descripcion,
+    observaciones:       editForm.observaciones
+  }).eq('id', editando)
+
+  logDespacho({
+    usuario: 'admin',
+    accion: 'ACTUALIZAR_DESPACHO',
+    cliente: despachos.find(d => d.id === editando)?.nombre_cliente || '—',
+    producto: despachos.find(d => d.id === editando)?.producto || '—',
+    estado: editForm.estado,
+    ciudad: despachos.find(d => d.id === editando)?.ciudad_destino || '—'
+  }).catch(() => {})
+
+  setEditando(null)
+  loadDespachos()
+}
 
   // Filtros
   const filtrados = despachos.filter(d => {
