@@ -1,3 +1,4 @@
+import EscanerSecuencial from '../components/EscanerSecuencial'
 import EscanerIMEI from '../components/EscanerIMEI'
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
@@ -423,38 +424,17 @@ export default function Inventario() {
         )}
       </div>
 
-      {escaner && (
-  <EscanerIMEI
-    campo={campoImei === 'imei' ? 'IMEI 1' : campoImei === 'imei2' ? 'IMEI 2' : 'Serial de caja'}
-    onResult={(codigo) => {
-      setForm(f => ({ ...f, [campoImei]: codigo }))
+     {escaner && (
+  <EscanerSecuencial
+    onComplete={(valores) => {
+      setForm(f => ({ ...f, ...valores }))
       setEscaner(false)
       setShowForm(true)
     }}
     onClose={() => setEscaner(false)}
   />
 )}
-      {escaner && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.92)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', zIndex:1000, gap:16, padding:20 }}>
-          <div style={{ color:'#fff', fontSize:15, fontWeight:500, textAlign:'center' }}>
-            📷 Escaneando {campoImei === 'imei' ? 'IMEI 1' : campoImei === 'imei2' ? 'IMEI 2' : 'Serial de caja'}
-          </div>
-          <video ref={videoRef} autoPlay playsInline style={{ width:'100%', maxWidth:380, borderRadius:12, background:'#000' }} />
-          <div style={{ width:'100%', maxWidth:380 }}>
-            <div style={{ color:'#8aabcc', fontSize:12, textAlign:'center', marginBottom:8 }}>O ingresa manualmente:</div>
-            <input style={{ ...inp, textAlign:'center', fontSize:16, letterSpacing:2 }}
-              placeholder="Ingresa el código..." value={imeiEscaneado}
-              onChange={e => setImeiEscaneado(e.target.value)} autoFocus />
-          </div>
-          <div style={{ display:'flex', gap:10 }}>
-            <button onClick={cerrarEscaner} style={{ padding:'10px 24px', background:'transparent', border:'1px solid #4a6a8a', borderRadius:8, color:'#8aabcc', fontSize:13, cursor:'pointer' }}>Cancelar</button>
-            <button onClick={usarIMEI} disabled={imeiEscaneado.trim().length < 6} style={{
-              padding:'10px 24px', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer',
-              background: imeiEscaneado.trim().length >= 6 ? 'linear-gradient(135deg,#0066ff,#0044bb)' : '#1e3058'
-            }}>Usar este código →</button>
-          </div>
-        </div>
-      )}
+      
 
       {/* MODAL INGRESAR EQUIPO */}
       {showForm && (
