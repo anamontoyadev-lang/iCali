@@ -1,3 +1,4 @@
+import { logInventario } from '../lib/drive'
 import EscanerSecuencial from '../components/EscanerSecuencial'
 import EscanerIMEI from '../components/EscanerIMEI'
 import { useEffect, useState, useRef } from 'react'
@@ -186,12 +187,22 @@ export default function Inventario() {
         registrado_por:  user.id,
         estado:          'disponible'
       })
-      if (error) throw new Error(error.message)
-      setMsgOk(`✓ Equipo registrado correctamente`)
-      setForm(INIT_FORM)
-      setFotos([])
-      setFotoPreviews([])
-      loadAll()
+
+if (error) throw new Error(error.message)
+
+logInventario({
+  usuario: user?.email || 'admin',
+  producto: form.producto,
+  imei: form.imei,
+  proveedor: proveedores.find(p => p.id === form.proveedor_id)?.nombre || '—',
+  costo: form.costo
+}).catch(() => {})
+
+setMsgOk(`✓ Equipo registrado correctamente`)
+setForm(INIT_FORM)
+setFotos([])
+setFotoPreviews([])
+loadAll()
     } catch (err) { setMsgErr(err.message) }
     setSaving(false)
     setTimeout(() => { setMsgOk(''); setMsgErr('') }, 4000)
