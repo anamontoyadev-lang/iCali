@@ -1,6 +1,3 @@
-import { logInventario } from '../lib/drive'
-import EscanerSecuencial from '../components/EscanerSecuencial'
-import EscanerIMEI from '../components/EscanerIMEI'
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
@@ -37,6 +34,22 @@ const ESTADOS_EQUIPO = [
   { value:'para_reparar',   label:'Para reparar',    color:'#ef4444' },
 ]
 
+const COLORES_IPHONE = [
+  'Negro','Blanco','Rojo','Azul','Verde','Morado','Rosa','Amarillo',
+  'Medianoche','Luz de estrella','Grafito','Oro','Plata',
+  'Negro medianoche','Blanco estrella','Sierra Azul','Alpino Verde',
+  'Negro espacial','Morado intenso',
+  'Negro titanio','Titanio blanco','Titanio azul','Titanio natural',
+  'Titanio arena del desierto',
+  'Verde azulado','Ultramarino','Azul cielo',
+]
+
+const STICKERS = [
+  { value:'Very Good', label:'Very Good', color:'#10b981', desc:'Excelente estado, sin rayones' },
+  { value:'Good',      label:'Good',      color:'#3b82f6', desc:'Buen estado, uso normal' },
+  { value:'Mid',       label:'Mid',       color:'#f59e0b', desc:'Estado regular, detalles visibles' },
+]
+
 const inp = {
   background:'#0a1628', border:'1px solid #1a2f52', borderRadius:8,
   padding:'9px 12px', color:'#fff', fontSize:13,
@@ -55,7 +68,8 @@ const INIT_FORM = {
   costo:'', precio_venta_est:'',
   estado_equipo:'nuevo',
   fecha_compra: new Date().toISOString().split('T')[0],
-  observaciones:''
+  observaciones:'',
+  sticker:''
 }
 
 export default function Inventario() {
@@ -150,14 +164,27 @@ export default function Inventario() {
   async function subirFotos(imei) {
     if (!fotos.length) return []
     const urls = []
+    const errores = []
     for (const foto of fotos) {
-      const ext  = foto.name.split('.').pop()
-      const path = `equipos/${imei}-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { error } = await supabase.storage.from('ICALI DOCS').upload(path, foto, { upsert:true })
-      if (!error) {
-        const { data:{ publicUrl } } = supabase.storage.from('ICALI DOCS').getPublicUrl(path)
-        urls.push(publicUrl)
+      try {
+        const ext  = foto.name.split('.').pop()
+        const path = `equipos/${String(imei).replace(/[^a-zA-Z0-9]/g,'_')}-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const { data, error } = await supabase.storage.from('ICALI DOCS').upload(path, foto, { upsert:true })
+        if (error) {
+          errores.push(`${foto.name}: ${error.message}`)
+          console.error('Error subiendo foto:', error)
+        } else {
+          const { data:{ publicUrl } } = supabase.storage.from('ICALI DOCS').getPublicUrl(path)
+          urls.push(publicUrl)
+          console.log('Foto subida OK:', publicUrl)
+        }
+      } catch(e) {
+        errores.push(`${foto.name}: ${e.message}`)
       }
+    }
+    if (errores.length) {
+      console.warn('Errores subiendo fotos:', errores)
+      // No bloquear — guardar el equipo aunque falle alguna foto
     }
     return urls
   }
@@ -181,28 +208,19 @@ export default function Inventario() {
         costo:           Number(String(form.costo).replace(/\D/g,'')) || 0,
         precio_venta_est:Number(String(form.precio_venta_est).replace(/\D/g,'')) || 0,
         estado_equipo:   form.estado_equipo,
+        sticker:         form.sticker || null,
         fecha_compra:    form.fecha_compra,
         observaciones:   form.observaciones,
         fotos:           fotUrls.length ? fotUrls : null,
         registrado_por:  user.id,
         estado:          'disponible'
       })
-
-if (error) throw new Error(error.message)
-
-logInventario({
-  usuario: user?.email || 'admin',
-  producto: form.producto,
-  imei: form.imei,
-  proveedor: proveedores.find(p => p.id === form.proveedor_id)?.nombre || '—',
-  costo: form.costo
-}).catch(() => {})
-
-setMsgOk(`✓ Equipo registrado correctamente`)
-setForm(INIT_FORM)
-setFotos([])
-setFotoPreviews([])
-loadAll()
+      if (error) throw new Error(error.message)
+      setMsgOk(`✓ Equipo registrado correctamente`)
+      setForm(INIT_FORM)
+      setFotos([])
+      setFotoPreviews([])
+      loadAll()
     } catch (err) { setMsgErr(err.message) }
     setSaving(false)
     setTimeout(() => { setMsgOk(''); setMsgErr('') }, 4000)
@@ -384,6 +402,7 @@ loadAll()
                 <th style={th}>Color</th>
                 <th style={th}>Costo</th>
                 <th style={th}>P. Venta est.</th>
+                <th style={th}>Sticker</th>
                 <th style={th}>Condición</th>
                 <th style={th}>Proveedor</th>
                 <th style={th}>Estado</th>
@@ -411,6 +430,15 @@ loadAll()
                     <td style={{ ...td, fontWeight:600, color:'#fff', whiteSpace:'nowrap' }}>{fmt(c.costo)}</td>
                     <td style={{ ...td, color:'#10b981', whiteSpace:'nowrap' }}>{c.precio_venta_est ? fmt(c.precio_venta_est) : '—'}</td>
                     <td style={td}>
+                      {c.sticker ? (
+                        <span style={{
+                          background: c.sticker==='Very Good' ? 'rgba(16,185,129,0.15)' : c.sticker==='Good' ? 'rgba(59,130,246,0.15)' : 'rgba(245,158,11,0.15)',
+                          color: c.sticker==='Very Good' ? '#10b981' : c.sticker==='Good' ? '#3b82f6' : '#f59e0b',
+                          fontSize:11, padding:'2px 8px', borderRadius:4, fontWeight:600
+                        }}>{c.sticker}</span>
+                      ) : '—'}
+                    </td>
+                    <td style={td}>
                       {condicion ? (
                         <span style={{ background: condicion.color+'22', color: condicion.color, fontSize:11, padding:'2px 8px', borderRadius:4, fontWeight:500 }}>
                           {condicion.label}
@@ -435,17 +463,28 @@ loadAll()
         )}
       </div>
 
-     {escaner && (
-  <EscanerSecuencial
-    onComplete={(valores) => {
-      setForm(f => ({ ...f, ...valores }))
-      setEscaner(false)
-      setShowForm(true)
-    }}
-    onClose={() => setEscaner(false)}
-  />
-)}
-      
+      {/* MODAL ESCÁNER */}
+      {escaner && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.92)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', zIndex:1000, gap:16, padding:20 }}>
+          <div style={{ color:'#fff', fontSize:15, fontWeight:500, textAlign:'center' }}>
+            📷 Escaneando {campoImei === 'imei' ? 'IMEI 1' : campoImei === 'imei2' ? 'IMEI 2' : 'Serial de caja'}
+          </div>
+          <video ref={videoRef} autoPlay playsInline style={{ width:'100%', maxWidth:380, borderRadius:12, background:'#000' }} />
+          <div style={{ width:'100%', maxWidth:380 }}>
+            <div style={{ color:'#8aabcc', fontSize:12, textAlign:'center', marginBottom:8 }}>O ingresa manualmente:</div>
+            <input style={{ ...inp, textAlign:'center', fontSize:16, letterSpacing:2 }}
+              placeholder="Ingresa el código..." value={imeiEscaneado}
+              onChange={e => setImeiEscaneado(e.target.value)} autoFocus />
+          </div>
+          <div style={{ display:'flex', gap:10 }}>
+            <button onClick={cerrarEscaner} style={{ padding:'10px 24px', background:'transparent', border:'1px solid #4a6a8a', borderRadius:8, color:'#8aabcc', fontSize:13, cursor:'pointer' }}>Cancelar</button>
+            <button onClick={usarIMEI} disabled={imeiEscaneado.trim().length < 6} style={{
+              padding:'10px 24px', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer',
+              background: imeiEscaneado.trim().length >= 6 ? 'linear-gradient(135deg,#0066ff,#0044bb)' : '#1e3058'
+            }}>Usar este código →</button>
+          </div>
+        </div>
+      )}
 
       {/* MODAL INGRESAR EQUIPO */}
       {showForm && (
@@ -477,23 +516,32 @@ loadAll()
                   </select>
                 </div>
 
-       {/* IMEI 1 */}
-<div>
-  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI 1</label>
-  <input style={inp} value={form.imei} onChange={e => setForm(f=>({...f, imei:e.target.value}))} placeholder="15 dígitos" />
-</div>
+                {/* IMEI 1 */}
+                <div>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI 1</label>
+                  <div style={{ display:'flex', gap:6 }}>
+                    <input style={{ ...inp, flex:1 }} value={form.imei} onChange={e => setForm(f=>({...f, imei:e.target.value}))} placeholder="15 dígitos" />
+                    <button type="button" onClick={() => iniciarEscaner('imei')} style={{ padding:'8px 10px', background:'#1a2f52', border:'none', borderRadius:8, color:'#8aabcc', fontSize:14, cursor:'pointer' }}>📷</button>
+                  </div>
+                </div>
 
-{/* IMEI 2 */}
-<div>
-  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI 2</label>
-  <input style={inp} value={form.imei2} onChange={e => setForm(f=>({...f, imei2:e.target.value}))} placeholder="Opcional" />
-</div>
+                {/* IMEI 2 */}
+                <div>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI 2</label>
+                  <div style={{ display:'flex', gap:6 }}>
+                    <input style={{ ...inp, flex:1 }} value={form.imei2} onChange={e => setForm(f=>({...f, imei2:e.target.value}))} placeholder="Opcional" />
+                    <button type="button" onClick={() => iniciarEscaner('imei2')} style={{ padding:'8px 10px', background:'#1a2f52', border:'none', borderRadius:8, color:'#8aabcc', fontSize:14, cursor:'pointer' }}>📷</button>
+                  </div>
+                </div>
 
-{/* Serial caja */}
-<div>
-  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Serial de caja</label>
-  <input style={inp} value={form.serial_caja} onChange={e => setForm(f=>({...f, serial_caja:e.target.value}))} placeholder="Escanea la caja" />
-</div>
+                {/* Serial caja */}
+                <div>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Serial de caja</label>
+                  <div style={{ display:'flex', gap:6 }}>
+                    <input style={{ ...inp, flex:1 }} value={form.serial_caja} onChange={e => setForm(f=>({...f, serial_caja:e.target.value}))} placeholder="Escanea la caja" />
+                    <button type="button" onClick={() => iniciarEscaner('serial_caja')} style={{ padding:'8px 10px', background:'#1a2f52', border:'none', borderRadius:8, color:'#8aabcc', fontSize:14, cursor:'pointer' }}>📷</button>
+                  </div>
+                </div>
 
                 {/* Almacenamiento */}
                 <div>
@@ -506,7 +554,21 @@ loadAll()
                 {/* Color */}
                 <div>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Color</label>
-                  <input style={inp} value={form.color} onChange={e => setForm(f=>({...f, color:e.target.value}))} />
+                  <select style={sel} value={form.color === '' || COLORES_IPHONE.includes(form.color) ? form.color : '__otro__'}
+                    onChange={e => {
+                      if (e.target.value === '__otro__') setForm(f=>({...f, color:'__custom__'}))
+                      else setForm(f=>({...f, color: e.target.value}))
+                    }}>
+                    <option value="">Seleccionar color...</option>
+                    {COLORES_IPHONE.map(c => <option key={c} value={c}>{c}</option>)}
+                    <option value="__otro__">✏️ Otro color...</option>
+                  </select>
+                  {(form.color === '__custom__' || (!COLORES_IPHONE.includes(form.color) && form.color !== '')) && (
+                    <input style={{ ...inp, marginTop:6 }}
+                      value={form.color === '__custom__' ? '' : form.color}
+                      onChange={e => setForm(f=>({...f, color:e.target.value}))}
+                      placeholder="Escribe el color..." autoFocus />
+                  )}
                 </div>
 
                 {/* Costo */}
@@ -527,6 +589,27 @@ loadAll()
                   <select style={sel} value={form.estado_equipo} onChange={e => setForm(f=>({...f, estado_equipo:e.target.value}))}>
                     {ESTADOS_EQUIPO.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
                   </select>
+                </div>
+
+                {/* Sticker */}
+                <div style={{ gridColumn:'span 2' }}>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:8 }}>Sticker de calidad</label>
+                  <div style={{ display:'flex', gap:8 }}>
+                    {STICKERS.map(s => (
+                      <button key={s.value} type="button"
+                        onClick={() => setForm(f=>({...f, sticker: f.sticker === s.value ? '' : s.value}))}
+                        style={{
+                          flex:1, padding:'10px 8px', border:`2px solid ${form.sticker === s.value ? s.color : '#1a2f52'}`,
+                          borderRadius:8, cursor:'pointer', transition:'all .15s',
+                          background: form.sticker === s.value ? s.color + '22' : 'transparent',
+                          color: form.sticker === s.value ? s.color : '#4a6a8a',
+                          textAlign:'center'
+                        }}>
+                        <div style={{ fontSize:13, fontWeight:700 }}>{s.label}</div>
+                        <div style={{ fontSize:10, marginTop:2, opacity:.8 }}>{s.desc}</div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Fecha */}
