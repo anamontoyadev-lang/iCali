@@ -67,11 +67,11 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
         constraints: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'environment' },
         area: { top: '35%', right: '5%', left: '5%', bottom: '35%' },
       },
-      decoder: { readers: ['code_128_reader'], multiple: false },
+      decoder: { readers: ['code_128_reader', 'ean_reader', 'ean_8_reader', 'upc_reader'], multiple: false },
       locate: true,
       numOfWorkers: 2,
-      frequency: 8,
-      halfSample: false,
+      frequency: 15,
+      halfSample: true,
     }, err => {
       if (err) { quaggaVivo.current = false; return }
       window.Quagga.start()
