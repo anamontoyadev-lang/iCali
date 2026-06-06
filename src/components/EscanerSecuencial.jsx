@@ -1,17 +1,28 @@
 import { useEffect, useRef, useState } from 'react'
-import { BrowserMultiFormatReader, DecodeHintType, BarcodeFormat } from '@zxing/browser'
+
+function loadQuagga() {
+  return new Promise((resolve, reject) => {
+    if (window.Quagga) { resolve(); return }
+    const s = document.createElement('script')
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js'
+    s.onload = resolve; s.onerror = reject
+    document.head.appendChild(s)
+  })
+}
+
+const REQ   = 4
+const MIN_C = 0.78
 
 function esIMEIValido(code) {
   return /^\d{15}$/.test(code)
 }
-
 function esSerialValido(code) {
   return /^[A-Za-z0-9]{6,25}$/.test(code)
 }
 
 const PASOS = [
-  { key: 'imei',        label: 'IMEI 1',        hint: 'Apunta al código de barras del IMEI 1',  validar: esIMEIValido  },
-  { key: 'imei2',       label: 'IMEI 2',         hint: 'Apunta al código de barras del IMEI 2',  validar: esIMEIValido  },
+  { key: 'imei',        label: 'IMEI 1',        hint: 'Apunta al código de barras del IMEI 1',   validar: esIMEIValido  },
+  { key: 'imei2',       label: 'IMEI 2',         hint: 'Apunta al código de barras del IMEI 2',   validar: esIMEIValido  },
   { key: 'serial_caja', label: 'Serial de caja', hint: 'Escanea el código de la caja (opcional)', validar: esSerialValido },
 ]
 
@@ -23,15 +34,15 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
   const [capturados, setCapturados] = useState({})
   const [pendiente, setPendiente]   = useState(null)
   const [cuenta, setCuenta]         = useState(0)
-  const [errCam, setErrCam]         = useState('')
 
   const pasoActual    = useRef(0)
   const valoresAcum   = useRef({ imei: '', imei2: '', serial_caja: '' })
+  const detBuf        = useRef([])
   const locked        = useRef(false)
+  const quaggaVivo    = useRef(false)
   const videoRef      = useRef()
-  const readerRef     = useRef(null)
-  const cuentaRef     = useRef(null)
   const manualRef     = useRef('')
+  const cuentaRef     = useRef(null)
   const onCompleteRef = useRef(onComplete)
   const onCloseRef    = useRef(onClose)
 
@@ -39,57 +50,70 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
   useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
   useEffect(() => {
-    iniciarZxing()
-    return () => { pararZxing(); clearInterval(cuentaRef.current) }
+    const timer = setTimeout(() => {
+      loadQuagga().then(initQuagga).catch(() => {})
+    }, 350)
+    return () => { clearTimeout(timer); pararQuagga(); clearInterval(cuentaRef.current) }
   }, [])
 
-  async function iniciarZxing() {
-    try {
-      const hints = new Map()
-      hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-        BarcodeFormat.CODE_128,
-        BarcodeFormat.EAN_13,
-        BarcodeFormat.UPC_A,
-      ])
-      hints.set(DecodeHintType.TRY_HARDER, true)
+  function initQuagga() {
+    if (!videoRef.current) return
+    quaggaVivo.current = true
+    window.Quagga.init({
+      inputStream: {
+        type: 'LiveStream',
+        target: videoRef.current,
+        constraints: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: 'environment',
+        },
+        area: { top: '25%', right: '5%', left: '5%', bottom: '25%' },
+      },
+      decoder: {
+        readers: ['code_128_reader', 'ean_reader', 'ean_8_reader', 'upc_reader'],
+        multiple: false,
+      },
+      locate: true,
+      numOfWorkers: 2,
+      frequency: 15,
+      halfSample: true,
+    }, err => {
+      if (err) { quaggaVivo.current = false; return }
+      window.Quagga.start()
+      window.Quagga.onDetected(onDetected)
+    })
+  }
 
-      const reader = new BrowserMultiFormatReader(hints)
-      readerRef.current = reader
-
-      // Obtener cámara trasera
-      const devices = await BrowserMultiFormatReader.listVideoInputDevices()
-      const trasera = devices.find(d =>
-        d.label.toLowerCase().includes('back') ||
-        d.label.toLowerCase().includes('rear') ||
-        d.label.toLowerCase().includes('environment') ||
-        d.label.toLowerCase().includes('trasera')
-      ) || devices[devices.length - 1]
-
-      if (!trasera) { setErrCam('No se encontró cámara'); return }
-
-      await reader.decodeFromVideoDevice(trasera.deviceId, videoRef.current, (result, err) => {
-        if (!result) return
-        if (locked.current) return
-
-        const code = result.getText().trim()
-        const paso = PASOS[pasoActual.current]
-
-        setReading(code)
-
-        if (!paso.validar(code)) return
-
-        // Válido — mostrar confirmación
-        locked.current = true
-        setPendiente({ code, label: paso.label })
-        iniciarCuenta(code)
-      })
-    } catch (e) {
-      setErrCam('Error al iniciar cámara: ' + e.message)
+  function pararQuagga() {
+    if (quaggaVivo.current) {
+      try { window.Quagga.offDetected(onDetected); window.Quagga.stop() } catch (_) {}
+      quaggaVivo.current = false
     }
   }
 
-  function pararZxing() {
-    try { readerRef.current?.reset() } catch (_) {}
+  function onDetected(result) {
+    if (locked.current) return
+    const code = result?.codeResult?.code?.trim() || ''
+    const c    = result?.codeResult?.startInfo?.error ?? 0
+    const confianza = c === 0 ? 1 : Math.max(0, 1 - c)
+    if (!code || code.length < 6 || confianza < MIN_C) return
+
+    const paso = PASOS[pasoActual.current]
+    setReading(code)
+
+    if (!paso.validar(code)) return
+
+    detBuf.current.push(code)
+    if (detBuf.current.length > REQ * 2) detBuf.current.shift()
+    const ultimos = detBuf.current.slice(-REQ)
+    if (ultimos.length === REQ && ultimos.every(v => v === ultimos[0])) {
+      // Código confirmado por REQ lecturas iguales — mostrar pantalla confirmación
+      locked.current = true
+      detBuf.current = []
+      setPendiente({ code, label: paso.label })
+      iniciarCuenta(code)
+    }
   }
 
   function iniciarCuenta(code) {
@@ -134,7 +158,7 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
       manualRef.current = ''
       setReading('–')
     } else {
-      pararZxing()
+      pararQuagga()
       onCompleteRef.current({
         imei:        valoresAcum.current.imei        || '',
         imei2:       valoresAcum.current.imei2       || '',
@@ -148,6 +172,7 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
     setPendiente(null)
     locked.current = false
     valoresAcum.current[PASOS[pasoActual.current].key] = ''
+    detBuf.current = []
     setReading('–')
     setManual('')
     manualRef.current = ''
@@ -170,7 +195,7 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
 
   function cerrar() {
     clearInterval(cuentaRef.current)
-    pararZxing()
+    pararQuagga()
     onCloseRef.current()
   }
 
@@ -249,12 +274,10 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
 
       {/* Visor */}
       <div style={{ position:'relative', width:'100%', maxWidth:460, borderRadius:12, overflow:'hidden', border: flash ? '2px solid #10b981' : '2px solid #1a2f52', background:'#000' }}>
-        <video ref={videoRef} style={{ width:'100%', aspectRatio:'4/3', background:'#000', display:'block' }} autoPlay muted playsInline />
+        <div ref={videoRef} style={{ width:'100%', aspectRatio:'16/9', background:'#000', display:'block' }} />
 
-        {/* Línea guía centrada */}
         <div style={{ position:'absolute', top:'50%', left:'8%', right:'8%', transform:'translateY(-50%)', height:2, background:'rgba(0,102,255,0.8)', boxShadow:'0 0 10px rgba(0,102,255,0.9)' }} />
 
-        {/* Esquinas */}
         {[
           { top:'25%', left:'5%', borderTop:'3px solid #0066ff', borderLeft:'3px solid #0066ff' },
           { top:'25%', right:'5%', borderTop:'3px solid #0066ff', borderRight:'3px solid #0066ff' },
@@ -262,17 +285,10 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
           { bottom:'25%', right:'5%', borderBottom:'3px solid #0066ff', borderRight:'3px solid #0066ff' },
         ].map((s, i) => <div key={i} style={{ position:'absolute', width:24, height:24, ...s }} />)}
 
-        {/* Lectura */}
         {reading !== '–' && (
           <div style={{ position:'absolute', bottom:8, left:8, right:8, background:'rgba(0,0,0,0.85)', borderRadius:6, padding:'5px 10px', textAlign:'center' }}>
             <div style={{ color: esMEID ? '#f59e0b' : '#10b981', fontSize:13, fontFamily:'monospace', letterSpacing:1 }}>{reading}</div>
-            {esMEID && <div style={{ color:'#f59e0b', fontSize:10, marginTop:2 }}>MEID (14 dígitos) — necesito el IMEI de 15 dígitos</div>}
-          </div>
-        )}
-
-        {errCam && (
-          <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.8)', color:'#ef4444', fontSize:13, padding:20, textAlign:'center' }}>
-            {errCam}
+            {esMEID && <div style={{ color:'#f59e0b', fontSize:10, marginTop:2 }}>MEID — apunta al IMEI de 15 dígitos</div>}
           </div>
         )}
 
