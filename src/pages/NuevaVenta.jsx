@@ -79,8 +79,7 @@ const REFERENCIAS_RETOMA = [
   'iPhone 15','iPhone 15 Plus','iPhone 15 Pro','iPhone 15 Pro Max',
   'iPhone 16','iPhone 16 Plus','iPhone 16 Pro','iPhone 16 Pro Max','iPhone 16E',
   'iPhone 17','iPhone 17 Air','iPhone 17 Pro','iPhone 17 Pro Max',
-  'Samsung S21','Samsung S22','Samsung S23','Samsung S24','Samsung S25',
-  'Otro'
+  'Samsung S21','Samsung S22','Samsung S23','Samsung S24','Samsung S25','Otro'
 ]
 
 const METODOS = [
@@ -93,6 +92,14 @@ const METODOS = [
   { value:'banco_bogota',  label:'Banco de Bogotá' },
   { value:'contraentrega', label:'Contraentrega' },
   { value:'mixto',         label:'Mixto' },
+]
+
+const ESTADOS_EQUIPO = [
+  { value:'nuevo',          label:'Nuevo',          color:'#10b981' },
+  { value:'exhibicion',     label:'Exhibición',     color:'#3b82f6' },
+  { value:'usado',          label:'Usado',          color:'#f59e0b' },
+  { value:'en_laboratorio', label:'En laboratorio', color:'#8b5cf6' },
+  { value:'para_reparar',   label:'Para reparar',   color:'#ef4444' },
 ]
 
 function getRefBase(producto) {
@@ -124,14 +131,12 @@ const inp = {
   fontSize:13, width:'100%', boxSizing:'border-box', outline:'none'
 }
 const sel = { ...inp, cursor:'pointer' }
+const fmt = n => new Intl.NumberFormat('es-CO',{ style:'currency', currency:'COP', maximumFractionDigits:0 }).format(n || 0)
 
 function Field({ label, children, required, span }) {
   return (
     <div style={{ gridColumn: span ? `span ${span}` : undefined }}>
-      <label style={{
-        display:'block', color:'#8aabcc', fontSize:11, fontWeight:500,
-        textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:5
-      }}>
+      <label style={{ display:'block', color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:5 }}>
         {label}{required && <span style={{ color:'#f43f5e' }}> *</span>}
       </label>
       {children}
@@ -142,11 +147,7 @@ function Field({ label, children, required, span }) {
 function Section({ title, children }) {
   return (
     <div style={{ marginBottom:28 }}>
-      <div style={{
-        color:'#4a7aaa', fontSize:11, fontWeight:700,
-        textTransform:'uppercase', letterSpacing:'0.1em',
-        borderBottom:'1px solid #1a2f52', paddingBottom:8, marginBottom:16
-      }}>{title}</div>
+      <div style={{ color:'#4a7aaa', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', borderBottom:'1px solid #1a2f52', paddingBottom:8, marginBottom:16 }}>{title}</div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px,1fr))', gap:'14px 16px' }}>
         {children}
       </div>
@@ -167,39 +168,70 @@ export default function NuevaVenta() {
   const [coloresDisponibles, setColoresDisponibles] = useState([])
   const [colorPersonalizado, setColorPersonalizado] = useState(false)
   const [proveedores, setProveedores] = useState([])
-  const [costoAutoInfo, setCostoAutoInfo] = useState(null) // info del costo encontrado
+  const [costoAutoInfo, setCostoAutoInfo] = useState(null)
+
+  // Stock por referencia
+  const [stockDisponible, setStockDisponible]   = useState([])
+  const [showStock, setShowStock]               = useState(false)
+  const [loadingStock, setLoadingStock]         = useState(false)
+  const [equipoSeleccionado, setEquipoSeleccionado] = useState(null)
+
+  // Notificación
+  const [enviandoNotif, setEnviandoNotif]   = useState(false)
+  const [notifEnviada, setNotifEnviada]     = useState(false)
+  const [notifRespuesta, setNotifRespuesta] = useState(null)
+  const [notifId, setNotifId]               = useState(null)
 
   useEffect(() => {
     supabase.from('proveedores').select('id,nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setProveedores(data || []))
   }, [])
 
-  // Cuando cambia el producto → colores
   useEffect(() => {
     if (form.producto) {
       const ref = getRefBase(form.producto)
       setColoresDisponibles(ref ? COLORES_POR_REF[ref] || [] : [])
       setForm(f => ({ ...f, color: '', color_custom: '' }))
       setColorPersonalizado(false)
+      buscarStock(form.producto)
     }
   }, [form.producto])
 
-  // Cuando cambia el IMEI → buscar costo en compras_proveedor
   useEffect(() => {
     const imei = form.imei.trim()
-    if (imei.length >= 10) {
-      buscarCostoPorIMEI(imei)
-    } else {
-      setCostoAutoInfo(null)
-    }
+    if (imei.length >= 10) buscarCostoPorIMEI(imei)
+    else setCostoAutoInfo(null)
   }, [form.imei])
 
-  // Cuando cambia producto → buscar costo promedio si no hay IMEI
   useEffect(() => {
-    if (form.producto && form.imei.trim().length < 10) {
-      buscarCostoPorProducto(form.producto)
-    }
+    if (form.producto && form.imei.trim().length < 10) buscarCostoPorProducto(form.producto)
   }, [form.producto])
+
+  // Polling notificación
+  useEffect(() => {
+    if (!notifId) return
+    const interval = setInterval(async () => {
+      const { data } = await supabase.from('notificaciones').select('respondida,respuesta,respondido_por').eq('id', notifId).single()
+      if (data?.respondida) {
+        setNotifRespuesta(data)
+        clearInterval(interval)
+      }
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [notifId])
+
+  async function buscarStock(producto) {
+    const nombre = producto.split(' - ')[0]
+    setLoadingStock(true)
+    const { data } = await supabase
+      .from('compras_proveedor')
+      .select('id, imei, imei2, color, almacenamiento, costo, estado_equipo, bateria, sticker, proveedores(nombre)')
+      .ilike('producto', `%${nombre}%`)
+      .eq('estado', 'disponible')
+      .order('created_at', { ascending: false })
+    setStockDisponible(data || [])
+    setLoadingStock(false)
+  }
 
   async function buscarCostoPorIMEI(imei) {
     const { data } = await supabase
@@ -209,11 +241,9 @@ export default function NuevaVenta() {
       .eq('estado', 'disponible')
       .single()
     if (data) {
-      setCostoAutoInfo({ costo: data.costo, fuente: `IMEI · ${data.proveedores?.nombre || ''}`, producto: data.producto })
+      setCostoAutoInfo({ costo: data.costo, fuente: `IMEI · ${data.proveedores?.nombre || ''}` })
       setForm(f => ({ ...f, costo_equipo: String(data.costo) }))
-    } else {
-      setCostoAutoInfo(null)
-    }
+    } else setCostoAutoInfo(null)
   }
 
   async function buscarCostoPorProducto(producto) {
@@ -226,13 +256,46 @@ export default function NuevaVenta() {
       .order('created_at', { ascending: false })
       .limit(1)
     if (data && data.length > 0) {
-      setCostoAutoInfo({
-        costo: data[0].costo,
-        fuente: `Referencia · ${data[0].proveedores?.nombre || ''}`,
-        producto: nombre
-      })
+      setCostoAutoInfo({ costo: data[0].costo, fuente: `Referencia · ${data[0].proveedores?.nombre || ''}` })
       setForm(f => ({ ...f, costo_equipo: String(data[0].costo) }))
     }
+  }
+
+  function seleccionarEquipo(equipo) {
+    setEquipoSeleccionado(equipo)
+    setForm(f => ({
+      ...f,
+      imei:         equipo.imei || '',
+      color:        equipo.color || '',
+      costo_equipo: String(equipo.costo || ''),
+      proveedor:    equipo.proveedores?.nombre || f.proveedor,
+    }))
+    setCostoAutoInfo({ costo: equipo.costo, fuente: `Stock · IMEI ${equipo.imei}` })
+    setShowStock(false)
+  }
+
+  async function enviarNotificacionInventario() {
+    if (enviandoNotif) return
+    setEnviandoNotif(true)
+    const user = (await supabase.auth.getUser()).data.user
+    const { data, error } = await supabase.from('notificaciones').insert({
+      tipo: 'SOLICITUD_EQUIPO',
+      mensaje: `Solicitud de equipo para mostrar al cliente`,
+      datos: {
+        producto:  form.producto,
+        imei:      equipoSeleccionado?.imei || form.imei,
+        asesor:    form.asesor_nombre,
+        cliente:   form.nombre_cliente || 'Cliente en mostrador',
+      },
+      creado_por:       user.id,
+      creado_por_nombre: form.asesor_nombre,
+      destinatario_rol: 'inventario',
+    }).select().single()
+    if (!error && data) {
+      setNotifId(data.id)
+      setNotifEnviada(true)
+    }
+    setEnviandoNotif(false)
   }
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -288,7 +351,7 @@ export default function NuevaVenta() {
 
     if (errVenta) { setError('Error al guardar: ' + errVenta.message); setSaving(false); return }
 
-    // Actualizar estado del equipo en compras_proveedor si IMEI coincide
+    // Marcar salida en inventario
     if (form.imei.trim().length >= 10 && venta?.id) {
       await supabase.from('compras_proveedor')
         .update({ estado: 'vendido', venta_id: venta.id })
@@ -296,7 +359,6 @@ export default function NuevaVenta() {
         .eq('estado', 'disponible')
     }
 
-    // Actualizar retoma
     if (form.tiene_retoma && venta?.id) {
       const refFinal = form.referencia_retoma === 'Otro'
         ? (form.referencia_retoma_otro || 'pendiente')
@@ -308,7 +370,6 @@ export default function NuevaVenta() {
       }).eq('venta_id', venta.id)
     }
 
-    // Log trazabilidad
     await supabase.from('logs_actividad').insert({
       usuario_id:     user.id,
       usuario_nombre: form.asesor_nombre,
@@ -318,12 +379,12 @@ export default function NuevaVenta() {
       registro_id:    venta.id
     })
 
-    // Sincronizar con Google Drive
-    logVenta({ ...venta, asesor_nombre: form.asesor_nombre })
-    logActividad({
+    // Drive — venta + actividad
+    await logVenta({ ...venta, asesor_nombre: form.asesor_nombre })
+    await logActividad({
       usuario: form.asesor_nombre,
       accion: 'NUEVA_VENTA',
-      detalle: `${form.producto} | ${form.nombre_cliente} | $${num(form.valor_venta).toLocaleString('es-CO')}`,
+      detalle: `${form.producto} | IMEI: ${form.imei} | ${form.nombre_cliente} | $${num(form.valor_venta).toLocaleString('es-CO')}`,
       tabla: 'ventas'
     })
 
@@ -340,13 +401,12 @@ export default function NuevaVenta() {
     </div>
   )
 
+  const condSeleccionada = equipoSeleccionado ? ESTADOS_EQUIPO.find(e => e.value === equipoSeleccionado.estado_equipo) : null
+
   return (
     <div style={{ padding:'32px 36px', maxWidth:900, fontFamily:"'DM Sans', system-ui, sans-serif" }}>
       <div style={{ marginBottom:28 }}>
-        <button onClick={() => navigate('/ventas')} style={{
-          background:'transparent', border:'none', color:'#4a6a8a',
-          fontSize:13, cursor:'pointer', padding:0, marginBottom:12
-        }}>← Volver a ventas</button>
+        <button onClick={() => navigate('/ventas')} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:13, cursor:'pointer', padding:0, marginBottom:12 }}>← Volver a ventas</button>
         <h1 style={{ color:'#fff', fontSize:20, fontWeight:600, margin:0 }}>Registrar venta</h1>
       </div>
 
@@ -355,64 +415,106 @@ export default function NuevaVenta() {
 
           <Section title="📅 Información general">
             <Field label="Fecha de venta" required>
-              <input type="date" style={inp} value={form.fecha_venta}
-                onChange={e => set('fecha_venta', e.target.value)} required />
+              <input type="date" style={inp} value={form.fecha_venta} onChange={e => set('fecha_venta', e.target.value)} required />
             </Field>
             <Field label="Fecha de entrega">
-              <input type="date" style={inp} value={form.fecha_entrega}
-                onChange={e => set('fecha_entrega', e.target.value)} />
+              <input type="date" style={inp} value={form.fecha_entrega} onChange={e => set('fecha_entrega', e.target.value)} />
             </Field>
             <Field label="Canal de venta" required>
-              <select style={sel} value={form.canal}
-                onChange={e => { set('canal', e.target.value); set('asesor_nombre', '') }}>
+              <select style={sel} value={form.canal} onChange={e => { set('canal', e.target.value); set('asesor_nombre', '') }}>
                 <option value="mostrador">Mostrador</option>
                 <option value="call_center">Call Center</option>
               </select>
             </Field>
             <Field label="Asesor" required>
-              <select style={sel} value={form.asesor_nombre}
-                onChange={e => set('asesor_nombre', e.target.value)} required>
+              <select style={sel} value={form.asesor_nombre} onChange={e => set('asesor_nombre', e.target.value)} required>
                 <option value="">Seleccionar asesor...</option>
                 {asesoresFiltrados.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
             </Field>
             <Field label="# Factura">
-              <input style={inp} value={form.no_factura}
-                onChange={e => set('no_factura', e.target.value)} />
+              <input style={inp} value={form.no_factura} onChange={e => set('no_factura', e.target.value)} />
             </Field>
           </Section>
 
           <Section title="👤 Datos del cliente">
             <Field label="Cédula" required>
-              <input style={inp} value={form.cedula_cliente}
-                onChange={e => set('cedula_cliente', e.target.value)} required />
+              <input style={inp} value={form.cedula_cliente} onChange={e => set('cedula_cliente', e.target.value)} required />
             </Field>
             <Field label="Nombre completo" required span={2}>
-              <input style={inp} value={form.nombre_cliente}
-                onChange={e => set('nombre_cliente', e.target.value)} required />
+              <input style={inp} value={form.nombre_cliente} onChange={e => set('nombre_cliente', e.target.value)} required />
             </Field>
             <Field label="Teléfono">
-              <input style={inp} value={form.telefono_cliente}
-                onChange={e => set('telefono_cliente', e.target.value)} />
+              <input style={inp} value={form.telefono_cliente} onChange={e => set('telefono_cliente', e.target.value)} />
             </Field>
             <Field label="Correo">
-              <input type="email" style={inp} value={form.email_cliente}
-                onChange={e => set('email_cliente', e.target.value)} />
+              <input type="email" style={inp} value={form.email_cliente} onChange={e => set('email_cliente', e.target.value)} />
             </Field>
             <Field label="Ciudad" required>
-              <input style={inp} value={form.ciudad_cliente}
-                onChange={e => set('ciudad_cliente', e.target.value)} required />
+              <input style={inp} value={form.ciudad_cliente} onChange={e => set('ciudad_cliente', e.target.value)} required />
             </Field>
           </Section>
 
           <Section title="📱 Producto">
             <Field label="Producto" required span={2}>
-              <select style={sel} value={form.producto}
-                onChange={e => set('producto', e.target.value)} required>
+              <select style={sel} value={form.producto} onChange={e => set('producto', e.target.value)} required>
                 <option value="">Seleccionar producto...</option>
                 {PRODUCTOS.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </Field>
+
+            {/* STOCK DISPONIBLE */}
+            {form.producto && (
+              <div style={{ gridColumn:'span 2' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
+                  <span style={{ color:'#8aabcc', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'.06em' }}>
+                    Stock disponible
+                  </span>
+                  {loadingStock
+                    ? <span style={{ color:'#4a6a8a', fontSize:11 }}>Buscando...</span>
+                    : <span style={{ color: stockDisponible.length > 0 ? '#10b981' : '#ef4444', fontSize:11, fontWeight:600 }}>
+                        {stockDisponible.length} equipo{stockDisponible.length !== 1 ? 's' : ''} en inventario
+                      </span>
+                  }
+                  {stockDisponible.length > 0 && (
+                    <button type="button" onClick={() => setShowStock(true)} style={{ padding:'4px 12px', background:'#0066ff22', border:'1px solid #0066ff55', borderRadius:6, color:'#60a5fa', fontSize:11, cursor:'pointer', fontWeight:600 }}>
+                      Ver equipos →
+                    </button>
+                  )}
+                </div>
+
+                {/* Equipo seleccionado */}
+                {equipoSeleccionado && (
+                  <div style={{ background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:10, padding:'12px 16px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                    <div>
+                      <div style={{ color:'#10b981', fontSize:12, fontWeight:600, marginBottom:4 }}>✓ Equipo seleccionado del inventario</div>
+                      <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+                        <span style={{ color:'#8aabcc', fontSize:12 }}>IMEI: <span style={{ color:'#fff', fontFamily:'monospace' }}>{equipoSeleccionado.imei}</span></span>
+                        {equipoSeleccionado.color && <span style={{ color:'#8aabcc', fontSize:12 }}>Color: <span style={{ color:'#fff' }}>{equipoSeleccionado.color}</span></span>}
+                        {equipoSeleccionado.bateria != null && <span style={{ color:'#8aabcc', fontSize:12 }}>Batería: <span style={{ color: equipoSeleccionado.bateria >= 80 ? '#10b981' : '#f59e0b' }}>{equipoSeleccionado.bateria}%</span></span>}
+                        {condSeleccionada && <span style={{ background: condSeleccionada.color+'22', color: condSeleccionada.color, fontSize:11, padding:'2px 8px', borderRadius:4 }}>{condSeleccionada.label}</span>}
+                        {equipoSeleccionado.sticker && <span style={{ color:'#f59e0b', fontSize:11 }}>{equipoSeleccionado.sticker}</span>}
+                      </div>
+                    </div>
+                    <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                      {/* Notificación a inventario */}
+                      {!notifEnviada ? (
+                        <button type="button" onClick={enviarNotificacionInventario} disabled={enviandoNotif}
+                          style={{ padding:'6px 12px', background:'#1a2f52', border:'1px solid #3b82f6', borderRadius:6, color:'#60a5fa', fontSize:11, cursor:'pointer', whiteSpace:'nowrap' }}>
+                          {enviandoNotif ? '...' : '🔔 Pedir a inventario'}
+                        </button>
+                      ) : notifRespuesta ? (
+                        <span style={{ fontSize:20 }}>{notifRespuesta.respuesta === 'si' ? '✅' : '❌'}</span>
+                      ) : (
+                        <span style={{ color:'#f59e0b', fontSize:11 }}>⏳ Esperando respuesta...</span>
+                      )}
+                      <button type="button" onClick={() => { setEquipoSeleccionado(null); setNotifEnviada(false); setNotifId(null); setNotifRespuesta(null) }}
+                        style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:16, cursor:'pointer' }}>×</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <Field label="Color">
               {coloresDisponibles.length > 0 ? (
@@ -427,29 +529,22 @@ export default function NuevaVenta() {
                     <option value="__otro__">Otro color...</option>
                   </select>
                   {colorPersonalizado && (
-                    <input style={inp} placeholder="Escribe el color"
-                      value={form.color_custom} onChange={e => set('color_custom', e.target.value)} />
+                    <input style={inp} placeholder="Escribe el color" value={form.color_custom} onChange={e => set('color_custom', e.target.value)} />
                   )}
                 </div>
               ) : (
-                <input style={inp} value={form.color}
-                  onChange={e => set('color', e.target.value)} placeholder="ej: Negro titanio" />
+                <input style={inp} value={form.color} onChange={e => set('color', e.target.value)} placeholder="ej: Negro titanio" />
               )}
             </Field>
 
             <Field label="IMEI" required>
-              <input style={inp} value={form.imei}
-                onChange={e => set('imei', e.target.value)} placeholder="15 dígitos" required />
+              <input style={inp} value={form.imei} onChange={e => set('imei', e.target.value)} placeholder="15 dígitos" required />
             </Field>
 
             <Field label="Proveedor" required>
-              <select style={sel} value={form.proveedor}
-                onChange={e => set('proveedor', e.target.value)} required>
+              <select style={sel} value={form.proveedor} onChange={e => set('proveedor', e.target.value)} required>
                 <option value="">Seleccionar...</option>
-                {proveedores.length > 0
-                  ? proveedores.map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)
-                  : ['Proveedor 1','Proveedor 2','Proveedor 3'].map(p => <option key={p} value={p}>{p}</option>)
-                }
+                {proveedores.map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
               </select>
             </Field>
 
@@ -459,12 +554,7 @@ export default function NuevaVenta() {
                   onChange={e => { set('costo_equipo', e.target.value); setCostoAutoInfo(null) }}
                   placeholder="0" required />
                 {costoAutoInfo && (
-                  <div style={{
-                    marginTop:4, padding:'4px 8px',
-                    background:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.3)',
-                    borderRadius:5, fontSize:11, color:'#10b981',
-                    display:'flex', alignItems:'center', gap:4
-                  }}>
+                  <div style={{ marginTop:4, padding:'4px 8px', background:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:5, fontSize:11, color:'#10b981' }}>
                     ✓ Costo cargado desde {costoAutoInfo.fuente}
                   </div>
                 )}
@@ -474,44 +564,33 @@ export default function NuevaVenta() {
 
           <Section title="💰 Valores">
             <Field label="Valor de venta $" required>
-              <input style={inp} value={form.valor_venta}
-                onChange={e => set('valor_venta', e.target.value)} required />
+              <input style={inp} value={form.valor_venta} onChange={e => set('valor_venta', e.target.value)} required />
             </Field>
             <Field label="Cuota inicial $">
-              <input style={inp} value={form.cuota_inicial}
-                onChange={e => set('cuota_inicial', e.target.value)} />
+              <input style={inp} value={form.cuota_inicial} onChange={e => set('cuota_inicial', e.target.value)} />
             </Field>
             <Field label="# Cuotas">
-              <input type="number" min="1" style={inp} value={form.numero_cuotas}
-                onChange={e => set('numero_cuotas', e.target.value)} />
+              <input type="number" min="1" style={inp} value={form.numero_cuotas} onChange={e => set('numero_cuotas', e.target.value)} />
             </Field>
             <Field label="Valor cuota $">
-              <input style={inp} value={form.valor_cuota}
-                onChange={e => set('valor_cuota', e.target.value)} />
+              <input style={inp} value={form.valor_cuota} onChange={e => set('valor_cuota', e.target.value)} />
             </Field>
           </Section>
 
           <Section title="💳 Método de pago">
             <Field label="Método" required>
-              <select style={sel} value={form.metodo_pago}
-                onChange={e => set('metodo_pago', e.target.value)}>
+              <select style={sel} value={form.metodo_pago} onChange={e => set('metodo_pago', e.target.value)}>
                 {METODOS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
               </select>
             </Field>
             {['contado','mixto'].includes(form.metodo_pago) && (
-              <Field label="Efectivo $">
-                <input style={inp} value={form.pago_efectivo} onChange={e => set('pago_efectivo', e.target.value)} />
-              </Field>
+              <Field label="Efectivo $"><input style={inp} value={form.pago_efectivo} onChange={e => set('pago_efectivo', e.target.value)} /></Field>
             )}
             {['transferencia','mixto'].includes(form.metodo_pago) && (
-              <Field label="Transferencia $">
-                <input style={inp} value={form.pago_transferencia} onChange={e => set('pago_transferencia', e.target.value)} />
-              </Field>
+              <Field label="Transferencia $"><input style={inp} value={form.pago_transferencia} onChange={e => set('pago_transferencia', e.target.value)} /></Field>
             )}
             {['tarjeta','mixto'].includes(form.metodo_pago) && (
-              <Field label="Tarjeta $">
-                <input style={inp} value={form.pago_tarjeta} onChange={e => set('pago_tarjeta', e.target.value)} />
-              </Field>
+              <Field label="Tarjeta $"><input style={inp} value={form.pago_tarjeta} onChange={e => set('pago_tarjeta', e.target.value)} /></Field>
             )}
           </Section>
 
@@ -524,9 +603,7 @@ export default function NuevaVenta() {
             </Field>
             {form.es_domicilio && (
               <Field label="Dirección de entrega" required span={2}>
-                <input style={inp} value={form.direccion_cliente}
-                  onChange={e => set('direccion_cliente', e.target.value)}
-                  placeholder="Dirección completa" required />
+                <input style={inp} value={form.direccion_cliente} onChange={e => set('direccion_cliente', e.target.value)} placeholder="Dirección completa" required />
               </Field>
             )}
             <Field label="¿Comisión compartida?">
@@ -544,8 +621,7 @@ export default function NuevaVenta() {
               </Field>
             )}
             <Field label="Observaciones" span={2}>
-              <textarea style={{ ...inp, resize:'vertical', minHeight:72 }}
-                value={form.observaciones} onChange={e => set('observaciones', e.target.value)} />
+              <textarea style={{ ...inp, resize:'vertical', minHeight:72 }} value={form.observaciones} onChange={e => set('observaciones', e.target.value)} />
             </Field>
           </Section>
 
@@ -565,9 +641,7 @@ export default function NuevaVenta() {
               </Field>
               {form.referencia_retoma === 'Otro' && (
                 <Field label="Especifica la referencia">
-                  <input style={inp} value={form.referencia_retoma_otro}
-                    onChange={e => set('referencia_retoma_otro', e.target.value)}
-                    placeholder="ej: Motorola G82, Samsung A54..." />
+                  <input style={inp} value={form.referencia_retoma_otro} onChange={e => set('referencia_retoma_otro', e.target.value)} placeholder="ej: Motorola G82..." />
                 </Field>
               )}
               <Field label="IMEI retoma">
@@ -581,28 +655,76 @@ export default function NuevaVenta() {
         </div>
 
         {error && (
-          <div style={{
-            margin:'16px 0', padding:'12px 16px',
-            background:'rgba(244,63,94,0.1)', border:'1px solid rgba(244,63,94,0.3)',
-            borderRadius:8, color:'#f87171', fontSize:13
-          }}>{error}</div>
+          <div style={{ margin:'16px 0', padding:'12px 16px', background:'rgba(244,63,94,0.1)', border:'1px solid rgba(244,63,94,0.3)', borderRadius:8, color:'#f87171', fontSize:13 }}>{error}</div>
         )}
 
         <div style={{ display:'flex', gap:12, marginTop:20 }}>
-          <button type="button" onClick={() => navigate('/ventas')} style={{
-            padding:'12px 24px', background:'transparent',
-            border:'1px solid #1a2f52', borderRadius:8,
-            color:'#6b8ab0', fontSize:14, cursor:'pointer'
-          }}>Cancelar</button>
-          <button type="submit" disabled={saving} style={{
-            padding:'12px 32px',
-            background: saving ? '#1e3058' : 'linear-gradient(135deg,#0066ff,#0044bb)',
-            border:'none', borderRadius:8, color:'#fff', fontSize:14, fontWeight:600, cursor:'pointer'
-          }}>
+          <button type="button" onClick={() => navigate('/ventas')} style={{ padding:'12px 24px', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:14, cursor:'pointer' }}>Cancelar</button>
+          <button type="submit" disabled={saving} style={{ padding:'12px 32px', background: saving ? '#1e3058' : 'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:14, fontWeight:600, cursor:'pointer' }}>
             {saving ? 'Guardando...' : 'Registrar venta ✓'}
           </button>
         </div>
       </form>
+
+      {/* MODAL STOCK */}
+      {showStock && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.82)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
+          <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:14, padding:24, width:'100%', maxWidth:700, maxHeight:'85vh', overflow:'auto', fontFamily:"'DM Sans', system-ui" }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+              <div>
+                <h3 style={{ color:'#fff', margin:'0 0 4px', fontSize:15 }}>Stock disponible — {form.producto?.split(' - ')[0]}</h3>
+                <p style={{ color:'#4a6a8a', fontSize:12, margin:0 }}>{stockDisponible.length} equipos disponibles en inventario</p>
+              </div>
+              <button onClick={() => setShowStock(false)} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:20, cursor:'pointer' }}>×</button>
+            </div>
+
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {stockDisponible.map(eq => {
+                const cond = ESTADOS_EQUIPO.find(e => e.value === eq.estado_equipo)
+                return (
+                  <div key={eq.id} style={{ background:'#0a1628', border:'1px solid #1a2f52', borderRadius:10, padding:'12px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+                    <div style={{ flex:1, display:'flex', gap:16, flexWrap:'wrap', alignItems:'center' }}>
+                      <div>
+                        <div style={{ color:'#5a7aaa', fontSize:10, marginBottom:2 }}>IMEI</div>
+                        <div style={{ color:'#fff', fontFamily:'monospace', fontSize:13 }}>{eq.imei || '—'}</div>
+                      </div>
+                      {eq.color && (
+                        <div>
+                          <div style={{ color:'#5a7aaa', fontSize:10, marginBottom:2 }}>Color</div>
+                          <div style={{ color:'#cbd5e1', fontSize:12 }}>{eq.color}</div>
+                        </div>
+                      )}
+                      {eq.bateria != null && (
+                        <div>
+                          <div style={{ color:'#5a7aaa', fontSize:10, marginBottom:2 }}>Batería</div>
+                          <div style={{ color: eq.bateria >= 80 ? '#10b981' : eq.bateria >= 60 ? '#f59e0b' : '#ef4444', fontSize:13, fontWeight:600 }}>{eq.bateria}%</div>
+                        </div>
+                      )}
+                      {eq.sticker && (
+                        <span style={{ background: eq.sticker==='Very Good' ? 'rgba(16,185,129,0.15)' : eq.sticker==='Good' ? 'rgba(59,130,246,0.15)' : 'rgba(245,158,11,0.15)', color: eq.sticker==='Very Good' ? '#10b981' : eq.sticker==='Good' ? '#3b82f6' : '#f59e0b', fontSize:10, padding:'2px 8px', borderRadius:4, fontWeight:600 }}>{eq.sticker}</span>
+                      )}
+                      {cond && (
+                        <span style={{ background: cond.color+'22', color: cond.color, fontSize:10, padding:'2px 8px', borderRadius:4 }}>{cond.label}</span>
+                      )}
+                      <div>
+                        <div style={{ color:'#5a7aaa', fontSize:10, marginBottom:2 }}>Costo</div>
+                        <div style={{ color:'#fff', fontSize:12, fontWeight:600 }}>{fmt(eq.costo)}</div>
+                      </div>
+                      {eq.proveedores?.nombre && (
+                        <div style={{ color:'#4a6a8a', fontSize:11 }}>{eq.proveedores.nombre}</div>
+                      )}
+                    </div>
+                    <button type="button" onClick={() => seleccionarEquipo(eq)}
+                      style={{ padding:'8px 16px', background:'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
+                      Seleccionar →
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

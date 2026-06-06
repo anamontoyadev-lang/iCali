@@ -67,6 +67,9 @@ function App() {
 } />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
+          import NotificacionesInventario from './components/NotificacionesInventario'
+// ... dentro del return, al final antes del cierre:
+<NotificacionesInventario />
         </Routes>
       
       </BrowserRouter>

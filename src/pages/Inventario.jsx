@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import * as XLSX from 'xlsx'
 import EscanerSecuencial from '../components/EscanerSecuencial'
+import { logInventario } from '../lib/drive'
 
 const PRODUCTOS = [
   'iPhone 11 64GB','iPhone 11 128GB',
@@ -70,7 +71,8 @@ const INIT_FORM = {
   estado_equipo:'nuevo',
   fecha_compra: new Date().toISOString().split('T')[0],
   observaciones:'',
-  sticker:''
+  sticker:'',
+  bateria: ''
 }
 
 export default function Inventario() {
@@ -120,13 +122,11 @@ export default function Inventario() {
     setLoading(false)
   }
 
-  // ESCÁNER — abre el flujo secuencial IMEI1 → IMEI2 → Serial
   function abrirEscaner() {
     setShowForm(false)
     setEscaner(true)
   }
 
-  // FOTOS MÚLTIPLES
   function handleFotos(e) {
     const files = Array.from(e.target.files)
     setFotos(prev => [...prev, ...files])
@@ -142,26 +142,20 @@ export default function Inventario() {
   async function subirFotos(imei) {
     if (!fotos.length) return []
     const urls = []
-    const errores = []
     for (const foto of fotos) {
       try {
         const ext  = foto.name.split('.').pop()
         const path = `equipos/${String(imei).replace(/[^a-zA-Z0-9]/g,'_')}-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-        const { data, error } = await supabase.storage.from('ICALI DOCS').upload(path, foto, { upsert:true })
-        if (error) {
-          errores.push(`${foto.name}: ${error.message}`)
-        } else {
+        const { error } = await supabase.storage.from('ICALI DOCS').upload(path, foto, { upsert:true })
+        if (!error) {
           const { data:{ publicUrl } } = supabase.storage.from('ICALI DOCS').getPublicUrl(path)
           urls.push(publicUrl)
         }
-      } catch(e) {
-        errores.push(`${foto.name}: ${e.message}`)
-      }
+      } catch(e) {}
     }
     return urls
   }
 
-  // GUARDAR EQUIPO
   async function guardarEquipo(e) {
     e.preventDefault()
     setSaving(true)
@@ -169,6 +163,8 @@ export default function Inventario() {
     try {
       const user    = (await supabase.auth.getUser()).data.user
       const fotUrls = await subirFotos(form.imei || form.serial_caja || Date.now())
+      const prov    = proveedores.find(p => p.id === form.proveedor_id)
+
       const { error } = await supabase.from('compras_proveedor').insert({
         proveedor_id:    form.proveedor_id,
         producto:        form.producto,
@@ -181,6 +177,7 @@ export default function Inventario() {
         precio_venta_est:Number(String(form.precio_venta_est).replace(/\D/g,'')) || 0,
         estado_equipo:   form.estado_equipo,
         sticker:         form.sticker || null,
+        bateria:         form.bateria ? Number(form.bateria) : null,
         fecha_compra:    form.fecha_compra,
         observaciones:   form.observaciones,
         fotos:           fotUrls.length ? fotUrls : null,
@@ -188,6 +185,17 @@ export default function Inventario() {
         estado:          'disponible'
       })
       if (error) throw new Error(error.message)
+
+      // Log Drive
+      await logInventario({
+        usuario:   user.email,
+        producto:  form.producto,
+        imei:      form.imei,
+        proveedor: prov?.nombre || '',
+        costo:     Number(String(form.costo).replace(/\D/g,'')) || 0,
+        accion:    'INGRESO_INVENTARIO'
+      })
+
       setMsgOk(`✓ Equipo registrado correctamente`)
       setForm(INIT_FORM)
       setFotos([])
@@ -198,7 +206,6 @@ export default function Inventario() {
     setTimeout(() => { setMsgOk(''); setMsgErr('') }, 4000)
   }
 
-  // LEER EXCEL
   async function leerExcel(e) {
     const file = e.target.files[0]
     if (!file) return
@@ -221,6 +228,7 @@ export default function Inventario() {
       precio_venta_est: find('precio venta','precio estimado','pvp','venta'),
       estado_equipo: find('estado','condicion','condition'),
       proveedor:  find('proveedor','supplier','vendor'),
+      bateria:    find('bateria','battery','bat'),
     }
     setExcelCols(cols)
     const parsed = rows.map((r,i) => ({
@@ -234,6 +242,7 @@ export default function Inventario() {
       precio_venta_est: Number(String(r[cols.precio_venta_est]||0).replace(/[^0-9.]/g,'')),
       estado_equipo: String(r[cols.estado_equipo] || 'nuevo').trim().toLowerCase(),
       proveedor:  String(r[cols.proveedor]|| '').trim(),
+      bateria:    r[cols.bateria] ? Number(r[cols.bateria]) : null,
       _ok: true, _msg: ''
     })).filter(r => r.imei || r.producto)
     const existentes = new Set(compras.map(c => c.imei).filter(Boolean))
@@ -264,6 +273,7 @@ export default function Inventario() {
         costo:            r.costo,
         precio_venta_est: r.precio_venta_est,
         estado_equipo:    estadoNorm,
+        bateria:          r.bateria || null,
         registrado_por:   user.id,
         estado:           'disponible',
         fecha_compra:     new Date().toISOString().split('T')[0]
@@ -275,7 +285,6 @@ export default function Inventario() {
     loadAll()
   }
 
-  // FILTROS
   const filtrados = compras.filter(c => {
     if (filtroEstado   && c.estado        !== filtroEstado)   return false
     if (filtroEstadoEq && c.estado_equipo !== filtroEstadoEq) return false
@@ -298,7 +307,6 @@ export default function Inventario() {
   return (
     <div style={{ padding:'32px 36px', fontFamily:"'DM Sans', system-ui" }}>
 
-      {/* Header */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
         <div>
           <h1 style={{ color:'#fff', fontSize:20, fontWeight:600, margin:'0 0 4px' }}>Inventario</h1>
@@ -316,7 +324,6 @@ export default function Inventario() {
         )}
       </div>
 
-      {/* KPIs */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:12, marginBottom:20 }}>
         {[
           { label:'Disponibles', val:totalDisp, color:'#10b981' },
@@ -331,11 +338,9 @@ export default function Inventario() {
         ))}
       </div>
 
-      {/* Mensajes */}
       {msgOk  && <div style={{ marginBottom:12, padding:'10px 16px', background:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:8, color:'#10b981', fontSize:13 }}>{msgOk}</div>}
       {msgErr && <div style={{ marginBottom:12, padding:'10px 16px', background:'rgba(244,63,94,0.1)', border:'1px solid rgba(244,63,94,0.3)', borderRadius:8, color:'#f87171', fontSize:13 }}>⚠ {msgErr}</div>}
 
-      {/* Filtros */}
       <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap' }}>
         <input placeholder="Buscar IMEI, serial, producto, color..." value={buscar} onChange={e => setBuscar(e.target.value)}
           style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 12px', color:'#fff', fontSize:13, outline:'none', flex:1, minWidth:200 }} />
@@ -355,7 +360,6 @@ export default function Inventario() {
         </select>
       </div>
 
-      {/* Tabla */}
       <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:12, overflow:'auto' }}>
         {loading ? (
           <div style={{ padding:40, textAlign:'center', color:'#4a6a8a', fontSize:13 }}>Cargando...</div>
@@ -372,6 +376,7 @@ export default function Inventario() {
                 <th style={th}>Serial caja</th>
                 <th style={th}>GB</th>
                 <th style={th}>Color</th>
+                <th style={th}>Batería</th>
                 <th style={th}>Costo</th>
                 <th style={th}>P. Venta est.</th>
                 <th style={th}>Sticker</th>
@@ -387,11 +392,10 @@ export default function Inventario() {
                 return (
                   <tr key={c.id}>
                     <td style={td}>
-                      {primeraFoto ? (
-                        <img src={primeraFoto} alt="equipo" style={{ width:40, height:40, objectFit:'cover', borderRadius:6 }} />
-                      ) : (
-                        <div style={{ width:40, height:40, borderRadius:6, background:'#1a2f52', display:'flex', alignItems:'center', justifyContent:'center', color:'#4a6a8a', fontSize:16 }}>📱</div>
-                      )}
+                      {primeraFoto
+                        ? <img src={primeraFoto} alt="equipo" style={{ width:40, height:40, objectFit:'cover', borderRadius:6 }} />
+                        : <div style={{ width:40, height:40, borderRadius:6, background:'#1a2f52', display:'flex', alignItems:'center', justifyContent:'center', color:'#4a6a8a', fontSize:16 }}>📱</div>
+                      }
                     </td>
                     <td style={{ ...td, fontSize:12, color:'#e2e8f0', maxWidth:140 }}>{c.producto}</td>
                     <td style={{ ...td, fontSize:11, fontFamily:'monospace', color:'#8aabcc' }}>{c.imei || '—'}</td>
@@ -399,6 +403,14 @@ export default function Inventario() {
                     <td style={{ ...td, fontSize:11, fontFamily:'monospace', color:'#6a8aaa' }}>{c.serial_caja || '—'}</td>
                     <td style={{ ...td, fontSize:12, color:'#8aabcc' }}>{c.almacenamiento || c.capacidad || '—'}</td>
                     <td style={{ ...td, fontSize:12 }}>{c.color || '—'}</td>
+                    <td style={td}>
+                      {c.bateria != null ? (
+                        <span style={{
+                          color: c.bateria >= 80 ? '#10b981' : c.bateria >= 60 ? '#f59e0b' : '#ef4444',
+                          fontWeight:600, fontSize:12
+                        }}>{c.bateria}%</span>
+                      ) : '—'}
+                    </td>
                     <td style={{ ...td, fontWeight:600, color:'#fff', whiteSpace:'nowrap' }}>{fmt(c.costo)}</td>
                     <td style={{ ...td, color:'#10b981', whiteSpace:'nowrap' }}>{c.precio_venta_est ? fmt(c.precio_venta_est) : '—'}</td>
                     <td style={td}>
@@ -411,11 +423,9 @@ export default function Inventario() {
                       ) : '—'}
                     </td>
                     <td style={td}>
-                      {condicion ? (
-                        <span style={{ background: condicion.color+'22', color: condicion.color, fontSize:11, padding:'2px 8px', borderRadius:4, fontWeight:500 }}>
-                          {condicion.label}
-                        </span>
-                      ) : '—'}
+                      {condicion
+                        ? <span style={{ background: condicion.color+'22', color: condicion.color, fontSize:11, padding:'2px 8px', borderRadius:4, fontWeight:500 }}>{condicion.label}</span>
+                        : '—'}
                     </td>
                     <td style={{ ...td, fontSize:12 }}>{c.proveedores?.nombre || '—'}</td>
                     <td style={td}>
@@ -435,7 +445,7 @@ export default function Inventario() {
         )}
       </div>
 
-      {/* ESCÁNER SECUENCIAL — IMEI1 → IMEI2 → Serial */}
+      {/* ESCÁNER SECUENCIAL */}
       {escaner && (
         <EscanerSecuencial
           onComplete={(valores) => {
@@ -464,7 +474,6 @@ export default function Inventario() {
             <form onSubmit={guardarEquipo}>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px 14px' }}>
 
-                {/* Proveedor */}
                 <div style={{ gridColumn:'span 2' }}>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Proveedor *</label>
                   <select required style={sel} value={form.proveedor_id} onChange={e => setForm(f=>({...f, proveedor_id:e.target.value}))}>
@@ -473,7 +482,6 @@ export default function Inventario() {
                   </select>
                 </div>
 
-                {/* Producto */}
                 <div style={{ gridColumn:'span 2' }}>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Producto *</label>
                   <select required style={sel} value={form.producto} onChange={e => setForm(f=>({...f, producto:e.target.value}))}>
@@ -482,25 +490,21 @@ export default function Inventario() {
                   </select>
                 </div>
 
-                {/* IMEI 1 — solo texto, sin botón cámara */}
                 <div>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI 1</label>
                   <input style={inp} value={form.imei} onChange={e => setForm(f=>({...f, imei:e.target.value}))} placeholder="15 dígitos" />
                 </div>
 
-                {/* IMEI 2 — solo texto, sin botón cámara */}
                 <div>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI 2</label>
                   <input style={inp} value={form.imei2} onChange={e => setForm(f=>({...f, imei2:e.target.value}))} placeholder="Opcional" />
                 </div>
 
-                {/* Serial caja — solo texto, sin botón cámara */}
                 <div>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Serial de caja</label>
-                  <input style={inp} value={form.serial_caja} onChange={e => setForm(f=>({...f, serial_caja:e.target.value}))} placeholder="Escanea la caja" />
+                  <input style={inp} value={form.serial_caja} onChange={e => setForm(f=>({...f, serial_caja:e.target.value}))} placeholder="Opcional" />
                 </div>
 
-                {/* Almacenamiento */}
                 <div>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Almacenamiento</label>
                   <select style={sel} value={form.almacenamiento} onChange={e => setForm(f=>({...f, almacenamiento:e.target.value}))}>
@@ -508,7 +512,6 @@ export default function Inventario() {
                   </select>
                 </div>
 
-                {/* Color */}
                 <div>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Color</label>
                   <select style={sel} value={form.color === '' || COLORES_IPHONE.includes(form.color) ? form.color : '__otro__'}
@@ -528,19 +531,28 @@ export default function Inventario() {
                   )}
                 </div>
 
-                {/* Costo */}
+                {/* BATERÍA */}
+                <div>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Batería %</label>
+                  <input
+                    style={inp}
+                    type="number" min="0" max="100"
+                    value={form.bateria}
+                    onChange={e => setForm(f=>({...f, bateria: e.target.value}))}
+                    placeholder="ej: 89"
+                  />
+                </div>
+
                 <div>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Precio de compra $</label>
                   <input style={inp} value={form.costo} onChange={e => setForm(f=>({...f, costo:e.target.value}))} placeholder="0" />
                 </div>
 
-                {/* Precio estimado venta */}
                 <div>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Precio estimado de venta $</label>
                   <input style={inp} value={form.precio_venta_est} onChange={e => setForm(f=>({...f, precio_venta_est:e.target.value}))} placeholder="0" />
                 </div>
 
-                {/* Condición */}
                 <div>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Condición del equipo</label>
                   <select style={sel} value={form.estado_equipo} onChange={e => setForm(f=>({...f, estado_equipo:e.target.value}))}>
@@ -548,7 +560,6 @@ export default function Inventario() {
                   </select>
                 </div>
 
-                {/* Sticker */}
                 <div style={{ gridColumn:'span 2' }}>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:8 }}>Sticker de calidad</label>
                   <div style={{ display:'flex', gap:8 }}>
@@ -559,8 +570,7 @@ export default function Inventario() {
                           flex:1, padding:'10px 8px', border:`2px solid ${form.sticker === s.value ? s.color : '#1a2f52'}`,
                           borderRadius:8, cursor:'pointer', transition:'all .15s',
                           background: form.sticker === s.value ? s.color + '22' : 'transparent',
-                          color: form.sticker === s.value ? s.color : '#4a6a8a',
-                          textAlign:'center'
+                          color: form.sticker === s.value ? s.color : '#4a6a8a', textAlign:'center'
                         }}>
                         <div style={{ fontSize:13, fontWeight:700 }}>{s.label}</div>
                         <div style={{ fontSize:10, marginTop:2, opacity:.8 }}>{s.desc}</div>
@@ -569,41 +579,28 @@ export default function Inventario() {
                   </div>
                 </div>
 
-                {/* Fecha */}
                 <div>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Fecha de compra</label>
                   <input type="date" style={inp} value={form.fecha_compra} onChange={e => setForm(f=>({...f, fecha_compra:e.target.value}))} />
                 </div>
 
-                {/* Notas */}
                 <div style={{ gridColumn:'span 2' }}>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Notas</label>
                   <textarea style={{ ...inp, resize:'vertical', minHeight:60 }} value={form.observaciones} onChange={e => setForm(f=>({...f, observaciones:e.target.value}))} />
                 </div>
 
-                {/* Fotos */}
                 <div style={{ gridColumn:'span 2' }}>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:8 }}>
                     Fotos del equipo ({fotoPreviews.length} seleccionadas)
                   </label>
-                  <input ref={fotosRef} type="file" accept="image/*" capture="environment"
-                    multiple style={{ display:'none' }} onChange={handleFotos} />
-                  <button type="button" onClick={() => fotosRef.current?.click()} style={{
-                    padding:'8px 16px', background:'#1a2f52', border:'none',
-                    borderRadius:8, color:'#8aabcc', fontSize:13, cursor:'pointer', marginBottom:10
-                  }}>📷 Agregar fotos</button>
+                  <input ref={fotosRef} type="file" accept="image/*" capture="environment" multiple style={{ display:'none' }} onChange={handleFotos} />
+                  <button type="button" onClick={() => fotosRef.current?.click()} style={{ padding:'8px 16px', background:'#1a2f52', border:'none', borderRadius:8, color:'#8aabcc', fontSize:13, cursor:'pointer', marginBottom:10 }}>📷 Agregar fotos</button>
                   {fotoPreviews.length > 0 && (
                     <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                       {fotoPreviews.map((url, i) => (
                         <div key={i} style={{ position:'relative' }}>
-                          <img src={url} alt={`foto ${i+1}`}
-                            style={{ width:64, height:64, objectFit:'cover', borderRadius:8, border:'1px solid #1a2f52' }} />
-                          <button type="button" onClick={() => quitarFoto(i)} style={{
-                            position:'absolute', top:-6, right:-6, width:18, height:18,
-                            background:'#ef4444', border:'none', borderRadius:'50%',
-                            color:'#fff', fontSize:10, cursor:'pointer', display:'flex',
-                            alignItems:'center', justifyContent:'center', lineHeight:1
-                          }}>×</button>
+                          <img src={url} alt={`foto ${i+1}`} style={{ width:64, height:64, objectFit:'cover', borderRadius:8, border:'1px solid #1a2f52' }} />
+                          <button type="button" onClick={() => quitarFoto(i)} style={{ position:'absolute', top:-6, right:-6, width:18, height:18, background:'#ef4444', border:'none', borderRadius:'50%', color:'#fff', fontSize:10, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', lineHeight:1 }}>×</button>
                         </div>
                       ))}
                     </div>
@@ -631,16 +628,9 @@ export default function Inventario() {
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
               <div>
                 <h3 style={{ color:'#fff', margin:'0 0 4px', fontSize:16 }}>Carga masiva — {excelFileName}</h3>
-                <p style={{ color:'#4a6a8a', fontSize:13, margin:0 }}>
-                  {excelRows.filter(r=>r._ok).length} listos · {excelRows.filter(r=>!r._ok).length} con problemas
-                </p>
+                <p style={{ color:'#4a6a8a', fontSize:13, margin:0 }}>{excelRows.filter(r=>r._ok).length} listos · {excelRows.filter(r=>!r._ok).length} con problemas</p>
               </div>
               <button onClick={() => { setShowExcel(false); setExcelRows([]); setImportResult(null) }} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:20, cursor:'pointer' }}>×</button>
-            </div>
-
-            <div style={{ background:'#0a1628', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 12px', marginBottom:12, fontSize:12, color:'#8aabcc' }}>
-              <strong style={{ color:'#fff' }}>Columnas detectadas: </strong>
-              {Object.entries(excelCols).map(([k,v]) => v ? `${k}="${v}"` : null).filter(Boolean).join(' · ')}
             </div>
 
             {importResult && (
@@ -653,7 +643,7 @@ export default function Inventario() {
               <table style={{ width:'100%', borderCollapse:'collapse', minWidth:700 }}>
                 <thead>
                   <tr>
-                    {['','IMEI 1','IMEI 2','Producto','GB','Color','Costo','P.Venta','Condición'].map(h => (
+                    {['','IMEI 1','IMEI 2','Producto','GB','Color','Bat%','Costo','P.Venta','Condición'].map(h => (
                       <th key={h} style={{ color:'#4a6a8a', fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'.06em', padding:'7px 10px', textAlign:'left', borderBottom:'1px solid #1a2f52', background:'#0d1a35', position:'sticky', top:0, whiteSpace:'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -669,6 +659,7 @@ export default function Inventario() {
                       <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:12, color:'#e2e8f0' }}>{r.producto || '—'}</td>
                       <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:12 }}>{r.almacenamiento || '—'}</td>
                       <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:12 }}>{r.color || '—'}</td>
+                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:12, color:'#10b981' }}>{r.bateria ? `${r.bateria}%` : '—'}</td>
                       <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:12, color:'#fff', whiteSpace:'nowrap' }}>{r.costo ? fmt(r.costo) : '—'}</td>
                       <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:12, color:'#10b981', whiteSpace:'nowrap' }}>{r.precio_venta_est ? fmt(r.precio_venta_est) : '—'}</td>
                       <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:12 }}>{r.estado_equipo || '—'}</td>
@@ -681,10 +672,7 @@ export default function Inventario() {
             <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
               <button onClick={() => { setShowExcel(false); setExcelRows([]); setImportResult(null) }} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>Cerrar</button>
               {!importResult && (
-                <button onClick={importarExcel} disabled={importando || !excelRows.filter(r=>r._ok).length} style={{
-                  padding:'9px 24px', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer',
-                  background: importando ? '#1e3058' : 'linear-gradient(135deg,#0066ff,#0044bb)'
-                }}>
+                <button onClick={importarExcel} disabled={importando || !excelRows.filter(r=>r._ok).length} style={{ padding:'9px 24px', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', background: importando ? '#1e3058' : 'linear-gradient(135deg,#0066ff,#0044bb)' }}>
                   {importando ? '⏳ Importando...' : `✓ Importar ${excelRows.filter(r=>r._ok).length} equipos`}
                 </button>
               )}
