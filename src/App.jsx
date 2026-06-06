@@ -12,9 +12,8 @@ import Financieras from './pages/Financieras'
 import Extractos   from './pages/Extractos'
 import Reportes    from './pages/Reportes'
 import Proveedores from './pages/Proveedores'
-import Inventario from './pages/Inventario'
-
-
+import Inventario  from './pages/Inventario'
+import NotificacionesInventario from './components/NotificacionesInventario'
 
 function ProtectedRoute({ children, roles }) {
   const { session, perfil, loading } = useAuth()
@@ -45,7 +44,6 @@ function App() {
             <Route path="ventas" element={<Ventas />} />
             <Route path="ventas/nueva" element={<NuevaVenta />} />
             <Route path="despachos" element={<Despachos />} />
-            <Route path="proveedores" element={<Proveedores />} />
             <Route path="retomas" element={<Retomas />} />
             <Route path="inventario" element={<Inventario />} />
             <Route path="financieras" element={
@@ -61,21 +59,17 @@ function App() {
             <Route path="proveedores" element={<Proveedores />} />
             <Route path="reportes" element={<Reportes />} />
             <Route path="usuarios" element={
-  <ProtectedRoute roles={['admin']}>
-    <Usuarios />
-  </ProtectedRoute>
-} />
+              <ProtectedRoute roles={['admin']}>
+                <Usuarios />
+              </ProtectedRoute>
+            } />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
-          import NotificacionesInventario from './components/NotificacionesInventario'
-// ... dentro del return, al final antes del cierre:
-<NotificacionesInventario />
         </Routes>
-      
+        <NotificacionesInventario />
       </BrowserRouter>
     </AuthProvider>
   )
 }
 
 export default App
-
