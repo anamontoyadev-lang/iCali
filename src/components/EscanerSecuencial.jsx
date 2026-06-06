@@ -65,7 +65,7 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
         type: 'LiveStream',
         target: videoRef.current,
         constraints: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'environment' },
-        area: { top: '35%', right: '5%', left: '5%', bottom: '35%' },
+        area: { top: '20%', right: '5%', left: '5%', bottom: '20%' },
       },
       decoder: { readers: ['code_128_reader', 'ean_reader', 'ean_8_reader', 'upc_reader'], multiple: false },
       locate: true,
