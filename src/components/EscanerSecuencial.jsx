@@ -10,12 +10,12 @@ function loadQuagga() {
   })
 }
 
-const REQ = 3
-const MIN_C = 0.70
+const REQ   = 4     // lecturas iguales consecutivas para confirmar
+const MIN_C = 0.70  // confianza mínima
 
-// IMEI: 14 o 15 dígitos numéricos (Quagga a veces pierde un dígito)
+// IMEI: exactamente 15 dígitos numéricos (MEID tiene 14 → rechazado)
 function esIMEIValido(code) {
-  return /^\d{14,15}$/.test(code)
+  return /^\d{15}$/.test(code)
 }
 
 // Serial: alfanumérico 6-25 caracteres
@@ -24,9 +24,9 @@ function esSerialValido(code) {
 }
 
 const PASOS = [
-  { key: 'imei',        label: 'IMEI 1',        hint: 'Escanea el IMEI 1 del equipo',   validar: esIMEIValido  },
-  { key: 'imei2',       label: 'IMEI 2',         hint: 'Escanea el IMEI 2 del equipo',   validar: esIMEIValido  },
-  { key: 'serial_caja', label: 'Serial de caja', hint: 'Escanea el código de la caja',   validar: esSerialValido },
+  { key: 'imei',        label: 'IMEI 1',        hint: 'Apunta al código de barras IMEI (15 dígitos)',  validar: esIMEIValido  },
+  { key: 'imei2',       label: 'IMEI 2',         hint: 'Apunta al código de barras IMEI2 (15 dígitos)', validar: esIMEIValido  },
+  { key: 'serial_caja', label: 'Serial de caja', hint: 'Escanea el código de la caja (opcional)',       validar: esSerialValido },
 ]
 
 export default function EscanerSecuencial({ onComplete, onClose }) {
@@ -35,7 +35,7 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
   const [manual, setManual]         = useState('')
   const [conf, setConf]             = useState(0)
   const [flash, setFlash]           = useState(false)
-  const [error, setError]           = useState('')
+  const [msgEstado, setMsgEstado]   = useState('')
   const [capturados, setCapturados] = useState({})
 
   const pasoActual    = useRef(0)
@@ -54,7 +54,7 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       loadQuagga().then(initQuagga).catch(() => {})
-    }, 350)
+    }, 400)
     return () => { clearTimeout(timer); pararQuagga() }
   }, [])
 
@@ -69,13 +69,13 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
         area: { top: '30%', right: '5%', left: '5%', bottom: '30%' },
       },
       decoder: {
-        readers: ['code_128_reader', 'ean_reader', 'upc_reader'],
+        readers: ['code_128_reader'],
         multiple: false,
       },
       locate: true,
       numOfWorkers: 2,
-      frequency: 12,
-      halfSample: true,
+      frequency: 10,
+      halfSample: false,
     }, err => {
       if (err) { quaggaVivo.current = false; return }
       window.Quagga.start()
@@ -95,20 +95,24 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
     const code = result?.codeResult?.code?.trim() || ''
     const c    = result?.codeResult?.startInfo?.error ?? 0
     const confianza = c === 0 ? 1 : Math.max(0, 1 - c)
-    if (!code || code.length < 6) return
-    if (confianza < MIN_C) return
+    if (!code || confianza < MIN_C) return
 
     const paso = PASOS[pasoActual.current]
     setReading(code)
     setConf(Math.round(confianza * 100))
 
     if (!paso.validar(code)) {
-      setError(`Esperando ${paso.label}...`)
+      // Mostrar mensaje descriptivo según el caso
+      if (paso.key !== 'serial_caja' && /^\d{14}$/.test(code)) {
+        setMsgEstado('MEID detectado — apunta al código IMEI de 15 dígitos')
+      } else {
+        setMsgEstado(`Esperando ${paso.label}...`)
+      }
       detBuf.current = []
       return
     }
 
-    setError('')
+    setMsgEstado('')
     detBuf.current.push(code)
     if (detBuf.current.length > REQ * 2) detBuf.current.shift()
 
@@ -122,20 +126,21 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
     if (locked.current) return
     const paso = PASOS[pasoActual.current]
     if (!paso.validar(code)) {
-      setError(`Código no válido para ${paso.label}`)
+      setMsgEstado(`Código no válido para ${paso.label}`)
       return
     }
 
     locked.current = true
-    setError('')
+    setMsgEstado('')
 
-    // Guardar SOLO en el campo del paso actual
+    // Guardar SOLO en el campo del paso actual — nunca tocar otros campos
     valoresAcum.current[paso.key] = code
     setCapturados(prev => ({ ...prev, [paso.key]: code }))
 
     setFlash(true)
-    setTimeout(() => setFlash(false), 600)
+    setTimeout(() => setFlash(false), 700)
 
+    // Resetear buffer completamente antes del siguiente paso
     detBuf.current = []
     locked.current = false
 
@@ -159,18 +164,19 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
 
   function saltar() {
     if (locked.current) return
+    // Campo actual queda vacío
     valoresAcum.current[PASOS[pasoActual.current].key] = ''
     detBuf.current = []
-    setError('')
+    setMsgEstado('')
     setReading('–')
     setConf(0)
+    setManual('')
+    manualRef.current = ''
 
     const siguiente = pasoActual.current + 1
     if (siguiente < PASOS.length) {
       pasoActual.current = siguiente
       setPasoUI(siguiente)
-      setManual('')
-      manualRef.current = ''
     } else {
       pararQuagga()
       onCompleteRef.current({
@@ -185,9 +191,9 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
     const clean = manualRef.current.trim()
     const paso  = PASOS[pasoActual.current]
     if (!paso.validar(clean)) {
-      setError(paso.key === 'serial_caja'
+      setMsgEstado(paso.key === 'serial_caja'
         ? 'Ingresa entre 6 y 25 caracteres alfanuméricos'
-        : 'El IMEI debe tener 14 o 15 dígitos numéricos')
+        : 'El IMEI debe tener exactamente 15 dígitos')
       return
     }
     confirmar(clean)
@@ -200,6 +206,7 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
 
   const paso     = PASOS[pasoUI]
   const progreso = (pasoUI / PASOS.length) * 100
+  const esMEID   = reading !== '–' && /^\d{14}$/.test(reading)
 
   return (
     <div style={{
@@ -237,11 +244,13 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
       </div>
 
       {/* Visor cámara */}
-      <div style={{ position:'relative', width:'100%', maxWidth:460, borderRadius:12, overflow:'hidden', border: flash ? '2px solid #10b981' : '2px solid #1a2f52', transition:'border-color .15s', background:'#000' }}>
+      <div style={{ position:'relative', width:'100%', maxWidth:460, borderRadius:12, overflow:'hidden', border: flash ? '2px solid #10b981' : esMEID ? '2px solid #f59e0b' : '2px solid #1a2f52', transition:'border-color .15s', background:'#000' }}>
         <div ref={videoRef} style={{ width:'100%', aspectRatio:'16/9', background:'#000', display:'block' }} />
 
+        {/* Línea guía */}
         <div style={{ position:'absolute', top:'50%', left:'10%', right:'10%', transform:'translateY(-50%)', height:2, background: flash ? 'rgba(16,185,129,0.8)' : 'rgba(0,102,255,0.6)', boxShadow: flash ? '0 0 12px #10b981' : '0 0 8px rgba(0,102,255,0.8)', transition:'all .15s' }} />
 
+        {/* Esquinas */}
         {[
           { top:'20%', left:'5%', borderTop:'3px solid #0066ff', borderLeft:'3px solid #0066ff' },
           { top:'20%', right:'5%', borderTop:'3px solid #0066ff', borderRight:'3px solid #0066ff' },
@@ -249,12 +258,17 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
           { bottom:'20%', right:'5%', borderBottom:'3px solid #0066ff', borderRight:'3px solid #0066ff' },
         ].map((s, i) => <div key={i} style={{ position:'absolute', width:20, height:20, ...s }} />)}
 
+        {/* Lectura actual */}
         {reading !== '–' && (
-          <div style={{ position:'absolute', bottom:8, left:8, right:8, background:'rgba(0,0,0,0.8)', borderRadius:6, padding:'4px 10px', textAlign:'center', color: error ? '#f59e0b' : '#10b981', fontSize:12, fontFamily:'monospace', letterSpacing:1 }}>
-            {reading} <span style={{ fontSize:10, opacity:.7 }}>({conf}%)</span>
+          <div style={{ position:'absolute', bottom:8, left:8, right:8, background:'rgba(0,0,0,0.85)', borderRadius:6, padding:'5px 10px', textAlign:'center' }}>
+            <div style={{ color: esMEID ? '#f59e0b' : msgEstado ? '#f59e0b' : '#10b981', fontSize:13, fontFamily:'monospace', letterSpacing:1 }}>
+              {reading} <span style={{ fontSize:10, opacity:.7 }}>({conf}%)</span>
+            </div>
+            {esMEID && <div style={{ color:'#f59e0b', fontSize:10, marginTop:2 }}>⚠ MEID (14 dígitos) — apunta al IMEI de 15 dígitos</div>}
           </div>
         )}
 
+        {/* Flash OK */}
         {flash && (
           <div style={{ position:'absolute', inset:0, background:'rgba(16,185,129,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
             <div style={{ fontSize:48 }}>✅</div>
@@ -262,10 +276,10 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
         )}
       </div>
 
-      {/* Error */}
-      {error && (
+      {/* Mensaje estado */}
+      {msgEstado && !esMEID && (
         <div style={{ width:'100%', maxWidth:460, padding:'6px 20px 0', color:'#f59e0b', fontSize:12, textAlign:'center' }}>
-          ⏳ {error}
+          ⏳ {msgEstado}
         </div>
       )}
 
@@ -275,9 +289,9 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
         <div style={{ display:'flex', gap:8 }}>
           <input
             style={{ flex:1, background:'#0a1628', border:'1px solid #1a2f52', borderRadius:8, padding:'10px 12px', color:'#fff', fontSize:14, letterSpacing:1, outline:'none', textAlign:'center' }}
-            placeholder={paso.key === 'serial_caja' ? 'Serial alfanumérico...' : 'IMEI (14-15 dígitos)...'}
+            placeholder={paso.key === 'serial_caja' ? 'Serial alfanumérico...' : 'IMEI exacto (15 dígitos)...'}
             value={manual}
-            onChange={e => { setManual(e.target.value); manualRef.current = e.target.value; setError('') }}
+            onChange={e => { setManual(e.target.value); manualRef.current = e.target.value; setMsgEstado('') }}
             onKeyDown={e => e.key === 'Enter' && usarManual()}
           />
           <button onClick={usarManual} disabled={manual.trim().length < 6}
