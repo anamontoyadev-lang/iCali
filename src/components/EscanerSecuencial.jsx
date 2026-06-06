@@ -10,44 +10,51 @@ function loadQuagga() {
   })
 }
 
-const REQ = 4        // lecturas iguales consecutivas para confirmar
-const MIN_C = 0.78   // confianza mínima
+const REQ = 3      // lecturas iguales consecutivas para confirmar
+const MIN_C = 0.75 // confianza mínima
 
-function luhnCheck(num) {
+// Valida que sea IMEI real: exactamente 15 dígitos + Luhn
+function esIMEIValido(code) {
+  if (!/^\d{15}$/.test(code)) return false
   let s = 0, alt = false
-  for (let i = num.length - 1; i >= 0; i--) {
-    let n = parseInt(num[i], 10)
+  for (let i = code.length - 1; i >= 0; i--) {
+    let n = parseInt(code[i], 10)
     if (alt) { n *= 2; if (n > 9) n -= 9 }
     s += n; alt = !alt
   }
   return s % 10 === 0
 }
 
+// Serial de caja: acepta alfanumérico de 6-20 caracteres
+function esSerialValido(code) {
+  return /^[A-Za-z0-9]{6,20}$/.test(code)
+}
+
 const PASOS = [
-  { key: 'imei',        label: 'IMEI 1',        hint: 'Apunta al código de barras del IMEI 1', isIMEI: true  },
-  { key: 'imei2',       label: 'IMEI 2',         hint: 'Apunta al IMEI 2 (dual SIM)',           isIMEI: true  },
-  { key: 'serial_caja', label: 'Serial de caja', hint: 'Escanea el código de la caja',          isIMEI: false },
+  { key: 'imei',        label: 'IMEI 1',        hint: 'Escanea el IMEI 1 (15 dígitos)',    validar: esIMEIValido  },
+  { key: 'imei2',       label: 'IMEI 2',         hint: 'Escanea el IMEI 2 (15 dígitos)',    validar: esIMEIValido  },
+  { key: 'serial_caja', label: 'Serial de caja', hint: 'Escanea el código de la caja',      validar: esSerialValido },
 ]
 
 export default function EscanerSecuencial({ onComplete, onClose }) {
-  const [pasoUI, setPasoUI]       = useState(0)
-  const [reading, setReading]     = useState('–')
-  const [manual, setManual]       = useState('')
-  const [conf, setConf]           = useState(0)
-  const [flash, setFlash]         = useState(false)
-  const [saltados, setSaltados]   = useState({})
+  const [pasoUI, setPasoUI]     = useState(0)
+  const [reading, setReading]   = useState('–')
+  const [manual, setManual]     = useState('')
+  const [conf, setConf]         = useState(0)
+  const [flash, setFlash]       = useState(false)
+  const [error, setError]       = useState('')
+  const [capturados, setCapturados] = useState({})
 
-  // Todos los valores acumulados y estado volátil en refs para evitar closures stale
-  const pasoActual   = useRef(0)
-  const valoresAcum  = useRef({ imei: '', imei2: '', serial_caja: '' })
-  const detBuf       = useRef([])
-  const locked       = useRef(false)
-  const quaggaVivo   = useRef(false)
-
-  const videoRef  = useRef()
-  const manualRef = useRef('')
+  const pasoActual  = useRef(0)
+  const valoresAcum = useRef({ imei: '', imei2: '', serial_caja: '' })
+  const detBuf      = useRef([])
+  const locked      = useRef(false)
+  const quaggaVivo  = useRef(false)
+  const videoRef    = useRef()
+  const manualRef   = useRef('')
   const onCompleteRef = useRef(onComplete)
   const onCloseRef    = useRef(onClose)
+
   useEffect(() => { onCompleteRef.current = onComplete }, [onComplete])
   useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
@@ -55,10 +62,7 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
     const timer = setTimeout(() => {
       loadQuagga().then(initQuagga).catch(() => {})
     }, 350)
-    return () => {
-      clearTimeout(timer)
-      pararQuagga()
-    }
+    return () => { clearTimeout(timer); pararQuagga() }
   }, [])
 
   function initQuagga() {
@@ -68,20 +72,16 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
       inputStream: {
         type: 'LiveStream',
         target: videoRef.current,
-        constraints: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: 'environment',
-        },
-        area: { top: '25%', right: '5%', left: '5%', bottom: '25%' },
+        constraints: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'environment' },
+        area: { top: '30%', right: '5%', left: '5%', bottom: '30%' },
       },
       decoder: {
-        readers: ['code_128_reader', 'ean_reader', 'ean_8_reader', 'upc_reader'],
+        readers: ['code_128_reader', 'ean_reader', 'upc_reader'],
         multiple: false,
       },
       locate: true,
       numOfWorkers: 2,
-      frequency: 15,
+      frequency: 12,
       halfSample: true,
     }, err => {
       if (err) { quaggaVivo.current = false; return }
@@ -92,10 +92,7 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
 
   function pararQuagga() {
     if (quaggaVivo.current) {
-      try {
-        window.Quagga.offDetected(onDetected)
-        window.Quagga.stop()
-      } catch (_) {}
+      try { window.Quagga.offDetected(onDetected); window.Quagga.stop() } catch (_) {}
       quaggaVivo.current = false
     }
   }
@@ -104,13 +101,24 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
     if (locked.current) return
     const code = result?.codeResult?.code?.trim() || ''
     const c    = result?.codeResult?.startInfo?.error ?? 0
-    const conf = c === 0 ? 1 : Math.max(0, 1 - c)
+    const confianza = c === 0 ? 1 : Math.max(0, 1 - c)
     if (!code || code.length < 6) return
-    if (conf < MIN_C) return
+    if (confianza < MIN_C) return
 
+    const paso = PASOS[pasoActual.current]
+
+    // Solo mostrar lectura, no confirmar si no pasa validación del paso
     setReading(code)
-    setConf(Math.round(conf * 100))
+    setConf(Math.round(confianza * 100))
 
+    // Si no es válido para este paso, mostrar error pero no confirmar
+    if (!paso.validar(code)) {
+      setError(`Código no válido para ${paso.label}`)
+      detBuf.current = [] // resetear buffer
+      return
+    }
+
+    setError('')
     detBuf.current.push(code)
     if (detBuf.current.length > REQ * 2) detBuf.current.shift()
 
@@ -122,15 +130,28 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
 
   function confirmar(code) {
     if (locked.current) return
-    locked.current = true
-
     const paso = PASOS[pasoActual.current]
-    valoresAcum.current = { ...valoresAcum.current, [paso.key]: code }
+
+    // Validar antes de confirmar
+    if (!paso.validar(code)) {
+      setError(`Código no válido para ${paso.label}`)
+      return
+    }
+
+    locked.current = true
+    setError('')
+
+    // Guardar SOLO en el campo del paso actual
+    valoresAcum.current[paso.key] = code
+
+    // Actualizar UI de capturados
+    setCapturados(prev => ({ ...prev, [paso.key]: code }))
 
     setFlash(true)
     setTimeout(() => setFlash(false), 600)
 
     const siguiente = pasoActual.current + 1
+    // Resetear buffer para el siguiente paso
     detBuf.current = []
     locked.current = false
 
@@ -143,17 +164,24 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
       setReading('–')
     } else {
       pararQuagga()
-      onCompleteRef.current({ ...valoresAcum.current })
+      onCompleteRef.current({
+        imei:        valoresAcum.current.imei        || '',
+        imei2:       valoresAcum.current.imei2       || '',
+        serial_caja: valoresAcum.current.serial_caja || '',
+      })
     }
   }
 
   function saltar() {
-    const siguiente = pasoActual.current + 1
+    if (locked.current) return
+    locked.current = true
+    // Al saltar, el campo queda vacío
+    valoresAcum.current[PASOS[pasoActual.current].key] = ''
     detBuf.current = []
     locked.current = false
+    setError('')
 
-    setSaltados(s => ({ ...s, [PASOS[pasoActual.current].key]: true }))
-
+    const siguiente = pasoActual.current + 1
     if (siguiente < PASOS.length) {
       pasoActual.current = siguiente
       setPasoUI(siguiente)
@@ -163,13 +191,22 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
       setReading('–')
     } else {
       pararQuagga()
-      onCompleteRef.current({ ...valoresAcum.current })
+      onCompleteRef.current({
+        imei:        valoresAcum.current.imei        || '',
+        imei2:       valoresAcum.current.imei2       || '',
+        serial_caja: valoresAcum.current.serial_caja || '',
+      })
     }
   }
 
   function usarManual() {
     const clean = manualRef.current.trim()
-    if (clean.length >= 6) confirmar(clean)
+    const paso  = PASOS[pasoActual.current]
+    if (!paso.validar(clean)) {
+      setError(`Código no válido para ${paso.label}`)
+      return
+    }
+    confirmar(clean)
   }
 
   function cerrar() {
@@ -177,54 +214,38 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
     onCloseRef.current()
   }
 
-  const paso = PASOS[pasoUI]
-  const progreso = ((pasoUI) / PASOS.length) * 100
+  const paso     = PASOS[pasoUI]
+  const progreso = (pasoUI / PASOS.length) * 100
 
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 2000,
-      background: flash ? 'rgba(16,185,129,0.18)' : 'rgba(0,0,0,0.95)',
+      background: flash ? 'rgba(16,185,129,0.12)' : 'rgba(0,0,0,0.96)',
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', gap: 0, padding: 0,
+      justifyContent: 'center', padding: 0,
       transition: 'background .15s',
       fontFamily: "'DM Sans', system-ui",
     }}>
 
       {/* Header */}
-      <div style={{
-        width: '100%', maxWidth: 460, display: 'flex',
-        alignItems: 'center', justifyContent: 'space-between',
-        padding: '16px 20px 8px',
-      }}>
+      <div style={{ width:'100%', maxWidth:460, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 20px 8px' }}>
         <div>
-          <div style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>
+          <div style={{ color:'#fff', fontSize:15, fontWeight:600 }}>
             Paso {pasoUI + 1} de {PASOS.length} — {paso.label}
           </div>
-          <div style={{ color: '#8aabcc', fontSize: 12, marginTop: 2 }}>{paso.hint}</div>
+          <div style={{ color:'#8aabcc', fontSize:12, marginTop:2 }}>{paso.hint}</div>
         </div>
-        <button onClick={cerrar} style={{
-          background: 'transparent', border: 'none', color: '#4a6a8a',
-          fontSize: 22, cursor: 'pointer', lineHeight: 1,
-        }}>×</button>
+        <button onClick={cerrar} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:22, cursor:'pointer' }}>×</button>
       </div>
 
-      {/* Barra de progreso */}
-      <div style={{ width: '100%', maxWidth: 460, padding: '0 20px 10px' }}>
-        <div style={{ height: 3, background: '#1a2f52', borderRadius: 2, overflow: 'hidden' }}>
-          <div style={{
-            height: '100%', borderRadius: 2,
-            width: `${progreso}%`,
-            background: 'linear-gradient(90deg,#0066ff,#00c6ff)',
-            transition: 'width .4s ease',
-          }} />
+      {/* Barra progreso */}
+      <div style={{ width:'100%', maxWidth:460, padding:'0 20px 10px' }}>
+        <div style={{ height:3, background:'#1a2f52', borderRadius:2, overflow:'hidden' }}>
+          <div style={{ height:'100%', borderRadius:2, width:`${progreso}%`, background:'linear-gradient(90deg,#0066ff,#00c6ff)', transition:'width .4s ease' }} />
         </div>
-        {/* Indicadores de pasos */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', marginTop:6 }}>
           {PASOS.map((p, i) => (
-            <div key={p.key} style={{
-              fontSize: 10, fontWeight: 600, letterSpacing: '.04em',
-              color: i < pasoUI ? '#10b981' : i === pasoUI ? '#0066ff' : '#2a3f5a',
-            }}>
+            <div key={p.key} style={{ fontSize:10, fontWeight:600, letterSpacing:'.04em', color: i < pasoUI ? '#10b981' : i === pasoUI ? '#0066ff' : '#2a3f5a' }}>
               {i < pasoUI ? '✓ ' : ''}{p.label}
             </div>
           ))}
@@ -232,122 +253,79 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
       </div>
 
       {/* Visor cámara */}
-      <div style={{
-        position: 'relative', width: '100%', maxWidth: 460,
-        borderRadius: 12, overflow: 'hidden',
-        border: flash ? '2px solid #10b981' : '2px solid #1a2f52',
-        transition: 'border-color .15s',
-        background: '#000',
-      }}>
-        <div
-          ref={videoRef}
-          style={{ width: '100%', aspectRatio: '16/9', background: '#000', display: 'block' }}
-        />
-        {/* Guía de escaneo */}
-        <div style={{
-          position: 'absolute', top: '50%', left: '10%', right: '10%',
-          transform: 'translateY(-50%)', height: 2,
-          background: flash ? 'rgba(16,185,129,0.8)' : 'rgba(0,102,255,0.6)',
-          boxShadow: flash ? '0 0 12px #10b981' : '0 0 8px rgba(0,102,255,0.8)',
-          transition: 'all .15s',
-        }} />
+      <div style={{ position:'relative', width:'100%', maxWidth:460, borderRadius:12, overflow:'hidden', border: flash ? '2px solid #10b981' : error ? '2px solid #ef4444' : '2px solid #1a2f52', transition:'border-color .15s', background:'#000' }}>
+        <div ref={videoRef} style={{ width:'100%', aspectRatio:'16/9', background:'#000', display:'block' }} />
+
+        {/* Línea guía */}
+        <div style={{ position:'absolute', top:'50%', left:'10%', right:'10%', transform:'translateY(-50%)', height:2, background: flash ? 'rgba(16,185,129,0.8)' : 'rgba(0,102,255,0.6)', boxShadow: flash ? '0 0 12px #10b981' : '0 0 8px rgba(0,102,255,0.8)', transition:'all .15s' }} />
+
         {/* Esquinas */}
         {[
-          { top: '20%', left: '5%',  borderTop: '3px solid #0066ff', borderLeft: '3px solid #0066ff' },
-          { top: '20%', right: '5%', borderTop: '3px solid #0066ff', borderRight: '3px solid #0066ff' },
-          { bottom: '20%', left: '5%',  borderBottom: '3px solid #0066ff', borderLeft: '3px solid #0066ff' },
-          { bottom: '20%', right: '5%', borderBottom: '3px solid #0066ff', borderRight: '3px solid #0066ff' },
-        ].map((style, i) => (
-          <div key={i} style={{ position: 'absolute', width: 20, height: 20, ...style }} />
-        ))}
+          { top:'20%', left:'5%', borderTop:'3px solid #0066ff', borderLeft:'3px solid #0066ff' },
+          { top:'20%', right:'5%', borderTop:'3px solid #0066ff', borderRight:'3px solid #0066ff' },
+          { bottom:'20%', left:'5%', borderBottom:'3px solid #0066ff', borderLeft:'3px solid #0066ff' },
+          { bottom:'20%', right:'5%', borderBottom:'3px solid #0066ff', borderRight:'3px solid #0066ff' },
+        ].map((s, i) => <div key={i} style={{ position:'absolute', width:20, height:20, ...s }} />)}
 
         {/* Lectura actual */}
         {reading !== '–' && (
-          <div style={{
-            position: 'absolute', bottom: 8, left: 8, right: 8,
-            background: 'rgba(0,0,0,0.75)', borderRadius: 6,
-            padding: '4px 10px', textAlign: 'center',
-            color: conf > 85 ? '#10b981' : '#f59e0b',
-            fontSize: 12, fontFamily: 'monospace', letterSpacing: 1,
-          }}>
-            {reading} <span style={{ fontSize: 10, opacity: .7 }}>({conf}%)</span>
+          <div style={{ position:'absolute', bottom:8, left:8, right:8, background:'rgba(0,0,0,0.8)', borderRadius:6, padding:'4px 10px', textAlign:'center', color: error ? '#ef4444' : conf > 85 ? '#10b981' : '#f59e0b', fontSize:12, fontFamily:'monospace', letterSpacing:1 }}>
+            {reading} <span style={{ fontSize:10, opacity:.7 }}>({conf}%)</span>
+            {error && <div style={{ fontSize:10, color:'#ef4444', marginTop:2 }}>{error}</div>}
           </div>
         )}
 
-        {/* Flash confirmado */}
+        {/* Flash OK */}
         {flash && (
-          <div style={{
-            position: 'absolute', inset: 0, background: 'rgba(16,185,129,0.15)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <div style={{ fontSize: 48 }}>✅</div>
+          <div style={{ position:'absolute', inset:0, background:'rgba(16,185,129,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <div style={{ fontSize:48 }}>✅</div>
           </div>
         )}
       </div>
 
-      {/* Manual */}
-      <div style={{ width: '100%', maxWidth: 460, padding: '12px 20px 0' }}>
-        <div style={{ color: '#5a7aaa', fontSize: 11, textAlign: 'center', marginBottom: 6 }}>
-          O ingresa manualmente:
+      {/* Error prominente */}
+      {error && (
+        <div style={{ width:'100%', maxWidth:460, padding:'6px 20px 0', color:'#ef4444', fontSize:12, textAlign:'center' }}>
+          ⚠ {error} — apunta a un código diferente
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+      )}
+
+      {/* Manual */}
+      <div style={{ width:'100%', maxWidth:460, padding:'12px 20px 0' }}>
+        <div style={{ color:'#5a7aaa', fontSize:11, textAlign:'center', marginBottom:6 }}>O ingresa manualmente:</div>
+        <div style={{ display:'flex', gap:8 }}>
           <input
-            style={{
-              flex: 1, background: '#0a1628', border: '1px solid #1a2f52', borderRadius: 8,
-              padding: '10px 12px', color: '#fff', fontSize: 14, letterSpacing: 1,
-              outline: 'none', textAlign: 'center',
-            }}
-            placeholder={`Ingresa ${paso.label}...`}
+            style={{ flex:1, background:'#0a1628', border:`1px solid ${error && manual ? '#ef4444' : '#1a2f52'}`, borderRadius:8, padding:'10px 12px', color:'#fff', fontSize:14, letterSpacing:1, outline:'none', textAlign:'center' }}
+            placeholder={paso.key === 'serial_caja' ? 'Serial alfanumérico...' : '15 dígitos IMEI...'}
             value={manual}
-            onChange={e => { setManual(e.target.value); manualRef.current = e.target.value }}
+            onChange={e => { setManual(e.target.value); manualRef.current = e.target.value; setError('') }}
             onKeyDown={e => e.key === 'Enter' && usarManual()}
           />
-          <button onClick={usarManual}
-            disabled={manual.trim().length < 6}
-            style={{
-              padding: '10px 16px', border: 'none', borderRadius: 8,
-              color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-              background: manual.trim().length >= 6
-                ? 'linear-gradient(135deg,#0066ff,#0044bb)' : '#1e3058',
-            }}>
+          <button onClick={usarManual} disabled={manual.trim().length < 6}
+            style={{ padding:'10px 16px', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', background: manual.trim().length >= 6 ? 'linear-gradient(135deg,#0066ff,#0044bb)' : '#1e3058' }}>
             Usar →
           </button>
         </div>
       </div>
 
       {/* Acciones */}
-      <div style={{
-        width: '100%', maxWidth: 460, padding: '10px 20px 20px',
-        display: 'flex', gap: 10,
-      }}>
-        <button onClick={cerrar} style={{
-          flex: 1, padding: '10px 0', background: 'transparent',
-          border: '1px solid #1a2f52', borderRadius: 8,
-          color: '#5a7aaa', fontSize: 13, cursor: 'pointer',
-        }}>Cancelar</button>
-        <button onClick={saltar} style={{
-          flex: 1, padding: '10px 0', background: '#0d1a35',
-          border: '1px solid #1a2f52', borderRadius: 8,
-          color: '#8aabcc', fontSize: 13, cursor: 'pointer',
-        }}>
-          Saltar {paso.label} →
+      <div style={{ width:'100%', maxWidth:460, padding:'10px 20px 16px', display:'flex', gap:10 }}>
+        <button onClick={cerrar} style={{ flex:1, padding:'10px 0', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#5a7aaa', fontSize:13, cursor:'pointer' }}>Cancelar</button>
+        <button onClick={saltar} style={{ flex:1, padding:'10px 0', background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, color:'#8aabcc', fontSize:13, cursor:'pointer' }}>
+          {paso.key === 'serial_caja' ? 'Sin caja →' : `Saltar ${paso.label} →`}
         </button>
       </div>
 
-      {/* Resumen de lo capturado */}
-      {Object.values(valoresAcum.current).some(v => v) && (
-        <div style={{
-          width: '100%', maxWidth: 460, margin: '0 0 12px',
-          padding: '8px 20px', display: 'flex', gap: 12, flexWrap: 'wrap',
-        }}>
+      {/* Resumen capturado */}
+      {Object.keys(capturados).length > 0 && (
+        <div style={{ width:'100%', maxWidth:460, padding:'0 20px 12px', display:'flex', gap:16, flexWrap:'wrap' }}>
           {PASOS.map((p, i) => {
-            const val = valoresAcum.current[p.key]
-            const salt = saltados[p.key]
-            if (i >= pasoUI) return null
+            const val = capturados[p.key]
+            if (!val || i >= pasoUI) return null
             return (
-              <div key={p.key} style={{ fontSize: 11, color: salt ? '#4a6a8a' : '#10b981' }}>
-                <span style={{ opacity: .6 }}>{p.label}: </span>
-                <span style={{ fontFamily: 'monospace' }}>{salt ? '(saltado)' : val}</span>
+              <div key={p.key} style={{ fontSize:11, color:'#10b981' }}>
+                <span style={{ opacity:.6 }}>{p.label}: </span>
+                <span style={{ fontFamily:'monospace' }}>{val}</span>
               </div>
             )
           })}
