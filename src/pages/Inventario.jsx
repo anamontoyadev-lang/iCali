@@ -85,15 +85,14 @@ export default function Inventario() {
 
   const [showForm, setShowForm]   = useState(false)
   const [form, setForm]           = useState(INIT_FORM)
-  const [fotos, setFotos]         = useState([])      // File[]
-  const [fotoPreviews, setFotoPreviews] = useState([]) // URL[]
+  const [fotos, setFotos]         = useState([])
+  const [fotoPreviews, setFotoPreviews] = useState([])
   const [saving, setSaving]       = useState(false)
   const [msgOk, setMsgOk]         = useState('')
   const [msgErr, setMsgErr]       = useState('')
 
-  
-  // Escáner
-const [escaner, setEscaner] = useState(false)
+  // Escáner secuencial
+  const [escaner, setEscaner] = useState(false)
 
   // Carga masiva Excel
   const [showExcel, setShowExcel]       = useState(false)
@@ -121,13 +120,11 @@ const [escaner, setEscaner] = useState(false)
     setLoading(false)
   }
 
-  // ESCANER
-function iniciarEscaner() {
-  setEscaner(true)
-}
-
-
-
+  // ESCÁNER — abre el flujo secuencial IMEI1 → IMEI2 → Serial
+  function abrirEscaner() {
+    setShowForm(false)
+    setEscaner(true)
+  }
 
   // FOTOS MÚLTIPLES
   function handleFotos(e) {
@@ -153,19 +150,13 @@ function iniciarEscaner() {
         const { data, error } = await supabase.storage.from('ICALI DOCS').upload(path, foto, { upsert:true })
         if (error) {
           errores.push(`${foto.name}: ${error.message}`)
-          console.error('Error subiendo foto:', error)
         } else {
           const { data:{ publicUrl } } = supabase.storage.from('ICALI DOCS').getPublicUrl(path)
           urls.push(publicUrl)
-          console.log('Foto subida OK:', publicUrl)
         }
       } catch(e) {
         errores.push(`${foto.name}: ${e.message}`)
       }
-    }
-    if (errores.length) {
-      console.warn('Errores subiendo fotos:', errores)
-      // No bloquear — guardar el equipo aunque falle alguna foto
     }
     return urls
   }
@@ -317,7 +308,7 @@ function iniciarEscaner() {
         </div>
         {puedeEditar && (
           <div style={{ display:'flex', gap:8 }}>
-            <button onClick={() => iniciarEscaner('imei')} style={{ padding:'9px 16px', background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, color:'#8aabcc', fontSize:13, cursor:'pointer' }}>📷 Escanear</button>
+            <button onClick={abrirEscaner} style={{ padding:'9px 16px', background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, color:'#8aabcc', fontSize:13, cursor:'pointer' }}>📷 Escanear</button>
             <button onClick={() => fileExcelRef.current?.click()} style={{ padding:'9px 16px', background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, color:'#8aabcc', fontSize:13, cursor:'pointer' }}>📊 Carga masiva</button>
             <button onClick={() => { setShowForm(true); setForm(INIT_FORM); setFotos([]); setFotoPreviews([]) }} style={{ padding:'9px 18px', background:'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>+ Ingresar equipo</button>
             <input ref={fileExcelRef} type="file" accept=".xlsx,.xls,.csv" style={{ display:'none' }} onChange={leerExcel} />
@@ -444,17 +435,22 @@ function iniciarEscaner() {
         )}
       </div>
 
-      {/* MODAL ESCÁNER */}
+      {/* ESCÁNER SECUENCIAL — IMEI1 → IMEI2 → Serial */}
       {escaner && (
-  <EscanerSecuencial
-    onComplete={(valores) => {
-      setForm(f => ({ ...f, ...valores }))
-      setEscaner(false)
-      setShowForm(true)
-    }}
-    onClose={() => setEscaner(false)}
-  />
-)}
+        <EscanerSecuencial
+          onComplete={(valores) => {
+            setForm(f => ({
+              ...f,
+              imei:        valores.imei        || '',
+              imei2:       valores.imei2       || '',
+              serial_caja: valores.serial_caja || '',
+            }))
+            setEscaner(false)
+            setShowForm(true)
+          }}
+          onClose={() => setEscaner(false)}
+        />
+      )}
 
       {/* MODAL INGRESAR EQUIPO */}
       {showForm && (
@@ -486,31 +482,22 @@ function iniciarEscaner() {
                   </select>
                 </div>
 
-                {/* IMEI 1 */}
+                {/* IMEI 1 — solo texto, sin botón cámara */}
                 <div>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI 1</label>
-                  <div style={{ display:'flex', gap:6 }}>
-                    <input style={{ ...inp, flex:1 }} value={form.imei} onChange={e => setForm(f=>({...f, imei:e.target.value}))} placeholder="15 dígitos" />
-                    <button type="button" onClick={() => iniciarEscaner('imei')} style={{ padding:'8px 10px', background:'#1a2f52', border:'none', borderRadius:8, color:'#8aabcc', fontSize:14, cursor:'pointer' }}>📷</button>
-                  </div>
+                  <input style={inp} value={form.imei} onChange={e => setForm(f=>({...f, imei:e.target.value}))} placeholder="15 dígitos" />
                 </div>
 
-                {/* IMEI 2 */}
+                {/* IMEI 2 — solo texto, sin botón cámara */}
                 <div>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI 2</label>
-                  <div style={{ display:'flex', gap:6 }}>
-                    <input style={{ ...inp, flex:1 }} value={form.imei2} onChange={e => setForm(f=>({...f, imei2:e.target.value}))} placeholder="Opcional" />
-                    <button type="button" onClick={() => iniciarEscaner('imei2')} style={{ padding:'8px 10px', background:'#1a2f52', border:'none', borderRadius:8, color:'#8aabcc', fontSize:14, cursor:'pointer' }}>📷</button>
-                  </div>
+                  <input style={inp} value={form.imei2} onChange={e => setForm(f=>({...f, imei2:e.target.value}))} placeholder="Opcional" />
                 </div>
 
-                {/* Serial caja */}
+                {/* Serial caja — solo texto, sin botón cámara */}
                 <div>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Serial de caja</label>
-                  <div style={{ display:'flex', gap:6 }}>
-                    <input style={{ ...inp, flex:1 }} value={form.serial_caja} onChange={e => setForm(f=>({...f, serial_caja:e.target.value}))} placeholder="Escanea la caja" />
-                    <button type="button" onClick={() => iniciarEscaner('serial_caja')} style={{ padding:'8px 10px', background:'#1a2f52', border:'none', borderRadius:8, color:'#8aabcc', fontSize:14, cursor:'pointer' }}>📷</button>
-                  </div>
+                  <input style={inp} value={form.serial_caja} onChange={e => setForm(f=>({...f, serial_caja:e.target.value}))} placeholder="Escanea la caja" />
                 </div>
 
                 {/* Almacenamiento */}
