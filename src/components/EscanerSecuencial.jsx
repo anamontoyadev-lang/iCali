@@ -1,16 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-
-function loadQuagga() {
-  return new Promise((resolve, reject) => {
-    if (window.Quagga) { resolve(); return }
-    const s = document.createElement('script')
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js'
-    s.onload = resolve; s.onerror = reject
-    document.head.appendChild(s)
-  })
-}
-
-const MIN_C = 0.70
+import { BrowserMultiFormatReader, DecodeHintType, BarcodeFormat } from '@zxing/browser'
 
 function esIMEIValido(code) {
   return /^\d{15}$/.test(code)
@@ -21,29 +10,28 @@ function esSerialValido(code) {
 }
 
 const PASOS = [
-  { key: 'imei',        label: 'IMEI 1',        hint: 'Apunta SOLO al código de barras del IMEI 1', validar: esIMEIValido  },
-  { key: 'imei2',       label: 'IMEI 2',         hint: 'Apunta SOLO al código de barras del IMEI2',  validar: esIMEIValido  },
-  { key: 'serial_caja', label: 'Serial de caja', hint: 'Escanea el código de la caja (opcional)',     validar: esSerialValido },
+  { key: 'imei',        label: 'IMEI 1',        hint: 'Apunta al código de barras del IMEI 1',  validar: esIMEIValido  },
+  { key: 'imei2',       label: 'IMEI 2',         hint: 'Apunta al código de barras del IMEI 2',  validar: esIMEIValido  },
+  { key: 'serial_caja', label: 'Serial de caja', hint: 'Escanea el código de la caja (opcional)', validar: esSerialValido },
 ]
 
 export default function EscanerSecuencial({ onComplete, onClose }) {
-  const [pasoUI, setPasoUI]           = useState(0)
-  const [reading, setReading]         = useState('–')
-  const [manual, setManual]           = useState('')
-  const [conf, setConf]               = useState(0)
-  const [flash, setFlash]             = useState(false)
-  const [capturados, setCapturados]   = useState({})
-  // Estado de confirmación — muestra el código leído y espera que el usuario confirme
-  const [pendiente, setPendiente]     = useState(null)  // { code, label }
-  const [cuenta, setCuenta]           = useState(0)     // contador regresivo
+  const [pasoUI, setPasoUI]         = useState(0)
+  const [reading, setReading]       = useState('–')
+  const [manual, setManual]         = useState('')
+  const [flash, setFlash]           = useState(false)
+  const [capturados, setCapturados] = useState({})
+  const [pendiente, setPendiente]   = useState(null)
+  const [cuenta, setCuenta]         = useState(0)
+  const [errCam, setErrCam]         = useState('')
 
   const pasoActual    = useRef(0)
   const valoresAcum   = useRef({ imei: '', imei2: '', serial_caja: '' })
   const locked        = useRef(false)
-  const quaggaVivo    = useRef(false)
   const videoRef      = useRef()
-  const manualRef     = useRef('')
+  const readerRef     = useRef(null)
   const cuentaRef     = useRef(null)
+  const manualRef     = useRef('')
   const onCompleteRef = useRef(onComplete)
   const onCloseRef    = useRef(onClose)
 
@@ -51,59 +39,57 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
   useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      loadQuagga().then(initQuagga).catch(() => {})
-    }, 400)
-    return () => { clearTimeout(timer); pararQuagga(); clearInterval(cuentaRef.current) }
+    iniciarZxing()
+    return () => { pararZxing(); clearInterval(cuentaRef.current) }
   }, [])
 
-  function initQuagga() {
-    if (!videoRef.current) return
-    quaggaVivo.current = true
-    window.Quagga.init({
-      inputStream: {
-        type: 'LiveStream',
-        target: videoRef.current,
-        constraints: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'environment' },
-        area: { top: '20%', right: '5%', left: '5%', bottom: '20%' },
-      },
-      decoder: { readers: ['code_128_reader', 'ean_reader', 'ean_8_reader', 'upc_reader'], multiple: false },
-      locate: true,
-      numOfWorkers: 2,
-      frequency: 15,
-      halfSample: true,
-    }, err => {
-      if (err) { quaggaVivo.current = false; return }
-      window.Quagga.start()
-      window.Quagga.onDetected(onDetected)
-    })
-  }
+  async function iniciarZxing() {
+    try {
+      const hints = new Map()
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+        BarcodeFormat.CODE_128,
+        BarcodeFormat.EAN_13,
+        BarcodeFormat.UPC_A,
+      ])
+      hints.set(DecodeHintType.TRY_HARDER, true)
 
-  function pararQuagga() {
-    if (quaggaVivo.current) {
-      try { window.Quagga.offDetected(onDetected); window.Quagga.stop() } catch (_) {}
-      quaggaVivo.current = false
+      const reader = new BrowserMultiFormatReader(hints)
+      readerRef.current = reader
+
+      // Obtener cámara trasera
+      const devices = await BrowserMultiFormatReader.listVideoInputDevices()
+      const trasera = devices.find(d =>
+        d.label.toLowerCase().includes('back') ||
+        d.label.toLowerCase().includes('rear') ||
+        d.label.toLowerCase().includes('environment') ||
+        d.label.toLowerCase().includes('trasera')
+      ) || devices[devices.length - 1]
+
+      if (!trasera) { setErrCam('No se encontró cámara'); return }
+
+      await reader.decodeFromVideoDevice(trasera.deviceId, videoRef.current, (result, err) => {
+        if (!result) return
+        if (locked.current) return
+
+        const code = result.getText().trim()
+        const paso = PASOS[pasoActual.current]
+
+        setReading(code)
+
+        if (!paso.validar(code)) return
+
+        // Válido — mostrar confirmación
+        locked.current = true
+        setPendiente({ code, label: paso.label })
+        iniciarCuenta(code)
+      })
+    } catch (e) {
+      setErrCam('Error al iniciar cámara: ' + e.message)
     }
   }
 
-  function onDetected(result) {
-    // Si hay un pendiente esperando confirmación, ignorar nuevas lecturas
-    if (locked.current) return
-    const code = result?.codeResult?.code?.trim() || ''
-    const c    = result?.codeResult?.startInfo?.error ?? 0
-    const confianza = c === 0 ? 1 : Math.max(0, 1 - c)
-    if (!code || confianza < MIN_C) return
-
-    const paso = PASOS[pasoActual.current]
-    setReading(code)
-    setConf(Math.round(confianza * 100))
-
-    if (!paso.validar(code)) return
-
-    // Código válido — pausar escáner y mostrar pantalla de confirmación con cuenta regresiva
-    locked.current = true
-    setPendiente({ code, label: paso.label })
-    iniciarCuenta(code)
+  function pararZxing() {
+    try { readerRef.current?.reset() } catch (_) {}
   }
 
   function iniciarCuenta(code) {
@@ -137,7 +123,6 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
     setPendiente(null)
     locked.current = false
     setReading('–')
-    setConf(0)
   }
 
   function avanzar() {
@@ -148,9 +133,8 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
       setManual('')
       manualRef.current = ''
       setReading('–')
-      setConf(0)
     } else {
-      pararQuagga()
+      pararZxing()
       onCompleteRef.current({
         imei:        valoresAcum.current.imei        || '',
         imei2:       valoresAcum.current.imei2       || '',
@@ -160,13 +144,11 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
   }
 
   function saltar() {
-    if (locked.current && !pendiente) return
     clearInterval(cuentaRef.current)
     setPendiente(null)
     locked.current = false
     valoresAcum.current[PASOS[pasoActual.current].key] = ''
     setReading('–')
-    setConf(0)
     setManual('')
     manualRef.current = ''
     avanzar()
@@ -188,7 +170,7 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
 
   function cerrar() {
     clearInterval(cuentaRef.current)
-    pararQuagga()
+    pararZxing()
     onCloseRef.current()
   }
 
@@ -201,16 +183,16 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
       position: 'fixed', inset: 0, zIndex: 2000,
       background: flash ? 'rgba(16,185,129,0.12)' : 'rgba(0,0,0,0.97)',
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', padding: 0,
+      justifyContent: 'center',
       transition: 'background .15s',
       fontFamily: "'DM Sans', system-ui",
     }}>
 
-      {/* PANTALLA DE CONFIRMACIÓN */}
+      {/* PANTALLA CONFIRMACIÓN */}
       {pendiente && (
         <div style={{
           position: 'absolute', inset: 0, zIndex: 10,
-          background: 'rgba(0,0,0,0.95)',
+          background: 'rgba(0,0,0,0.96)',
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           justifyContent: 'center', gap: 20, padding: 32,
         }}>
@@ -218,33 +200,26 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
           <div style={{ color: '#fff', fontSize: 16, fontWeight: 700, textAlign: 'center' }}>
             ¿Este es el {pendiente.label} correcto?
           </div>
-          <div style={{
-            background: '#0d1a35', border: '2px solid #0066ff',
-            borderRadius: 12, padding: '16px 24px', textAlign: 'center',
-          }}>
+          <div style={{ background: '#0d1a35', border: '2px solid #0066ff', borderRadius: 12, padding: '16px 24px', textAlign: 'center' }}>
             <div style={{ color: '#8aabcc', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>{pendiente.label} leído</div>
             <div style={{ color: '#10b981', fontSize: 20, fontFamily: 'monospace', letterSpacing: 2, fontWeight: 700 }}>
               {pendiente.code}
             </div>
           </div>
           <div style={{ color: '#4a6a8a', fontSize: 13 }}>
-            Confirmando automáticamente en <span style={{ color: '#0066ff', fontWeight: 700, fontSize: 18 }}>{cuenta}</span>s...
+            Confirmando en <span style={{ color: '#0066ff', fontWeight: 700, fontSize: 18 }}>{cuenta}</span>s...
           </div>
           <div style={{ display: 'flex', gap: 12, width: '100%', maxWidth: 340 }}>
             <button onClick={rechazarPendiente} style={{
               flex: 1, padding: '12px 0', background: 'transparent',
               border: '1px solid #ef4444', borderRadius: 8,
               color: '#ef4444', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            }}>
-              ✗ No es este
-            </button>
+            }}>✗ No es este</button>
             <button onClick={() => confirmarPendiente(pendiente.code)} style={{
               flex: 1, padding: '12px 0', background: 'linear-gradient(135deg,#10b981,#059669)',
               border: 'none', borderRadius: 8,
               color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            }}>
-              ✓ Confirmar
-            </button>
+            }}>✓ Confirmar</button>
           </div>
         </div>
       )}
@@ -252,45 +227,52 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
       {/* Header */}
       <div style={{ width:'100%', maxWidth:460, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 20px 8px' }}>
         <div>
-          <div style={{ color:'#fff', fontSize:15, fontWeight:600 }}>
-            Paso {pasoUI + 1} de {PASOS.length} — {paso.label}
-          </div>
+          <div style={{ color:'#fff', fontSize:15, fontWeight:600 }}>Paso {pasoUI + 1} de {PASOS.length} — {paso.label}</div>
           <div style={{ color:'#8aabcc', fontSize:12, marginTop:2 }}>{paso.hint}</div>
         </div>
         <button onClick={cerrar} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:22, cursor:'pointer' }}>×</button>
       </div>
 
-      {/* Barra progreso */}
+      {/* Progreso */}
       <div style={{ width:'100%', maxWidth:460, padding:'0 20px 10px' }}>
         <div style={{ height:3, background:'#1a2f52', borderRadius:2, overflow:'hidden' }}>
           <div style={{ height:'100%', borderRadius:2, width:`${progreso}%`, background:'linear-gradient(90deg,#0066ff,#00c6ff)', transition:'width .4s ease' }} />
         </div>
         <div style={{ display:'flex', justifyContent:'space-between', marginTop:6 }}>
           {PASOS.map((p, i) => (
-            <div key={p.key} style={{ fontSize:10, fontWeight:600, letterSpacing:'.04em', color: i < pasoUI ? '#10b981' : i === pasoUI ? '#0066ff' : '#2a3f5a' }}>
+            <div key={p.key} style={{ fontSize:10, fontWeight:600, color: i < pasoUI ? '#10b981' : i === pasoUI ? '#0066ff' : '#2a3f5a' }}>
               {i < pasoUI ? '✓ ' : ''}{p.label}
             </div>
           ))}
         </div>
       </div>
 
-      {/* Visor cámara */}
-      <div style={{ position:'relative', width:'100%', maxWidth:460, borderRadius:12, overflow:'hidden', border: flash ? '2px solid #10b981' : '2px solid #1a2f52', transition:'border-color .15s', background:'#000' }}>
-        <div ref={videoRef} style={{ width:'100%', aspectRatio:'16/9', background:'#000', display:'block' }} />
-        <div style={{ position:'absolute', top:'50%', left:'10%', right:'10%', transform:'translateY(-50%)', height:2, background:'rgba(0,102,255,0.7)', boxShadow:'0 0 8px rgba(0,102,255,0.8)' }} />
+      {/* Visor */}
+      <div style={{ position:'relative', width:'100%', maxWidth:460, borderRadius:12, overflow:'hidden', border: flash ? '2px solid #10b981' : '2px solid #1a2f52', background:'#000' }}>
+        <video ref={videoRef} style={{ width:'100%', aspectRatio:'4/3', background:'#000', display:'block' }} autoPlay muted playsInline />
+
+        {/* Línea guía centrada */}
+        <div style={{ position:'absolute', top:'50%', left:'8%', right:'8%', transform:'translateY(-50%)', height:2, background:'rgba(0,102,255,0.8)', boxShadow:'0 0 10px rgba(0,102,255,0.9)' }} />
+
+        {/* Esquinas */}
         {[
-          { top:'15%', left:'5%', borderTop:'3px solid #0066ff', borderLeft:'3px solid #0066ff' },
-          { top:'15%', right:'5%', borderTop:'3px solid #0066ff', borderRight:'3px solid #0066ff' },
-          { bottom:'15%', left:'5%', borderBottom:'3px solid #0066ff', borderLeft:'3px solid #0066ff' },
-          { bottom:'15%', right:'5%', borderBottom:'3px solid #0066ff', borderRight:'3px solid #0066ff' },
+          { top:'25%', left:'5%', borderTop:'3px solid #0066ff', borderLeft:'3px solid #0066ff' },
+          { top:'25%', right:'5%', borderTop:'3px solid #0066ff', borderRight:'3px solid #0066ff' },
+          { bottom:'25%', left:'5%', borderBottom:'3px solid #0066ff', borderLeft:'3px solid #0066ff' },
+          { bottom:'25%', right:'5%', borderBottom:'3px solid #0066ff', borderRight:'3px solid #0066ff' },
         ].map((s, i) => <div key={i} style={{ position:'absolute', width:24, height:24, ...s }} />)}
 
+        {/* Lectura */}
         {reading !== '–' && (
           <div style={{ position:'absolute', bottom:8, left:8, right:8, background:'rgba(0,0,0,0.85)', borderRadius:6, padding:'5px 10px', textAlign:'center' }}>
-            <div style={{ color: esMEID ? '#f59e0b' : '#10b981', fontSize:13, fontFamily:'monospace', letterSpacing:1 }}>
-              {reading} <span style={{ fontSize:10, opacity:.7 }}>({conf}%)</span>
-            </div>
-            {esMEID && <div style={{ color:'#f59e0b', fontSize:10, marginTop:2 }}>MEID — apunta al IMEI de 15 dígitos</div>}
+            <div style={{ color: esMEID ? '#f59e0b' : '#10b981', fontSize:13, fontFamily:'monospace', letterSpacing:1 }}>{reading}</div>
+            {esMEID && <div style={{ color:'#f59e0b', fontSize:10, marginTop:2 }}>MEID (14 dígitos) — necesito el IMEI de 15 dígitos</div>}
+          </div>
+        )}
+
+        {errCam && (
+          <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.8)', color:'#ef4444', fontSize:13, padding:20, textAlign:'center' }}>
+            {errCam}
           </div>
         )}
 
