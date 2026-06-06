@@ -225,7 +225,7 @@ export default function NuevaVenta() {
     setLoadingStock(true)
     const { data } = await supabase
       .from('compras_proveedor')
-      .select('id, imei, imei2, color, almacenamiento, costo, estado_equipo, bateria, sticker, proveedores(nombre)')
+      .select('id, imei, imei2, color, almacenamiento, costo, precio_venta_est, estado_equipo, bateria, sticker, fotos, proveedores(nombre)')
       .ilike('producto', `%${nombre}%`)
       .eq('estado', 'disponible')
       .order('created_at', { ascending: false })
@@ -269,6 +269,7 @@ export default function NuevaVenta() {
       color:        equipo.color || '',
       costo_equipo: String(equipo.costo || ''),
       proveedor:    equipo.proveedores?.nombre || f.proveedor,
+      _de_inventario: true,
     }))
     setCostoAutoInfo({ costo: equipo.costo, fuente: `Stock · IMEI ${equipo.imei}` })
     setShowStock(false)
@@ -548,18 +549,21 @@ export default function NuevaVenta() {
               </select>
             </Field>
 
-            <Field label="Costo equipo $" required>
-              <div style={{ position:'relative' }}>
-                <input style={inp} value={form.costo_equipo}
-                  onChange={e => { set('costo_equipo', e.target.value); setCostoAutoInfo(null) }}
-                  placeholder="0" required />
-                {costoAutoInfo && (
-                  <div style={{ marginTop:4, padding:'4px 8px', background:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:5, fontSize:11, color:'#10b981' }}>
-                    ✓ Costo cargado desde {costoAutoInfo.fuente}
-                  </div>
-                )}
-              </div>
-            </Field>
+            {/* Costo solo si el equipo NO viene del inventario */}
+            {!form._de_inventario && (
+              <Field label="Costo equipo $" required>
+                <div style={{ position:'relative' }}>
+                  <input style={inp} value={form.costo_equipo}
+                    onChange={e => { set('costo_equipo', e.target.value); setCostoAutoInfo(null) }}
+                    placeholder="0" required />
+                  {costoAutoInfo && (
+                    <div style={{ marginTop:4, padding:'4px 8px', background:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:5, fontSize:11, color:'#10b981' }}>
+                      ✓ Costo cargado desde {costoAutoInfo.fuente}
+                    </div>
+                  )}
+                </div>
+              </Field>
+            )}
           </Section>
 
           <Section title="💰 Valores">
@@ -706,10 +710,16 @@ export default function NuevaVenta() {
                       {cond && (
                         <span style={{ background: cond.color+'22', color: cond.color, fontSize:10, padding:'2px 8px', borderRadius:4 }}>{cond.label}</span>
                       )}
-                      <div>
-                        <div style={{ color:'#5a7aaa', fontSize:10, marginBottom:2 }}>Costo</div>
-                        <div style={{ color:'#fff', fontSize:12, fontWeight:600 }}>{fmt(eq.costo)}</div>
-                      </div>
+                      {eq.precio_venta_est ? (
+                        <div>
+                          <div style={{ color:'#5a7aaa', fontSize:10, marginBottom:2 }}>Precio venta</div>
+                          <div style={{ color:'#10b981', fontSize:12, fontWeight:600 }}>{fmt(eq.precio_venta_est)}</div>
+                        </div>
+                      ) : null}
+                      {/* Foto del equipo */}
+                      {Array.isArray(eq.fotos) && eq.fotos[0] && (
+                        <img src={eq.fotos[0]} alt="equipo" style={{ width:48, height:48, objectFit:'cover', borderRadius:8, border:'1px solid #1a2f52' }} />
+                      )}
                       {eq.proveedores?.nombre && (
                         <div style={{ color:'#4a6a8a', fontSize:11 }}>{eq.proveedores.nombre}</div>
                       )}

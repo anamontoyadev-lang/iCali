@@ -44,11 +44,29 @@ export function AuthProvider({ children }) {
     setPerfil(null)
   }
 
-  const isAdmin = perfil?.rol === 'admin'
-  const isAsesor = perfil?.rol === 'asesor'
+  const rol = perfil?.rol || ''
+
+  const esAdmin         = rol === 'admin'
+  const esLiderAdmin    = rol === 'lider_admin'
+  const esLiderCom      = rol === 'lider_comercial'
+  const esContadora     = rol === 'contadora'
+  const esAsesor        = rol === 'asesor' || rol === 'asesor_mostrador' || rol === 'asesor_call_center'
+  const esAsesorCall    = rol === 'asesor_call_center' || rol === 'asesor'
+  const esAsesorMostrador = rol === 'asesor_mostrador'
+  const esGarantias     = rol === 'garantias'
+
+  // Compat con código viejo
+  const isAdmin  = esAdmin
+  const isAsesor = esAsesor
 
   return (
-    <AuthContext.Provider value={{ session, perfil, loading, isAdmin, isAsesor, login, logout }}>
+    <AuthContext.Provider value={{
+      session, perfil, loading,
+      esAdmin, esLiderAdmin, esLiderCom, esContadora,
+      esAsesor, esAsesorCall, esAsesorMostrador, esGarantias,
+      isAdmin, isAsesor,
+      login, logout
+    }}>
       {children}
     </AuthContext.Provider>
   )
