@@ -82,7 +82,7 @@ export default function Reportes() {
       const hasta = new Date(Number(periodo.split('-')[0]), Number(periodo.split('-')[1]), 0).toISOString().split('T')[0]
 
       let qVentas = supabase.from('ventas')
-        .select('id,fecha_venta,no_factura,asesor_nombre,canal,cedula_cliente,nombre_cliente,telefono_cliente,producto,imei,color,proveedor,costo_equipo,valor_venta,metodo_pago,estado,es_domicilio,tiene_retoma,ciudad_cliente,cuota_inicial,numero_cuotas,observaciones')
+        .select('id,fecha_venta,no_factura,asesor_nombre,canal,cedula_cliente,nombre_cliente,telefono_cliente,producto,imei,color,proveedor,costo_equipo,valor_venta,metodo_pago,pago_efectivo,pago_transferencia,pago_tarjeta,estado,es_domicilio,tiene_retoma,ciudad_cliente,cuota_inicial,numero_cuotas,observaciones')
         .gte('fecha_venta', desde).lte('fecha_venta', hasta).neq('estado', 'anulada')
       if (esAsesor && perfil) qVentas = qVentas.eq('asesor_nombre', `${perfil.nombre} ${perfil.apellido || ''}`.trim())
 
@@ -163,6 +163,9 @@ export default function Reportes() {
       'Costo':          v.costo_equipo || 0,
       'Valor venta':    v.valor_venta || 0,
       'Método pago':    v.metodo_pago,
+      'Pago efectivo':  v.metodo_pago === 'mixto' || v.metodo_pago === 'contado' ? (v.pago_efectivo || 0) : '',
+      'Pago transferencia': v.metodo_pago === 'mixto' || v.metodo_pago === 'transferencia' ? (v.pago_transferencia || 0) : '',
+      'Pago tarjeta':   v.metodo_pago === 'mixto' || v.metodo_pago === 'tarjeta' ? (v.pago_tarjeta || 0) : '',
       'Canal':          v.canal,
       'Asesor':         v.asesor_nombre,
       'Estado':         v.estado,
@@ -456,7 +459,16 @@ export default function Reportes() {
                       <td style={td}><span style={{ background: v.canal==='mostrador'?'#1e3a5f':'#1e3a2f', color: v.canal==='mostrador'?'#60a5fa':'#34d399', fontSize:11, padding:'2px 8px', borderRadius:4 }}>{v.canal==='mostrador'?'Mostrador':'Call'}</span></td>
                       <td style={{ ...td, fontWeight:600, color:'#fff', whiteSpace:'nowrap' }}>{fmt(v.valor_venta)}</td>
                       <td style={{ ...td, color:'#f59e0b', whiteSpace:'nowrap' }}>{fmt(v.costo_equipo)}</td>
-                      <td style={{ ...td, fontSize:11, color:'#8aabcc' }}>{v.metodo_pago?.replace('_',' ')}</td>
+                      <td style={{ ...td, fontSize:11, color:'#8aabcc' }}>
+                        <div>{v.metodo_pago?.replace('_',' ')}</div>
+                        {v.metodo_pago === 'mixto' && (
+                          <div style={{ color:'#4a6a8a', fontSize:10, marginTop:2 }}>
+                            {v.pago_efectivo > 0 && <span>Ef: {new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(v.pago_efectivo)} </span>}
+                            {v.pago_transferencia > 0 && <span>Tr: {new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(v.pago_transferencia)} </span>}
+                            {v.pago_tarjeta > 0 && <span>Tj: {new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(v.pago_tarjeta)}</span>}
+                          </div>
+                        )}
+                      </td>
                       <td style={td}><span style={{ background:'#1a2f52', color:'#8aabcc', fontSize:11, padding:'2px 8px', borderRadius:4 }}>{v.estado}</span></td>
                     </tr>
                   ))}

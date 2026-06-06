@@ -10,7 +10,7 @@ const ROLES_LABEL = {
   contadora:          'Contadora',
   asesor_mostrador:   'Asesor Mostrador',
   asesor_call_center: 'Asesor Call Center',
-  garantias:          'Garantías',
+  garantias:          'Garantías y Reparaciones',
   laboratorio:        'Laboratorio',
 }
 
@@ -63,9 +63,9 @@ export default function Layout() {
           Despachos
         </NavLink>
       )}
-      <NavLink to="/retomas" style={navStyle} onClick={onNav}>
-        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.6"/></svg>
-        Retomas
+      <NavLink to="/laboratorio" style={navStyle} onClick={onNav}>
+        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v11m0 0H3m6 0h12m0 0V9m0 6v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6"/></svg>
+        Laboratorio
       </NavLink>
       <NavLink to="/proveedores" style={navStyle} onClick={onNav}>
         <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
@@ -120,38 +120,20 @@ export default function Layout() {
     </div>
   )
 
-  // ── MÓVIL ──
   if (isMobile) {
     return (
       <div style={{ display:'flex', flexDirection:'column', minHeight:'100vh', background:'#060d1f', fontFamily:"'DM Sans', system-ui" }}>
-
-        {/* Topbar */}
-        <div style={{
-          background:'#0a1628', borderBottom:'1px solid #1a2f52',
-          padding:'0 16px', height:52,
-          display:'flex', alignItems:'center', justifyContent:'space-between',
-          position:'sticky', top:0, zIndex:100
-        }}>
+        <div style={{ background:'#0a1628', borderBottom:'1px solid #1a2f52', padding:'0 16px', height:52, display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100 }}>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ width:28, height:28, borderRadius:7, background:'linear-gradient(135deg,#0066ff,#0044bb)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:700, fontSize:14 }}>i</div>
             <span style={{ color:'#fff', fontWeight:600, fontSize:14 }}>iCali Portal</span>
           </div>
-          <button onClick={() => setMenuOpen(true)} style={{
-            background:'transparent', border:'none', color:'#8aabcc',
-            fontSize:24, cursor:'pointer', padding:'4px 8px', lineHeight:1
-          }}>☰</button>
+          <button onClick={() => setMenuOpen(true)} style={{ background:'transparent', border:'none', color:'#8aabcc', fontSize:24, cursor:'pointer', padding:'4px 8px', lineHeight:1 }}>☰</button>
         </div>
-
-        {/* Drawer */}
         {menuOpen && (
           <div style={{ position:'fixed', inset:0, zIndex:999, display:'flex' }}>
             <div onClick={() => setMenuOpen(false)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.65)' }} />
-            <div style={{
-              position:'relative', zIndex:1, width:260,
-              background:'#0a1628', borderRight:'1px solid #1a2f52',
-              display:'flex', flexDirection:'column', height:'100vh',
-              overflowY:'auto', animation:'slideIn 0.2s ease'
-            }}>
+            <div style={{ position:'relative', zIndex:1, width:260, background:'#0a1628', borderRight:'1px solid #1a2f52', display:'flex', flexDirection:'column', height:'100vh', overflowY:'auto', animation:'slideIn 0.2s ease' }}>
               <div style={{ padding:'14px 16px', borderBottom:'1px solid #1a2f52', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                   <div style={{ width:28, height:28, borderRadius:7, background:'linear-gradient(135deg,#0066ff,#0044bb)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:700, fontSize:14 }}>i</div>
@@ -166,26 +148,17 @@ export default function Layout() {
             </div>
           </div>
         )}
-
-        {/* Contenido */}
         <main style={{ flex:1, overflow:'auto' }}>
           <Outlet />
         </main>
-
-        <style>{`@keyframes slideIn { from { transform: translateX(-100%) } to { transform: translateX(0) } }`}</style>
+        <style>{\`@keyframes slideIn { from { transform: translateX(-100%) } to { transform: translateX(0) } }\`}</style>
       </div>
     )
   }
 
-  // ── DESKTOP ──
   return (
     <div style={{ display:'flex', minHeight:'100vh', background:'#060d1f', fontFamily:"'DM Sans', system-ui" }}>
-      <aside style={{
-        width:220, flexShrink:0, background:'#0a1628',
-        borderRight:'1px solid #1a2f52', display:'flex',
-        flexDirection:'column', position:'sticky', top:0,
-        height:'100vh', overflowY:'auto'
-      }}>
+      <aside style={{ width:220, flexShrink:0, background:'#0a1628', borderRight:'1px solid #1a2f52', display:'flex', flexDirection:'column', position:'sticky', top:0, height:'100vh', overflowY:'auto' }}>
         <div style={{ padding:'20px 20px 16px', borderBottom:'1px solid #1a2f52' }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <div style={{ width:32, height:32, borderRadius:8, background:'linear-gradient(135deg,#0066ff,#0044bb)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:700, fontSize:16, flexShrink:0 }}>i</div>
@@ -206,3 +179,4 @@ export default function Layout() {
     </div>
   )
 }
+  

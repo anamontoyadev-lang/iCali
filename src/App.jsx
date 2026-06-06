@@ -1,19 +1,19 @@
 import Usuarios from './pages/Usuarios'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/AuthContext'
-import Login       from './pages/Login'
-import Layout      from './components/Layout'
-import Dashboard   from './pages/Dashboard'
-import Ventas      from './pages/Ventas'
-import NuevaVenta  from './pages/NuevaVenta'
-import EditarVenta from './pages/EditarVenta'
-import Despachos   from './pages/Despachos'
-import Retomas     from './pages/Retomas'
-import Financieras from './pages/Financieras'
-import Extractos   from './pages/Extractos'
-import Reportes    from './pages/Reportes'
-import Proveedores from './pages/Proveedores'
-import Inventario  from './pages/Inventario'
+import Login        from './pages/Login'
+import Layout       from './components/Layout'
+import Dashboard    from './pages/Dashboard'
+import Ventas       from './pages/Ventas'
+import NuevaVenta   from './pages/NuevaVenta'
+import EditarVenta  from './pages/EditarVenta'
+import Despachos    from './pages/Despachos'
+import Laboratorio  from './pages/Laboratorio'
+import Financieras  from './pages/Financieras'
+import Extractos    from './pages/Extractos'
+import Reportes     from './pages/Reportes'
+import Proveedores  from './pages/Proveedores'
+import Inventario   from './pages/Inventario'
 import NotificacionesInventario from './components/NotificacionesInventario'
 
 function ProtectedRoute({ children, roles }) {
@@ -40,7 +40,7 @@ function App() {
             <Route path="ventas/nueva" element={<NuevaVenta />} />
             <Route path="ventas/editar/:id" element={<EditarVenta />} />
             <Route path="despachos" element={<Despachos />} />
-            <Route path="retomas" element={<Retomas />} />
+            <Route path="laboratorio" element={<Laboratorio />} />
             <Route path="inventario" element={<Inventario />} />
             <Route path="financieras" element={
               <ProtectedRoute roles={['admin','lider_admin','contadora','lider_comercial']}>
