@@ -74,11 +74,12 @@ export default function Laboratorio() {
   const [filtroG, setFiltroG]       = useState('')
   const [formG, setFormG]           = useState(FORM_INIT)
   const [savingG, setSavingG]       = useState(false)
+  const [proveedores, setProveedores] = useState([])
   // Repuesto en edición
   const [nuevoRep, setNuevoRep]     = useState({ nombre:'', costo:'' })
   const [nuevoRepEdit, setNuevoRepEdit] = useState({ nombre:'', costo:'' })
 
-  useEffect(() => { loadRetomas(); loadGarantias() }, [])
+  useEffect(() => { loadRetomas(); loadGarantias(); loadProveedores() }, [])
 
   async function loadRetomas() {
     const { data } = await supabase
@@ -98,6 +99,11 @@ export default function Laboratorio() {
     setLoadingG(false)
   }
 
+  async function loadProveedores() {
+    const { data } = await supabase.from('proveedores').select('nombre').eq('activo', true).order('nombre')
+    setProveedores(data || [])
+  }
+
   async function guardarRetoma() {
     await supabase.from('retomas').update({
       imei_retoma: editFormR.imei_retoma, referencia: editFormR.referencia,
@@ -108,7 +114,36 @@ export default function Laboratorio() {
       quien_tiene: editFormR.quien_tiene, punto_tienda: editFormR.punto_tienda,
       estado: editFormR.estado, observaciones: editFormR.observaciones,
     }).eq('id', editandoR)
-    setEditandoR(null); loadRetomas()
+    // Si el estado es en_reparacion, crear ingreso en garantias_reparaciones si no existe
+    if (editFormR.estado === 'en_reparacion') {
+      const retoma = retomas.find(r => r.id === editandoR)
+      if (retoma) {
+        // verificar si ya existe ingreso con este IMEI
+        const { data: existe } = await supabase
+          .from('garantias_reparaciones')
+          .select('id')
+          .eq('imei', editFormR.imei_retoma || retoma.imei_retoma || '')
+          .eq('tipo', 'reparacion')
+          .limit(1)
+        if (!existe || existe.length === 0) {
+          const user = (await supabase.auth.getUser()).data.user
+          await supabase.from('garantias_reparaciones').insert({
+            tipo: 'reparacion',
+            imei: editFormR.imei_retoma || retoma.imei_retoma || '',
+            producto: editFormR.referencia || retoma.referencia || '',
+            cliente: retoma.ventas?.nombre_cliente || '',
+            asesor: retoma.ventas?.asesor_nombre || '',
+            descripcion_falla: editFormR.observaciones || 'Ingresado desde retoma',
+            estado: 'en_reparacion',
+            fecha_recepcion: new Date().toISOString().split('T')[0],
+            registrado_por: user.id,
+            repuestos: [],
+            costo_repuestos: 0,
+          })
+        }
+      }
+    }
+    setEditandoR(null); loadRetomas(); loadGarantias()
   }
 
   // Calcular total repuestos
@@ -404,9 +439,17 @@ export default function Laboratorio() {
           <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:14, padding:28, width:'100%', maxWidth:500, fontFamily:"'DM Sans',system-ui", maxHeight:'90vh', overflow:'auto' }}>
             <h3 style={{ color:'#fff', margin:'0 0 20px', fontSize:16 }}>Editar retoma</h3>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px 14px' }}>
-              {[['imei_retoma','IMEI'],['referencia','Referencia'],['capacidad_gb','GB'],['color','Color'],['porcentaje_bateria','Batería %'],['valor_retoma','Valor retoma $'],['costo_estimado','Costo estimado $'],['quien_tiene','¿Quién tiene?'],['punto_tienda','Punto de tienda']].map(([k,label]) => (
+              {[['imei_retoma','IMEI'],['referencia','Referencia'],['capacidad_gb','GB'],['color','Color'],['porcentaje_bateria','Batería %'],['valor_retoma','Valor retoma $'],['costo_estimado','Costo estimado $'],['punto_tienda','Punto de tienda']].map(([k,label]) => (
                 <div key={k}><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>{label}</label><input style={inp} value={editFormR[k]} onChange={e => setEditFormR(f=>({...f,[k]:e.target.value}))} /></div>
               ))}
+              <div>
+                <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>¿Quién tiene?</label>
+                <select style={{ ...inp, cursor:'pointer' }} value={editFormR.quien_tiene} onChange={e => setEditFormR(f=>({...f, quien_tiene:e.target.value}))}>
+                  <option value="">Seleccionar...</option>
+                  <option value="Laboratorio iCali">🔬 Laboratorio iCali</option>
+                  {proveedores.map(p => <option key={p.nombre} value={p.nombre}>{p.nombre}</option>)}
+                </select>
+              </div>
               <div><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Estado</label>
                 <select style={{ ...inp, cursor:'pointer' }} value={editFormR.estado} onChange={e => setEditFormR(f=>({...f,estado:e.target.value}))}>
                   {Object.entries(ESTADOS_RETOMA).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
