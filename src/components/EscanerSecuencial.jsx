@@ -10,48 +10,41 @@ function loadQuagga() {
   })
 }
 
-const REQ = 3      // lecturas iguales consecutivas para confirmar
-const MIN_C = 0.75 // confianza mínima
+const REQ = 3
+const MIN_C = 0.70
 
-// Valida que sea IMEI real: exactamente 15 dígitos + Luhn
+// IMEI: 14 o 15 dígitos numéricos (Quagga a veces pierde un dígito)
 function esIMEIValido(code) {
-  if (!/^\d{15}$/.test(code)) return false
-  let s = 0, alt = false
-  for (let i = code.length - 1; i >= 0; i--) {
-    let n = parseInt(code[i], 10)
-    if (alt) { n *= 2; if (n > 9) n -= 9 }
-    s += n; alt = !alt
-  }
-  return s % 10 === 0
+  return /^\d{14,15}$/.test(code)
 }
 
-// Serial de caja: acepta alfanumérico de 6-20 caracteres
+// Serial: alfanumérico 6-25 caracteres
 function esSerialValido(code) {
-  return /^[A-Za-z0-9]{6,20}$/.test(code)
+  return /^[A-Za-z0-9]{6,25}$/.test(code)
 }
 
 const PASOS = [
-  { key: 'imei',        label: 'IMEI 1',        hint: 'Escanea el IMEI 1 (15 dígitos)',    validar: esIMEIValido  },
-  { key: 'imei2',       label: 'IMEI 2',         hint: 'Escanea el IMEI 2 (15 dígitos)',    validar: esIMEIValido  },
-  { key: 'serial_caja', label: 'Serial de caja', hint: 'Escanea el código de la caja',      validar: esSerialValido },
+  { key: 'imei',        label: 'IMEI 1',        hint: 'Escanea el IMEI 1 del equipo',   validar: esIMEIValido  },
+  { key: 'imei2',       label: 'IMEI 2',         hint: 'Escanea el IMEI 2 del equipo',   validar: esIMEIValido  },
+  { key: 'serial_caja', label: 'Serial de caja', hint: 'Escanea el código de la caja',   validar: esSerialValido },
 ]
 
 export default function EscanerSecuencial({ onComplete, onClose }) {
-  const [pasoUI, setPasoUI]     = useState(0)
-  const [reading, setReading]   = useState('–')
-  const [manual, setManual]     = useState('')
-  const [conf, setConf]         = useState(0)
-  const [flash, setFlash]       = useState(false)
-  const [error, setError]       = useState('')
+  const [pasoUI, setPasoUI]         = useState(0)
+  const [reading, setReading]       = useState('–')
+  const [manual, setManual]         = useState('')
+  const [conf, setConf]             = useState(0)
+  const [flash, setFlash]           = useState(false)
+  const [error, setError]           = useState('')
   const [capturados, setCapturados] = useState({})
 
-  const pasoActual  = useRef(0)
-  const valoresAcum = useRef({ imei: '', imei2: '', serial_caja: '' })
-  const detBuf      = useRef([])
-  const locked      = useRef(false)
-  const quaggaVivo  = useRef(false)
-  const videoRef    = useRef()
-  const manualRef   = useRef('')
+  const pasoActual    = useRef(0)
+  const valoresAcum   = useRef({ imei: '', imei2: '', serial_caja: '' })
+  const detBuf        = useRef([])
+  const locked        = useRef(false)
+  const quaggaVivo    = useRef(false)
+  const videoRef      = useRef()
+  const manualRef     = useRef('')
   const onCompleteRef = useRef(onComplete)
   const onCloseRef    = useRef(onClose)
 
@@ -106,15 +99,12 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
     if (confianza < MIN_C) return
 
     const paso = PASOS[pasoActual.current]
-
-    // Solo mostrar lectura, no confirmar si no pasa validación del paso
     setReading(code)
     setConf(Math.round(confianza * 100))
 
-    // Si no es válido para este paso, mostrar error pero no confirmar
     if (!paso.validar(code)) {
-      setError(`Código no válido para ${paso.label}`)
-      detBuf.current = [] // resetear buffer
+      setError(`Esperando ${paso.label}...`)
+      detBuf.current = []
       return
     }
 
@@ -131,8 +121,6 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
   function confirmar(code) {
     if (locked.current) return
     const paso = PASOS[pasoActual.current]
-
-    // Validar antes de confirmar
     if (!paso.validar(code)) {
       setError(`Código no válido para ${paso.label}`)
       return
@@ -143,18 +131,15 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
 
     // Guardar SOLO en el campo del paso actual
     valoresAcum.current[paso.key] = code
-
-    // Actualizar UI de capturados
     setCapturados(prev => ({ ...prev, [paso.key]: code }))
 
     setFlash(true)
     setTimeout(() => setFlash(false), 600)
 
-    const siguiente = pasoActual.current + 1
-    // Resetear buffer para el siguiente paso
     detBuf.current = []
     locked.current = false
 
+    const siguiente = pasoActual.current + 1
     if (siguiente < PASOS.length) {
       pasoActual.current = siguiente
       setPasoUI(siguiente)
@@ -174,12 +159,11 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
 
   function saltar() {
     if (locked.current) return
-    locked.current = true
-    // Al saltar, el campo queda vacío
     valoresAcum.current[PASOS[pasoActual.current].key] = ''
     detBuf.current = []
-    locked.current = false
     setError('')
+    setReading('–')
+    setConf(0)
 
     const siguiente = pasoActual.current + 1
     if (siguiente < PASOS.length) {
@@ -187,8 +171,6 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
       setPasoUI(siguiente)
       setManual('')
       manualRef.current = ''
-      setConf(0)
-      setReading('–')
     } else {
       pararQuagga()
       onCompleteRef.current({
@@ -203,7 +185,9 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
     const clean = manualRef.current.trim()
     const paso  = PASOS[pasoActual.current]
     if (!paso.validar(clean)) {
-      setError(`Código no válido para ${paso.label}`)
+      setError(paso.key === 'serial_caja'
+        ? 'Ingresa entre 6 y 25 caracteres alfanuméricos'
+        : 'El IMEI debe tener 14 o 15 dígitos numéricos')
       return
     }
     confirmar(clean)
@@ -253,13 +237,11 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
       </div>
 
       {/* Visor cámara */}
-      <div style={{ position:'relative', width:'100%', maxWidth:460, borderRadius:12, overflow:'hidden', border: flash ? '2px solid #10b981' : error ? '2px solid #ef4444' : '2px solid #1a2f52', transition:'border-color .15s', background:'#000' }}>
+      <div style={{ position:'relative', width:'100%', maxWidth:460, borderRadius:12, overflow:'hidden', border: flash ? '2px solid #10b981' : '2px solid #1a2f52', transition:'border-color .15s', background:'#000' }}>
         <div ref={videoRef} style={{ width:'100%', aspectRatio:'16/9', background:'#000', display:'block' }} />
 
-        {/* Línea guía */}
         <div style={{ position:'absolute', top:'50%', left:'10%', right:'10%', transform:'translateY(-50%)', height:2, background: flash ? 'rgba(16,185,129,0.8)' : 'rgba(0,102,255,0.6)', boxShadow: flash ? '0 0 12px #10b981' : '0 0 8px rgba(0,102,255,0.8)', transition:'all .15s' }} />
 
-        {/* Esquinas */}
         {[
           { top:'20%', left:'5%', borderTop:'3px solid #0066ff', borderLeft:'3px solid #0066ff' },
           { top:'20%', right:'5%', borderTop:'3px solid #0066ff', borderRight:'3px solid #0066ff' },
@@ -267,15 +249,12 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
           { bottom:'20%', right:'5%', borderBottom:'3px solid #0066ff', borderRight:'3px solid #0066ff' },
         ].map((s, i) => <div key={i} style={{ position:'absolute', width:20, height:20, ...s }} />)}
 
-        {/* Lectura actual */}
         {reading !== '–' && (
-          <div style={{ position:'absolute', bottom:8, left:8, right:8, background:'rgba(0,0,0,0.8)', borderRadius:6, padding:'4px 10px', textAlign:'center', color: error ? '#ef4444' : conf > 85 ? '#10b981' : '#f59e0b', fontSize:12, fontFamily:'monospace', letterSpacing:1 }}>
+          <div style={{ position:'absolute', bottom:8, left:8, right:8, background:'rgba(0,0,0,0.8)', borderRadius:6, padding:'4px 10px', textAlign:'center', color: error ? '#f59e0b' : '#10b981', fontSize:12, fontFamily:'monospace', letterSpacing:1 }}>
             {reading} <span style={{ fontSize:10, opacity:.7 }}>({conf}%)</span>
-            {error && <div style={{ fontSize:10, color:'#ef4444', marginTop:2 }}>{error}</div>}
           </div>
         )}
 
-        {/* Flash OK */}
         {flash && (
           <div style={{ position:'absolute', inset:0, background:'rgba(16,185,129,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
             <div style={{ fontSize:48 }}>✅</div>
@@ -283,10 +262,10 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
         )}
       </div>
 
-      {/* Error prominente */}
+      {/* Error */}
       {error && (
-        <div style={{ width:'100%', maxWidth:460, padding:'6px 20px 0', color:'#ef4444', fontSize:12, textAlign:'center' }}>
-          ⚠ {error} — apunta a un código diferente
+        <div style={{ width:'100%', maxWidth:460, padding:'6px 20px 0', color:'#f59e0b', fontSize:12, textAlign:'center' }}>
+          ⏳ {error}
         </div>
       )}
 
@@ -295,8 +274,8 @@ export default function EscanerSecuencial({ onComplete, onClose }) {
         <div style={{ color:'#5a7aaa', fontSize:11, textAlign:'center', marginBottom:6 }}>O ingresa manualmente:</div>
         <div style={{ display:'flex', gap:8 }}>
           <input
-            style={{ flex:1, background:'#0a1628', border:`1px solid ${error && manual ? '#ef4444' : '#1a2f52'}`, borderRadius:8, padding:'10px 12px', color:'#fff', fontSize:14, letterSpacing:1, outline:'none', textAlign:'center' }}
-            placeholder={paso.key === 'serial_caja' ? 'Serial alfanumérico...' : '15 dígitos IMEI...'}
+            style={{ flex:1, background:'#0a1628', border:'1px solid #1a2f52', borderRadius:8, padding:'10px 12px', color:'#fff', fontSize:14, letterSpacing:1, outline:'none', textAlign:'center' }}
+            placeholder={paso.key === 'serial_caja' ? 'Serial alfanumérico...' : 'IMEI (14-15 dígitos)...'}
             value={manual}
             onChange={e => { setManual(e.target.value); manualRef.current = e.target.value; setError('') }}
             onKeyDown={e => e.key === 'Enter' && usarManual()}
