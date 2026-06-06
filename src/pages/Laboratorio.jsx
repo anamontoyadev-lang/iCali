@@ -151,15 +151,19 @@ export default function Laboratorio() {
     return reps.reduce((a, r) => a + Number(r.costo || 0), 0)
   }
 
-  function agregarRepuesto(reps, setReps, nuevo, setNuevo, esForm = false) {
+  function agregarRepuesto(nuevo, setNuevo, esForm = false) {
     if (!nuevo.nombre) return
     const rep = { nombre: nuevo.nombre, costo: Number(nuevo.costo) || 0 }
-    const nuevosReps = [...reps, rep]
-    setReps(nuevosReps)
     if (esForm) {
-      setFormG(f => ({ ...f, repuestos: nuevosReps, costo_repuestos: calcTotalRep(nuevosReps) }))
+      setFormG(f => {
+        const nuevosReps = [...(f.repuestos || []), rep]
+        return { ...f, repuestos: nuevosReps, costo_repuestos: calcTotalRep(nuevosReps) }
+      })
     } else {
-      setEditFormG(f => ({ ...f, repuestos: nuevosReps, costo_repuestos: calcTotalRep(nuevosReps) }))
+      setEditFormG(f => {
+        const nuevosReps = [...(f.repuestos || []), rep]
+        return { ...f, repuestos: nuevosReps, costo_repuestos: calcTotalRep(nuevosReps) }
+      })
     }
     setNuevo({ nombre:'', costo:'' })
   }
@@ -235,7 +239,6 @@ export default function Laboratorio() {
       <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:8 }}>
         Repuestos {reps.length > 0 && <span style={{ color:'#10b981' }}>({reps.length}) — Total: {fmt(calcTotalRep(reps))}</span>}
       </label>
-      {/* Lista de repuestos */}
       {reps.length > 0 && (
         <div style={{ marginBottom:8, display:'flex', flexDirection:'column', gap:4 }}>
           {reps.map((r, i) => (
@@ -249,18 +252,22 @@ export default function Laboratorio() {
           ))}
         </div>
       )}
-      {/* Agregar repuesto */}
       <div style={{ display:'flex', gap:6 }}>
         <select value={nuevo.nombre} onChange={e => setNuevo(n => ({ ...n, nombre: e.target.value }))}
           style={{ ...inp, flex:2, cursor:'pointer' }}>
           <option value="">+ Repuesto...</option>
           {REPUESTOS_CATALOGO.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
-        <input type="number" placeholder="Costo $" value={nuevo.costo}
+        <input
+          type="number"
+          placeholder="Costo $"
+          value={nuevo.costo}
           onChange={e => setNuevo(n => ({ ...n, costo: e.target.value }))}
-          style={{ ...inp, flex:1 }} />
+          style={{ ...inp, flex:1 }}
+          min="0"
+        />
         <button type="button"
-          onClick={() => agregarRepuesto(reps, () => {}, nuevo, setNuevo, esForm)}
+          onClick={() => agregarRepuesto(nuevo, setNuevo, esForm)}
           disabled={!nuevo.nombre}
           style={{ padding:'7px 12px', background: nuevo.nombre ? '#0066ff' : '#1e3058', border:'none', borderRadius:6, color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
           Agregar
