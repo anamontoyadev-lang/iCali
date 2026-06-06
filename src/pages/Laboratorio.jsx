@@ -153,7 +153,7 @@ export default function Laboratorio() {
 
   function agregarRepuesto(nuevo, setNuevo, esForm = false) {
     if (!nuevo.nombre) return
-    const rep = { nombre: nuevo.nombre, costo: Number(nuevo.costo) || 0 }
+    const rep = { nombre: nuevo.nombre, cantidad: Number(nuevo.cantidad) || 1, costo: Number(String(nuevo.costo).replace(/\D/g,'')) || 0 }
     if (esForm) {
       setFormG(f => {
         const nuevosReps = [...(f.repuestos || []), rep]
@@ -165,7 +165,7 @@ export default function Laboratorio() {
         return { ...f, repuestos: nuevosReps, costo_repuestos: calcTotalRep(nuevosReps) }
       })
     }
-    setNuevo({ nombre:'', costo:'' })
+    setNuevo({ nombre:'', costo:'', cantidad: 1 })
   }
 
   function quitarRepuesto(idx, esForm = false) {
@@ -234,47 +234,71 @@ export default function Laboratorio() {
   const th = { color:'#4a6a8a', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', padding:'10px 14px', textAlign:'left', borderBottom:'1px solid #1a2f52', whiteSpace:'nowrap' }
   const td = { padding:'10px 14px', color:'#cbd5e1', fontSize:13, borderBottom:'1px solid #0f1e36' }
 
-  const RepuestosWidget = ({ reps, onQuitar, nuevo, setNuevo, esForm }) => (
-    <div>
-      <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:8 }}>
-        Repuestos {reps.length > 0 && <span style={{ color:'#10b981' }}>({reps.length}) — Total: {fmt(calcTotalRep(reps))}</span>}
-      </label>
-      {reps.length > 0 && (
-        <div style={{ marginBottom:8, display:'flex', flexDirection:'column', gap:4 }}>
-          {reps.map((r, i) => (
-            <div key={i} style={{ background:'#0a1628', border:'1px solid #1a2f52', borderRadius:6, padding:'6px 10px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-              <span style={{ color:'#e2e8f0', fontSize:12 }}>{r.nombre}</span>
-              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                <span style={{ color:'#10b981', fontSize:12, fontWeight:600 }}>{fmt(r.costo)}</span>
-                <button type="button" onClick={() => onQuitar(i)} style={{ background:'transparent', border:'none', color:'#ef4444', fontSize:14, cursor:'pointer', lineHeight:1 }}>×</button>
+  function RepuestosWidget({ reps, onQuitar, nuevo, setNuevo, esForm }) {
+    return (
+      <div>
+        <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:8 }}>
+          Repuestos {reps.length > 0 && <span style={{ color:'#10b981' }}>({reps.length}) — Total: {fmt(calcTotalRep(reps))}</span>}
+        </label>
+        {reps.length > 0 && (
+          <div style={{ marginBottom:8, display:'flex', flexDirection:'column', gap:4 }}>
+            {reps.map((r, i) => (
+              <div key={i} style={{ background:'#0a1628', border:'1px solid #1a2f52', borderRadius:6, padding:'6px 10px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                <div style={{ display:'flex', gap:12, alignItems:'center' }}>
+                  <span style={{ color:'#e2e8f0', fontSize:12 }}>{r.nombre}</span>
+                  {r.cantidad > 1 && <span style={{ color:'#8aabcc', fontSize:11 }}>x{r.cantidad}</span>}
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ color:'#10b981', fontSize:12, fontWeight:600 }}>{fmt(r.costo)}</span>
+                  <button type="button" onClick={() => onQuitar(i)} style={{ background:'transparent', border:'none', color:'#ef4444', fontSize:14, cursor:'pointer', lineHeight:1 }}>×</button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        )}
+        <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr auto', gap:6, alignItems:'end' }}>
+          <div>
+            <div style={{ color:'#5a7aaa', fontSize:10, marginBottom:4 }}>Repuesto</div>
+            <select
+              value={nuevo.nombre}
+              onChange={e => setNuevo(n => ({ ...n, nombre: e.target.value }))}
+              style={{ ...inp, cursor:'pointer' }}
+            >
+              <option value="">Seleccionar...</option>
+              {REPUESTOS_CATALOGO.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+          <div>
+            <div style={{ color:'#5a7aaa', fontSize:10, marginBottom:4 }}>Cantidad</div>
+            <input
+              type="number"
+              min="1"
+              value={nuevo.cantidad || 1}
+              onChange={e => setNuevo(n => ({ ...n, cantidad: e.target.value }))}
+              style={{ ...inp }}
+            />
+          </div>
+          <div>
+            <div style={{ color:'#5a7aaa', fontSize:10, marginBottom:4 }}>Valor $</div>
+            <input
+              value={nuevo.costo}
+              onChange={e => setNuevo(n => ({ ...n, costo: e.target.value }))}
+              placeholder="0"
+              style={{ ...inp }}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => agregarRepuesto(nuevo, setNuevo, esForm)}
+            disabled={!nuevo.nombre}
+            style={{ padding:'9px 14px', background: nuevo.nombre ? '#0066ff' : '#1e3058', border:'none', borderRadius:6, color:'#fff', fontSize:12, fontWeight:600, cursor: nuevo.nombre ? 'pointer' : 'default', whiteSpace:'nowrap' }}
+          >
+            + Agregar
+          </button>
         </div>
-      )}
-      <div style={{ display:'flex', gap:6 }}>
-        <select value={nuevo.nombre} onChange={e => setNuevo(n => ({ ...n, nombre: e.target.value }))}
-          style={{ ...inp, flex:2, cursor:'pointer' }}>
-          <option value="">+ Repuesto...</option>
-          {REPUESTOS_CATALOGO.map(r => <option key={r} value={r}>{r}</option>)}
-        </select>
-        <input
-          type="text"
-          inputMode="numeric"
-          placeholder="Valor $"
-          value={nuevo.costo}
-          onChange={e => setNuevo(n => ({ ...n, costo: e.target.value.replace(/[^0-9]/g, '') }))}
-          style={{ ...inp, flex:1 }}
-        />
-        <button type="button"
-          onClick={() => agregarRepuesto(nuevo, setNuevo, esForm)}
-          disabled={!nuevo.nombre}
-          style={{ padding:'7px 12px', background: nuevo.nombre ? '#0066ff' : '#1e3058', border:'none', borderRadius:6, color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
-          Agregar
-        </button>
       </div>
-    </div>
-  )
+    )
+  }
 
   const totalCostoG = (g) => (Number(g.costo_repuestos)||0) + (Number(g.costo_mano_obra)||0)
 
