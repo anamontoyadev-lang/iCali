@@ -259,12 +259,12 @@ export default function Laboratorio() {
           {REPUESTOS_CATALOGO.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
         <input
-          type="number"
-          placeholder="Costo $"
+          type="text"
+          inputMode="numeric"
+          placeholder="Valor $"
           value={nuevo.costo}
-          onChange={e => setNuevo(n => ({ ...n, costo: e.target.value }))}
+          onChange={e => setNuevo(n => ({ ...n, costo: e.target.value.replace(/[^0-9]/g, '') }))}
           style={{ ...inp, flex:1 }}
-          min="0"
         />
         <button type="button"
           onClick={() => agregarRepuesto(nuevo, setNuevo, esForm)}
