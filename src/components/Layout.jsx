@@ -151,7 +151,7 @@ export default function Layout() {
         <main style={{ flex:1, overflow:'auto' }}>
           <Outlet />
         </main>
-        <style>{\`@keyframes slideIn { from { transform: translateX(-100%) } to { transform: translateX(0) } }\`}</style>
+        <style>{"@keyframes slideIn { from { transform: translateX(-100%) } to { transform: translateX(0) } }"}</style>
       </div>
     )
   }
@@ -179,4 +179,3 @@ export default function Layout() {
     </div>
   )
 }
-  
