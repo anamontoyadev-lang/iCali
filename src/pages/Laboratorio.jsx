@@ -285,7 +285,6 @@ export default function Laboratorio() {
     if (!error) {
       setShowFormG(false)
       setFormG(FORM_INIT)
-      setNuevoRep({ nombre:'', costo:'' })
       loadGarantias()
     }
   }
@@ -473,7 +472,7 @@ export default function Laboratorio() {
                       <td style={{ ...td, fontSize:12, whiteSpace:'nowrap', color:'#10b981' }}>{g.fecha_entrega_real?new Date(g.fecha_entrega_real+'T12:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short'}):'—'}</td>
                       <td style={{ ...td, fontSize:12 }}>{g.asesor||'—'}</td>
                       {(esAdmin||esLiderAdmin||esLiderCom) && (
-                        <td style={td}><button onClick={() => { setEditandoG(g.id); setEditFormG({ tipo:g.tipo, diagnostico:g.diagnostico||'', solucion:g.solucion||'', costo_mano_obra:g.costo_mano_obra||'', costo_repuestos:g.costo_repuestos||0, repuestos:Array.isArray(g.repuestos)?g.repuestos:[], estado:g.estado, observaciones:g.observaciones||'', fecha_entrega_estimada:g.fecha_entrega_estimada||'', fecha_entrega_real:g.fecha_entrega_real||'' }); setNuevoRepEdit({nombre:'',costo:''}) }} style={{ background:'#1a2f52', border:'none', borderRadius:6, color:'#8aabcc', fontSize:12, padding:'5px 10px', cursor:'pointer' }}>Editar</button></td>
+                        <td style={td}><button onClick={() => { setEditandoG(g.id); setEditFormG({ tipo:g.tipo, diagnostico:g.diagnostico||'', solucion:g.solucion||'', costo_mano_obra:g.costo_mano_obra||'', costo_repuestos:g.costo_repuestos||0, repuestos:Array.isArray(g.repuestos)?g.repuestos:[], estado:g.estado, observaciones:g.observaciones||'', fecha_entrega_estimada:g.fecha_entrega_estimada||'', fecha_entrega_real:g.fecha_entrega_real||'' }) }} style={{ background:'#1a2f52', border:'none', borderRadius:6, color:'#8aabcc', fontSize:12, padding:'5px 10px', cursor:'pointer' }}>Editar</button></td>
                       )}
                     </tr>
                   ))}
