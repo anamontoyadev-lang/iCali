@@ -54,6 +54,96 @@ const FORM_INIT = {
   repuestos: [], costo_repuestos: 0,
 }
 
+
+const REPUESTOS_CAT_EXTERNAL = [
+  'Batería','Display','Back cover','Cámara trasera','Cámara frontal',
+  'Botón home','Botón power','Botones volumen','Conector carga',
+  'Altavoz','Micrófono','Vibrador','Flex cable','Tornillos',
+  'Marco/Chasis','Lente cámara','Otro'
+]
+
+const inpStyle = {
+  background:'#0a1628', border:'1px solid #1a2f52', borderRadius:6,
+  padding:'7px 10px', color:'#fff', fontSize:13,
+  width:'100%', boxSizing:'border-box', outline:'none'
+}
+
+const fmtCOP = n => new Intl.NumberFormat('es-CO',{ style:'currency', currency:'COP', maximumFractionDigits:0 }).format(n||0)
+const calcTotal = reps => reps.reduce((a,r) => a + Number(r.costo||0), 0)
+
+function RepuestosWidget({ reps, onQuitar, onAgregar }) {
+  const [nombre, setNombre] = useState('')
+  const [cantidad, setCantidad] = useState('1')
+  const [costo, setCosto] = useState('')
+
+  function handleAgregar() {
+    if (!nombre) return
+    onAgregar({ nombre, cantidad: Number(cantidad)||1, costo: Number(costo)||0 })
+    setNombre('')
+    setCantidad('1')
+    setCosto('')
+  }
+
+  return (
+    <div>
+      <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:8 }}>
+        Repuestos {reps.length > 0 && <span style={{ color:'#10b981' }}>({reps.length}) — Total: {fmtCOP(calcTotal(reps))}</span>}
+      </label>
+      {reps.length > 0 && (
+        <div style={{ marginBottom:8, display:'flex', flexDirection:'column', gap:4 }}>
+          {reps.map((r, i) => (
+            <div key={i} style={{ background:'#0a1628', border:'1px solid #1a2f52', borderRadius:6, padding:'6px 10px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div style={{ display:'flex', gap:10, alignItems:'center' }}>
+                <span style={{ color:'#e2e8f0', fontSize:12 }}>{r.nombre}</span>
+                {r.cantidad > 1 && <span style={{ color:'#8aabcc', fontSize:11 }}>x{r.cantidad}</span>}
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <span style={{ color:'#10b981', fontSize:12, fontWeight:600 }}>{fmtCOP(r.costo)}</span>
+                <button type="button" onClick={() => onQuitar(i)} style={{ background:'transparent', border:'none', color:'#ef4444', fontSize:16, cursor:'pointer', lineHeight:1, padding:0 }}>×</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{ display:'grid', gridTemplateColumns:'2fr 80px 120px auto', gap:6, alignItems:'end' }}>
+        <div>
+          <div style={{ color:'#5a7aaa', fontSize:10, marginBottom:4 }}>Repuesto</div>
+          <select value={nombre} onChange={e => setNombre(e.target.value)} style={{ ...inpStyle, cursor:'pointer' }}>
+            <option value="">Seleccionar...</option>
+            {REPUESTOS_CAT_EXTERNAL.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </div>
+        <div>
+          <div style={{ color:'#5a7aaa', fontSize:10, marginBottom:4 }}>Cant.</div>
+          <input
+            type="number" min="1"
+            value={cantidad}
+            onChange={e => setCantidad(e.target.value)}
+            style={{ ...inpStyle }}
+          />
+        </div>
+        <div>
+          <div style={{ color:'#5a7aaa', fontSize:10, marginBottom:4 }}>Costo $</div>
+          <input
+            value={costo}
+            onChange={e => setCosto(e.target.value)}
+            placeholder="0"
+            style={{ ...inpStyle }}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={handleAgregar}
+          disabled={!nombre}
+          style={{ padding:'9px 12px', background: nombre ? '#0066ff' : '#1e3058', border:'none', borderRadius:6, color:'#fff', fontSize:12, fontWeight:600, cursor: nombre ? 'pointer' : 'default', whiteSpace:'nowrap', height:36 }}
+        >
+          + Agregar
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function Laboratorio() {
   const { esAdmin, esLiderAdmin, esLiderCom } = useAuth()
   const [tab, setTab] = useState('garantias')
@@ -75,9 +165,6 @@ export default function Laboratorio() {
   const [formG, setFormG]           = useState(FORM_INIT)
   const [savingG, setSavingG]       = useState(false)
   const [proveedores, setProveedores] = useState([])
-  // Repuesto en edición
-  const [nuevoRep, setNuevoRep]     = useState({ nombre:'', costo:'' })
-  const [nuevoRepEdit, setNuevoRepEdit] = useState({ nombre:'', costo:'' })
 
   useEffect(() => { loadRetomas(); loadGarantias(); loadProveedores() }, [])
 
@@ -151,9 +238,8 @@ export default function Laboratorio() {
     return reps.reduce((a, r) => a + Number(r.costo || 0), 0)
   }
 
-  function agregarRepuesto(nuevo, setNuevo, esForm = false) {
-    if (!nuevo.nombre) return
-    const rep = { nombre: nuevo.nombre, cantidad: Number(nuevo.cantidad) || 1, costo: Number(String(nuevo.costo).replace(/\D/g,'')) || 0 }
+  function agregarRepuesto(rep, esForm) {
+    if (!rep.nombre) return
     if (esForm) {
       setFormG(f => {
         const nuevosReps = [...(f.repuestos || []), rep]
@@ -165,7 +251,6 @@ export default function Laboratorio() {
         return { ...f, repuestos: nuevosReps, costo_repuestos: calcTotalRep(nuevosReps) }
       })
     }
-    setNuevo({ nombre:'', costo:'', cantidad: 1 })
   }
 
   function quitarRepuesto(idx, esForm = false) {
@@ -234,71 +319,6 @@ export default function Laboratorio() {
   const th = { color:'#4a6a8a', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', padding:'10px 14px', textAlign:'left', borderBottom:'1px solid #1a2f52', whiteSpace:'nowrap' }
   const td = { padding:'10px 14px', color:'#cbd5e1', fontSize:13, borderBottom:'1px solid #0f1e36' }
 
-  function RepuestosWidget({ reps, onQuitar, nuevo, setNuevo, esForm }) {
-    return (
-      <div>
-        <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:8 }}>
-          Repuestos {reps.length > 0 && <span style={{ color:'#10b981' }}>({reps.length}) — Total: {fmt(calcTotalRep(reps))}</span>}
-        </label>
-        {reps.length > 0 && (
-          <div style={{ marginBottom:8, display:'flex', flexDirection:'column', gap:4 }}>
-            {reps.map((r, i) => (
-              <div key={i} style={{ background:'#0a1628', border:'1px solid #1a2f52', borderRadius:6, padding:'6px 10px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                <div style={{ display:'flex', gap:12, alignItems:'center' }}>
-                  <span style={{ color:'#e2e8f0', fontSize:12 }}>{r.nombre}</span>
-                  {r.cantidad > 1 && <span style={{ color:'#8aabcc', fontSize:11 }}>x{r.cantidad}</span>}
-                </div>
-                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <span style={{ color:'#10b981', fontSize:12, fontWeight:600 }}>{fmt(r.costo)}</span>
-                  <button type="button" onClick={() => onQuitar(i)} style={{ background:'transparent', border:'none', color:'#ef4444', fontSize:14, cursor:'pointer', lineHeight:1 }}>×</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr auto', gap:6, alignItems:'end' }}>
-          <div>
-            <div style={{ color:'#5a7aaa', fontSize:10, marginBottom:4 }}>Repuesto</div>
-            <select
-              value={nuevo.nombre}
-              onChange={e => setNuevo(n => ({ ...n, nombre: e.target.value }))}
-              style={{ ...inp, cursor:'pointer' }}
-            >
-              <option value="">Seleccionar...</option>
-              {REPUESTOS_CATALOGO.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </div>
-          <div>
-            <div style={{ color:'#5a7aaa', fontSize:10, marginBottom:4 }}>Cantidad</div>
-            <input
-              type="number"
-              min="1"
-              value={nuevo.cantidad || 1}
-              onChange={e => setNuevo(n => ({ ...n, cantidad: e.target.value }))}
-              style={{ ...inp }}
-            />
-          </div>
-          <div>
-            <div style={{ color:'#5a7aaa', fontSize:10, marginBottom:4 }}>Valor $</div>
-            <input
-              value={nuevo.costo}
-              onChange={e => setNuevo(n => ({ ...n, costo: e.target.value }))}
-              placeholder="0"
-              style={{ ...inp }}
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => agregarRepuesto(nuevo, setNuevo, esForm)}
-            disabled={!nuevo.nombre}
-            style={{ padding:'9px 14px', background: nuevo.nombre ? '#0066ff' : '#1e3058', border:'none', borderRadius:6, color:'#fff', fontSize:12, fontWeight:600, cursor: nuevo.nombre ? 'pointer' : 'default', whiteSpace:'nowrap' }}
-          >
-            + Agregar
-          </button>
-        </div>
-      </div>
-    )
-  }
 
   const totalCostoG = (g) => (Number(g.costo_repuestos)||0) + (Number(g.costo_mano_obra)||0)
 
@@ -538,8 +558,6 @@ export default function Laboratorio() {
                   <RepuestosWidget
                     reps={formG.repuestos}
                     onQuitar={(i) => quitarRepuesto(i, true)}
-                    nuevo={nuevoRep}
-                    setNuevo={setNuevoRep}
                     esForm={true}
                   />
                 </div>
@@ -595,9 +613,7 @@ export default function Laboratorio() {
                 <RepuestosWidget
                   reps={editFormG.repuestos||[]}
                   onQuitar={(i) => quitarRepuesto(i, false)}
-                  nuevo={nuevoRepEdit}
-                  setNuevo={setNuevoRepEdit}
-                  esForm={false}
+                  onAgregar={(rep) => agregarRepuesto(rep, false)}
                 />
               </div>
 
