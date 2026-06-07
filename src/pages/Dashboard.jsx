@@ -29,8 +29,8 @@ export default function Dashboard() {
     const mes  = hoy.slice(0,7)+'-01'
     const user = (await supabase.auth.getUser()).data.user
 
-    let qVHoy = supabase.from('ventas').select('id',{count:'exact',head:true}).eq('fecha_venta',hoy).neq('estado','anulada')
-    let qVMes = supabase.from('ventas').select('id,valor_venta,costo_equipo',{count:'exact'}).gte('fecha_venta',mes).neq('estado','anulada')
+    let qVHoy = supabase.from('ventas').select('id',{count:'exact',head:true}).eq('fecha_venta',hoy).in('estado',['registrada','en_proceso','entregada'])
+    let qVMes = supabase.from('ventas').select('id,valor_venta,costo_equipo',{count:'exact'}).gte('fecha_venta',mes).in('estado',['registrada','en_proceso','entregada'])
     let qRec  = supabase.from('ventas').select('fecha_venta,nombre_cliente,producto,valor_venta,asesor_nombre,canal').order('created_at',{ascending:false}).limit(6)
 
     if ((esAsesor || esAsesorCall || esAsesorMostrador) && user) {
@@ -130,7 +130,7 @@ export default function Dashboard() {
   ].filter(Boolean)
 
   return (
-    <div style={{ padding:'clamp(16px, 4vw, 32px)', fontFamily:"'DM Sans', system-ui", minHeight:'100vh', background:'#060d1f' }}>
+    <div style={{ padding:'clamp(16px, 4vw, 32px) clamp(12px, 4vw, 32px) 80px', fontFamily:"'DM Sans', system-ui", minHeight:'100vh', background:'#060d1f' }}>
 
       {/* Header */}
       <div style={{ marginBottom:28 }}>
@@ -172,81 +172,82 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* NOTIFICACIONES - fuera del loading para mostrar siempre */}
+      {notifs.length > 0 && (
+        <div style={{ marginBottom:28 }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+            <div style={{ color:'#3a5a7a', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em' }}>
+              Notificaciones
+              {notifs.filter(n=>!n.respondida).length > 0 && (
+                <span style={{ marginLeft:8, background:'#ef4444', color:'#fff', fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:10 }}>
+                  {notifs.filter(n=>!n.respondida).length} nueva{notifs.filter(n=>!n.respondida).length>1?'s':''}
+                </span>
+              )}
+            </div>
+            <span style={{ color:'#4a6a8a', fontSize:11 }}>Últimas {notifs.length}</span>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+            {notifs.map(n => {
+              const pendiente = !n.respondida
+              const icono = n.tipo==='EQUIPO_LISTO_LABORATORIO'?'🔬':n.tipo==='SOLICITUD_EQUIPO'?'🔔':'📌'
+              const borderColor = pendiente
+                ? (n.tipo==='EQUIPO_LISTO_LABORATORIO'?'#10b981':n.tipo==='SOLICITUD_EQUIPO'?'#f59e0b':'#3b82f6')
+                : '#1a2f52'
+              return (
+                <div key={n.id} style={{
+                  background: pendiente ? '#0d1a35' : '#080f20',
+                  border: `1px solid ${borderColor}`,
+                  borderRadius:10, padding:'10px 12px',
+                  display:'flex', flexDirection:'column', gap:8,
+                  opacity: pendiente ? 1 : 0.6,
+                }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:0 }}>
+                    <span style={{ fontSize:16, flexShrink:0 }}>{icono}</span>
+                    <div style={{ minWidth:0, flex:1 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+                        <span style={{ color: pendiente?'#fff':'#8aabcc', fontSize:12, fontWeight: pendiente?500:400 }}>{n.mensaje}</span>
+                        {pendiente
+                          ? <span style={{ background:'#f59e0b22', color:'#f59e0b', fontSize:9, fontWeight:700, padding:'1px 5px', borderRadius:4 }}>PENDIENTE</span>
+                          : <span style={{ background:'#10b98122', color:'#10b981', fontSize:9, fontWeight:700, padding:'1px 5px', borderRadius:4 }}>
+                              {n.respuesta==='ingresado'?'INGRESADO':n.respuesta==='si'?'ATENDIDO':n.respuesta==='no'?'NO DISPONIBLE':'LEÍDA'}
+                            </span>
+                        }
+                      </div>
+                      <div style={{ color:'#4a6a8a', fontSize:10, marginTop:2 }}>
+                        {n.datos?.producto && <span>{n.datos.producto}</span>}
+                        {n.datos?.imei && <span style={{ fontFamily:'monospace' }}> · {n.datos.imei}</span>}
+                        <span style={{ marginLeft:4 }}>{new Date(n.created_at).toLocaleDateString('es-CO',{day:'2-digit',month:'short'})}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {pendiente && (
+                    <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                      {n.tipo === 'SOLICITUD_EQUIPO' && (
+                        <>
+                          <button onClick={() => responderNotif(n.id,'no')} style={{ padding:'5px 10px', background:'transparent', border:'1px solid #ef4444', borderRadius:6, color:'#ef4444', fontSize:11, fontWeight:600, cursor:'pointer' }}>✗ No</button>
+                          <button onClick={() => responderNotif(n.id,'si')} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>✓ Voy</button>
+                        </>
+                      )}
+                      {n.tipo === 'EQUIPO_LISTO_LABORATORIO' && (
+                        <button onClick={() => navigate('/laboratorio')} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>Ver lab →</button>
+                      )}
+                      {!['SOLICITUD_EQUIPO','EQUIPO_LISTO_LABORATORIO'].includes(n.tipo) && (
+                        <button onClick={() => responderNotif(n.id,'leida')} style={{ padding:'5px 10px', background:'#1a2f52', border:'none', borderRadius:6, color:'#8aabcc', fontSize:11, cursor:'pointer' }}>✓ Leída</button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div style={{ color:'#4a6a8a', fontSize:13, textAlign:'center', padding:20 }}>Cargando...</div>
       ) : (
         <>
-          {/* NOTIFICACIONES */}
-          {notifs.length > 0 && (
-            <div style={{ marginBottom:28 }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-                <div style={{ color:'#3a5a7a', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em' }}>
-                  Notificaciones
-                  {notifs.filter(n=>!n.respondida).length > 0 && (
-                    <span style={{ marginLeft:8, background:'#ef4444', color:'#fff', fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:10 }}>
-                      {notifs.filter(n=>!n.respondida).length} nueva{notifs.filter(n=>!n.respondida).length>1?'s':''}
-                    </span>
-                  )}
-                </div>
-                <span style={{ color:'#4a6a8a', fontSize:11 }}>Últimas {notifs.length}</span>
-              </div>
-              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                {notifs.map(n => {
-                  const pendiente = !n.respondida
-                  const icono = n.tipo==='EQUIPO_LISTO_LABORATORIO'?'🔬':n.tipo==='SOLICITUD_EQUIPO'?'🔔':'📌'
-                  const borderColor = pendiente
-                    ? (n.tipo==='EQUIPO_LISTO_LABORATORIO'?'#10b981':n.tipo==='SOLICITUD_EQUIPO'?'#f59e0b':'#3b82f6')
-                    : '#1a2f52'
-                  return (
-                    <div key={n.id} style={{
-                      background: pendiente ? '#0d1a35' : '#080f20',
-                      border: `1px solid ${borderColor}`,
-                      borderRadius:10, padding:'10px 12px',
-                      display:'flex', flexDirection:'column', gap:8,
-                      opacity: pendiente ? 1 : 0.6,
-                    }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:0 }}>
-                        <span style={{ fontSize:16, flexShrink:0 }}>{icono}</span>
-                        <div style={{ minWidth:0 }}>
-                          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                            <span style={{ color: pendiente?'#fff':'#8aabcc', fontSize:12, fontWeight: pendiente?500:400 }}>{n.mensaje}</span>
-                            {pendiente
-                              ? <span style={{ background:'#f59e0b22', color:'#f59e0b', fontSize:9, fontWeight:700, padding:'1px 5px', borderRadius:4, flexShrink:0 }}>PENDIENTE</span>
-                              : <span style={{ background:'#10b98122', color:'#10b981', fontSize:9, fontWeight:700, padding:'1px 5px', borderRadius:4, flexShrink:0 }}>
-                                  {n.respuesta==='ingresado'?'INGRESADO':n.respuesta==='si'?'ATENDIDO':n.respuesta==='no'?'NO DISPONIBLE':'LEÍDA'}
-                                </span>
-                            }
-                          </div>
-                          <div style={{ color:'#4a6a8a', fontSize:10, marginTop:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                            {n.datos?.producto && <span>{n.datos.producto}</span>}
-                            {n.datos?.imei && <span style={{ fontFamily:'monospace' }}> · {n.datos.imei}</span>}
-                            {n.datos?.cliente && <span> · {n.datos.cliente}</span>}
-                            <span style={{ marginLeft:6 }}>{new Date(n.created_at).toLocaleDateString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
-                          </div>
-                        </div>
-                      </div>
-                      {pendiente && (
-                        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                          {n.tipo === 'SOLICITUD_EQUIPO' && (
-                            <>
-                              <button onClick={() => responderNotif(n.id,'no')} style={{ padding:'5px 10px', background:'transparent', border:'1px solid #ef4444', borderRadius:6, color:'#ef4444', fontSize:11, fontWeight:600, cursor:'pointer' }}>✗</button>
-                              <button onClick={() => responderNotif(n.id,'si')} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>✓ Voy</button>
-                            </>
-                          )}
-                          {n.tipo === 'EQUIPO_LISTO_LABORATORIO' && (
-                            <button onClick={() => navigate('/laboratorio')} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>Ver lab →</button>
-                          )}
-                          {!['SOLICITUD_EQUIPO','EQUIPO_LISTO_LABORATORIO'].includes(n.tipo) && (
-                            <button onClick={() => responderNotif(n.id,'leida')} style={{ padding:'5px 10px', background:'#1a2f52', border:'none', borderRadius:6, color:'#8aabcc', fontSize:11, cursor:'pointer' }}>✓ Leída</button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
+          {/* notificaciones movidas arriba del loading */}
 
           {/* RESUMEN DE GESTIÓN */}
           {kpis.length > 0 && (
