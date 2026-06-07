@@ -148,7 +148,7 @@ function Section({ title, children }) {
   return (
     <div style={{ marginBottom:28 }}>
       <div style={{ color:'#4a7aaa', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', borderBottom:'1px solid #1a2f52', paddingBottom:8, marginBottom:16 }}>{title}</div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px,1fr))', gap:'14px 16px' }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px,1fr))', gap:'12px 14px' }}>
         {children}
       </div>
     </div>
@@ -405,14 +405,14 @@ export default function NuevaVenta() {
   const condSeleccionada = equipoSeleccionado ? ESTADOS_EQUIPO.find(e => e.value === equipoSeleccionado.estado_equipo) : null
 
   return (
-    <div style={{ padding:'32px 36px', maxWidth:900, fontFamily:"'DM Sans', system-ui, sans-serif" }}>
+    <div style={{ padding:'clamp(16px, 4vw, 32px)', maxWidth:900, fontFamily:"'DM Sans', system-ui, sans-serif" }}>
       <div style={{ marginBottom:28 }}>
         <button onClick={() => navigate('/ventas')} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:13, cursor:'pointer', padding:0, marginBottom:12 }}>← Volver a ventas</button>
         <h1 style={{ color:'#fff', fontSize:20, fontWeight:600, margin:0 }}>Registrar venta</h1>
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:14, padding:'28px 32px' }}>
+        <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:14, padding:'clamp(16px, 4vw, 28px) clamp(14px, 4vw, 32px)' }}>
 
           <Section title="📅 Información general">
             <Field label="Fecha de venta" required>

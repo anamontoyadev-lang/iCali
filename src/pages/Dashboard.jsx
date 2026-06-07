@@ -130,7 +130,7 @@ export default function Dashboard() {
   ].filter(Boolean)
 
   return (
-    <div style={{ padding:'28px 32px', fontFamily:"'DM Sans', system-ui", minHeight:'100vh', background:'#060d1f' }}>
+    <div style={{ padding:'clamp(16px, 4vw, 32px)', fontFamily:"'DM Sans', system-ui", minHeight:'100vh', background:'#060d1f' }}>
 
       {/* Header */}
       <div style={{ marginBottom:28 }}>
@@ -143,7 +143,7 @@ export default function Dashboard() {
       {/* MÓDULOS */}
       <div style={{ marginBottom:28 }}>
         <div style={{ color:'#3a5a7a', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:12 }}>Módulos</div>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(150px, 1fr))', gap:12 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(120px, 1fr))', gap:10 }}>
           {modulos.map(m => (
             <button key={m.key} onClick={() => navigate(m.path)} style={{
               background:'#0d1a35', border:`1px solid #1a2f52`,
@@ -201,11 +201,11 @@ export default function Dashboard() {
                     <div key={n.id} style={{
                       background: pendiente ? '#0d1a35' : '#080f20',
                       border: `1px solid ${borderColor}`,
-                      borderRadius:10, padding:'10px 14px',
-                      display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap',
+                      borderRadius:10, padding:'10px 12px',
+                      display:'flex', flexDirection:'column', gap:8,
                       opacity: pendiente ? 1 : 0.6,
                     }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:10, flex:1, minWidth:0 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:0 }}>
                         <span style={{ fontSize:16, flexShrink:0 }}>{icono}</span>
                         <div style={{ minWidth:0 }}>
                           <div style={{ display:'flex', alignItems:'center', gap:6 }}>
@@ -226,7 +226,7 @@ export default function Dashboard() {
                         </div>
                       </div>
                       {pendiente && (
-                        <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+                        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
                           {n.tipo === 'SOLICITUD_EQUIPO' && (
                             <>
                               <button onClick={() => responderNotif(n.id,'no')} style={{ padding:'5px 10px', background:'transparent', border:'1px solid #ef4444', borderRadius:6, color:'#ef4444', fontSize:11, fontWeight:600, cursor:'pointer' }}>✗</button>
@@ -254,7 +254,7 @@ export default function Dashboard() {
               <div style={{ color:'#3a5a7a', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:12 }}>
                 Tu resumen — {new Date().toLocaleDateString('es-CO',{month:'long', year:'numeric'})}
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:12, marginBottom:20 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))', gap:10, marginBottom:20 }}>
                 {kpis.map(k => (
                   <div key={k.label} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:12, padding:'16px 18px' }}>
                     <div style={{ color:'#5a7aaa', fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'.07em', marginBottom:8 }}>{k.label}</div>
