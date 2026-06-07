@@ -36,7 +36,7 @@ export default function NotificacionesInventario() {
     const { data } = await supabase
       .from('notificaciones')
       .select('*')
-      .in('tipo', ['SOLICITUD_EQUIPO', 'EQUIPO_LISTO_LABORATORIO'])
+      .in('tipo', ['SOLICITUD_EQUIPO', 'EQUIPO_LISTO_LABORATORIO', 'DEVOLUCION_EQUIPO'])
       .eq('respondida', false)
       .order('created_at', { ascending: false })
     setNotifs(data || [])
@@ -139,18 +139,31 @@ export default function NotificacionesInventario() {
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
                     <span style={{ fontSize:18 }}>🔔</span>
                     <div>
-                      <div style={{ color:'#fff', fontSize:13, fontWeight:600 }}>Solicitud de equipo</div>
-                      <div style={{ color:'#4a6a8a', fontSize:11 }}>de {n.creado_por_nombre}</div>
+                      <div style={{ color:'#fff', fontSize:13, fontWeight:600 }}>{n.mensaje}</div>
+                      <div style={{ color:'#f59e0b', fontSize:11 }}>de {n.creado_por_nombre} · {n.datos?.cliente}</div>
                     </div>
                   </div>
                   <div style={{ background:'#0a1628', borderRadius:8, padding:'8px 12px', marginBottom:10 }}>
-                    <div style={{ color:'#8aabcc', fontSize:11, marginBottom:2 }}>{n.datos?.producto}</div>
-                    {n.datos?.imei && <div style={{ color:'#fff', fontFamily:'monospace', fontSize:12 }}>IMEI: {n.datos.imei}</div>}
-                    {n.datos?.cliente && <div style={{ color:'#4a6a8a', fontSize:11, marginTop:2 }}>Cliente: {n.datos.cliente}</div>}
+                    {/* Solicitud múltiple */}
+                    {Array.isArray(n.datos?.equipos) ? (
+                      <div>
+                        {n.datos.equipos.map((e,i) => (
+                          <div key={i} style={{ display:'flex', alignItems:'center', gap:8, padding:'4px 0', borderBottom: i < n.datos.equipos.length-1 ? '1px solid #1a2f52' : 'none' }}>
+                            <span style={{ color:'#fff', fontFamily:'monospace', fontSize:11 }}>{e.imei}</span>
+                            {e.color && <span style={{ color:'#8aabcc', fontSize:11 }}>{e.color}</span>}
+                            {e.sticker && <span style={{ color:'#f59e0b', fontSize:10 }}>{e.sticker}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div>
+                        {n.datos?.imei && <div style={{ color:'#fff', fontFamily:'monospace', fontSize:12 }}>IMEI: {n.datos.imei}</div>}
+                      </div>
+                    )}
                   </div>
                   <div style={{ display:'flex', gap:8 }}>
-                    <button onClick={() => responderSolicitud(n.id, 'no')} style={{ flex:1, padding:'8px 0', background:'transparent', border:'1px solid #ef4444', borderRadius:7, color:'#ef4444', fontSize:12, fontWeight:600, cursor:'pointer' }}>✗ No disponible</button>
-                    <button onClick={() => responderSolicitud(n.id, 'si')} style={{ flex:1, padding:'8px 0', background:'linear-gradient(135deg,#10b981,#059669)', border:'none', borderRadius:7, color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}>✓ Voy con el equipo</button>
+                    <button onClick={() => responderSolicitud(n.id, 'no')} style={{ flex:1, padding:'8px 0', background:'transparent', border:'1px solid #ef4444', borderRadius:7, color:'#ef4444', fontSize:12, fontWeight:600, cursor:'pointer' }}>✗ No puedo bajar</button>
+                    <button onClick={() => confirmarBajarEquipos(n)} style={{ flex:2, padding:'8px 0', background:'linear-gradient(135deg,#f59e0b,#d97706)', border:'none', borderRadius:7, color:'#000', fontSize:12, fontWeight:700, cursor:'pointer' }}>✓ Voy a bajar los equipos</button>
                   </div>
                 </>
               )}
@@ -185,6 +198,25 @@ export default function NotificacionesInventario() {
                     style={{ width:'100%', padding:'10px 0', background:'linear-gradient(135deg,#10b981,#059669)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}
                   >
                     📦 Ya tengo el equipo — Ingresar a inventario
+                  </button>
+                </>
+              )}
+              {/* DEVOLUCION EQUIPO */}
+              {n.tipo === 'DEVOLUCION_EQUIPO' && (
+                <>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+                    <span style={{ fontSize:18 }}>📤</span>
+                    <div>
+                      <div style={{ color:'#fff', fontSize:13, fontWeight:600 }}>Solicitud de recogida</div>
+                      <div style={{ color:'#f59e0b', fontSize:11 }}>{n.creado_por_nombre} quiere devolver un equipo</div>
+                    </div>
+                  </div>
+                  <div style={{ background:'#0a1628', borderRadius:8, padding:'8px 12px', marginBottom:10 }}>
+                    <div style={{ color:'#e2e8f0', fontSize:12 }}>{n.datos?.producto}</div>
+                    {n.datos?.imei && <div style={{ color:'#8aabcc', fontFamily:'monospace', fontSize:11, marginTop:2 }}>IMEI: {n.datos.imei}</div>}
+                  </div>
+                  <button onClick={() => confirmarRecogida(n)} style={{ width:'100%', padding:'9px 0', background:'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:7, color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                    ✓ Confirmé la recogida — devolver a inventario
                   </button>
                 </>
               )}

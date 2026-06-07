@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
+import EquiposConAsesor from '../components/EquiposConAsesor'
 
 const fmt  = n => new Intl.NumberFormat('es-CO',{ style:'currency', currency:'COP', maximumFractionDigits:0 }).format(n||0)
 const fmtK = n => {
@@ -258,6 +259,8 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      <EquiposConAsesor />
 
       {loading ? (
         <div style={{ color:'#4a6a8a', fontSize:13, textAlign:'center', padding:20 }}>Cargando...</div>

@@ -185,6 +185,11 @@ export default function NuevaVenta() {
   const [notifEnviada, setNotifEnviada]     = useState(false)
   const [notifRespuesta, setNotifRespuesta] = useState(null)
   const [notifId, setNotifId]               = useState(null)
+  // Solicitud múltiple de equipos (hasta 5)
+  const [equiposSolicitados, setEquiposSolicitados] = useState([]) // lista de equipos pedidos a inventario
+  const [notifSolicitudId, setNotifSolicitudId]     = useState(null)
+  const [solicitudEnviada, setSolicitudEnviada]     = useState(false)
+  const [solicitudRespuesta, setSolicitudRespuesta] = useState(null)
 
   useEffect(() => {
     supabase.from('proveedores').select('id,nombre').eq('activo', true).order('nombre')
@@ -277,6 +282,43 @@ export default function NuevaVenta() {
     }))
     setCostoAutoInfo({ costo: equipo.costo, fuente: `Stock · IMEI ${equipo.imei}` })
     setShowStock(false)
+  }
+
+  function agregarAListaSolicitud(equipo) {
+    if (equiposSolicitados.length >= 5) return
+    if (equiposSolicitados.find(e => e.id === equipo.id)) return
+    setEquiposSolicitados(prev => [...prev, equipo])
+  }
+
+  function quitarDeSolicitud(id) {
+    setEquiposSolicitados(prev => prev.filter(e => e.id !== id))
+  }
+
+  async function enviarSolicitudEquipos() {
+    if (enviandoNotif || equiposSolicitados.length === 0) return
+    setEnviandoNotif(true)
+    const user = (await supabase.auth.getUser()).data.user
+    const { data, error } = await supabase.from('notificaciones').insert({
+      tipo: 'SOLICITUD_EQUIPO',
+      mensaje: `Solicitud de ${equiposSolicitados.length} equipo${equiposSolicitados.length>1?'s':''} para mostrar al cliente`,
+      datos: {
+        equipos: equiposSolicitados.map(e => ({
+          id: e.id, imei: e.imei, producto: form.producto,
+          color: e.color, sticker: e.sticker, bateria: e.bateria,
+        })),
+        asesor:    form.asesor_nombre,
+        asesor_id: user.id,
+        cliente:   form.nombre_cliente || 'Cliente en mostrador',
+      },
+      creado_por:        user.id,
+      creado_por_nombre: form.asesor_nombre,
+      destinatario_rol:  'inventario',
+    }).select().single()
+    if (!error && data) {
+      setNotifSolicitudId(data.id)
+      setSolicitudEnviada(true)
+    }
+    setEnviandoNotif(false)
   }
 
   async function enviarNotificacionInventario() {
@@ -749,6 +791,35 @@ export default function NuevaVenta() {
               <button onClick={() => setShowStock(false)} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:20, cursor:'pointer' }}>×</button>
             </div>
 
+            {/* Panel solicitud múltiple */}
+            {equiposSolicitados.length > 0 && (
+              <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:10, padding:'12px 16px', marginBottom:12 }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+                  <div style={{ color:'#f59e0b', fontSize:12, fontWeight:600 }}>
+                    🔔 Equipos a solicitar ({equiposSolicitados.length}/5)
+                  </div>
+                  {!solicitudEnviada ? (
+                    <button type="button" onClick={enviarSolicitudEquipos} disabled={enviandoNotif}
+                      style={{ padding:'6px 14px', background:'#f59e0b', border:'none', borderRadius:6, color:'#000', fontSize:11, fontWeight:700, cursor:'pointer' }}>
+                      {enviandoNotif ? '...' : 'Enviar solicitud a inventario →'}
+                    </button>
+                  ) : (
+                    <span style={{ color:'#10b981', fontSize:11, fontWeight:600 }}>✓ Solicitud enviada — esperando respuesta</span>
+                  )}
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                  {equiposSolicitados.map(e => (
+                    <div key={e.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#0a1628', borderRadius:6, padding:'5px 10px' }}>
+                      <span style={{ color:'#fff', fontSize:11', fontFamily:'monospace' }}>IMEI: {e.imei} — {e.color}</span>
+                      {!solicitudEnviada && (
+                        <button type="button" onClick={() => quitarDeSolicitud(e.id)} style={{ background:'transparent', border:'none', color:'#ef4444', fontSize:14, cursor:'pointer' }}>×</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
               {stockDisponible.map(eq => {
                 const cond = ESTADOS_EQUIPO.find(e => e.value === eq.estado_equipo)
@@ -791,10 +862,21 @@ export default function NuevaVenta() {
                         <div style={{ color:'#4a6a8a', fontSize:11 }}>{eq.proveedores.nombre}</div>
                       )}
                     </div>
-                    <button type="button" onClick={() => seleccionarEquipo(eq)}
-                      style={{ padding:'8px 16px', background:'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
-                      Seleccionar →
-                    </button>
+                    <div style={{ display:'flex', flexDirection:'column', gap:6, flexShrink:0 }}>
+                      <button type="button" onClick={() => seleccionarEquipo(eq)}
+                        style={{ padding:'7px 14px', background:'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:7, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
+                        ✓ Usar en venta
+                      </button>
+                      {!equiposSolicitados.find(e=>e.id===eq.id) && equiposSolicitados.length < 5 && (
+                        <button type="button" onClick={() => agregarAListaSolicitud(eq)}
+                          style={{ padding:'7px 14px', background:'transparent', border:'1px solid #f59e0b', borderRadius:7, color:'#f59e0b', fontSize:11, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
+                          🔔 Pedir a inventario
+                        </button>
+                      )}
+                      {equiposSolicitados.find(e=>e.id===eq.id) && (
+                        <span style={{ color:'#10b981', fontSize:11, textAlign:'center' }}>✓ En solicitud</span>
+                      )}
+                    </div>
                   </div>
                 )
               })}
