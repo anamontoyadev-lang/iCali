@@ -304,6 +304,42 @@ export default function NuevaVenta() {
   const asesoresFiltrados = form.canal === 'call_center' ? ASESORES.call_center : ASESORES.mostrador
   const colorFinal = colorPersonalizado ? form.color_custom : form.color
 
+  async function guardarBorrador() {
+    setSaving(true)
+    setError('')
+    try {
+      const user = (await supabase.auth.getUser()).data.user
+      if (!user) { setError('Sesión expirada'); setSaving(false); return }
+      const payload = {
+        registrado_por:    user.id,
+        fecha_venta:       form.fecha_venta,
+        canal:             form.canal,
+        asesor_id:         user.id,
+        asesor_nombre:     form.asesor_nombre || '',
+        cedula_cliente:    form.cedula_cliente || '',
+        nombre_cliente:    form.nombre_cliente || 'Borrador',
+        telefono_cliente:  form.telefono_cliente || '',
+        ciudad_cliente:    form.ciudad_cliente || '',
+        producto:          form.producto || '',
+        color:             colorFinal || '',
+        imei:              form.imei || '',
+        proveedor:         form.proveedor || '',
+        costo_equipo:      num(form.costo_equipo),
+        valor_venta:       num(form.valor_venta),
+        metodo_pago:       form.metodo_pago,
+        estado:            'registrada',
+        observaciones:     '[BORRADOR] ' + (form.observaciones || ''),
+        es_domicilio:      false,
+        tiene_retoma:      false,
+      }
+      const { error: errB } = await supabase.from('ventas').insert(payload)
+      if (errB) throw new Error(errB.message)
+      setSuccess(true)
+      setTimeout(() => navigate('/ventas'), 1500)
+    } catch(err) { setError(err.message) }
+    setSaving(false)
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
@@ -542,11 +578,23 @@ export default function NuevaVenta() {
               <input style={inp} value={form.imei} onChange={e => set('imei', e.target.value)} placeholder="15 dígitos" required />
             </Field>
 
-            <Field label="Proveedor" required>
-              <select style={sel} value={form.proveedor} onChange={e => set('proveedor', e.target.value)} required>
+            <Field label="Proveedor">
+              <select style={sel} value={form._prov_nuevo ? '__nuevo__' : form.proveedor}
+                onChange={e => {
+                  if (e.target.value === '__nuevo__') { set('_prov_nuevo', true); set('proveedor','') }
+                  else { set('_prov_nuevo', false); set('proveedor', e.target.value) }
+                }}>
                 <option value="">Seleccionar...</option>
                 {proveedores.map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+                <option value="__nuevo__">✏️ Agregar proveedor nuevo...</option>
               </select>
+              {form._prov_nuevo && (
+                <input style={{ ...inp, marginTop:6 }}
+                  placeholder="Nombre del proveedor"
+                  value={form.proveedor}
+                  onChange={e => set('proveedor', e.target.value)}
+                  autoFocus />
+              )}
             </Field>
 
             {/* Costo solo si el equipo NO viene del inventario */}
@@ -662,8 +710,11 @@ export default function NuevaVenta() {
           <div style={{ margin:'16px 0', padding:'12px 16px', background:'rgba(244,63,94,0.1)', border:'1px solid rgba(244,63,94,0.3)', borderRadius:8, color:'#f87171', fontSize:13 }}>{error}</div>
         )}
 
-        <div style={{ display:'flex', gap:12, marginTop:20 }}>
+        <div style={{ display:'flex', gap:12, marginTop:20, flexWrap:'wrap' }}>
           <button type="button" onClick={() => navigate('/ventas')} style={{ padding:'12px 24px', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:14, cursor:'pointer' }}>Cancelar</button>
+          <button type="button" disabled={saving} onClick={() => guardarBorrador()} style={{ padding:'12px 24px', background:'transparent', border:'1px solid #f59e0b', borderRadius:8, color:'#f59e0b', fontSize:14, cursor:'pointer' }}>
+            ⏸ Pausar venta
+          </button>
           <button type="submit" disabled={saving} style={{ padding:'12px 32px', background: saving ? '#1e3058' : 'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:14, fontWeight:600, cursor:'pointer' }}>
             {saving ? 'Guardando...' : 'Registrar venta ✓'}
           </button>

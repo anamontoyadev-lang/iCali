@@ -4,51 +4,88 @@ import { supabase } from '../lib/supabase'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState(null)
-  const [perfil, setPerfil]   = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [session, setSession]   = useState(null)
+  const [perfil,  setPerfil]    = useState(null)
+  const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session) fetchPerfil(session.user.id)
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+      if (data.session) fetchPerfil(data.session.user.id)
       else setLoading(false)
     })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       if (session) fetchPerfil(session.user.id)
       else { setPerfil(null); setLoading(false) }
     })
-    return () => subscription.unsubscribe()
+
+    return () => listener.subscription.unsubscribe()
   }, [])
 
-  async function fetchPerfil(uid) {
-    const { data } = await supabase.from('perfiles').select('*').eq('id', uid).single()
+  async function fetchPerfil(userId) {
+    const { data } = await supabase
+      .from('perfiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
     setPerfil(data)
     setLoading(false)
   }
 
-  const rol = perfil?.rol ?? null
+  async function login(email, password) {
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    return error
+  }
 
-  // Helpers de permisos
-  const esAdmin        = rol === 'admin'
-  const esLiderAdmin   = ['admin','lider_admin'].includes(rol)
-  const esLiderCom     = ['admin','lider_comercial'].includes(rol)
-  const esContadora    = ['admin','contadora'].includes(rol)
-  const esAsesor       = ['asesor_mostrador','asesor_call_center'].includes(rol)
-  const puedeVerFinancieras = ['admin','lider_admin','contadora','lider_comercial'].includes(rol)
-  const puedeVerDespachos   = ['admin','lider_admin','lider_comercial','contadora',
-                               'asesor_mostrador','asesor_call_center'].includes(rol)
+  async function logout() {
+    await supabase.auth.signOut()
+    setPerfil(null)
+  }
+
+  const rol = perfil?.rol || ''
+
+  const esAdmin         = rol === 'admin'
+  const esLiderAdmin    = rol === 'lider_admin'
+  const esLiderCom      = rol === 'lider_comercial'
+  const esContadora     = rol === 'contadora'
+  const esAsesor        = rol === 'asesor' || rol === 'asesor_mostrador' || rol === 'asesor_call_center'
+  const esAsesorCall    = rol === 'asesor_call_center' || rol === 'asesor'
+  const esAsesorMostrador = rol === 'asesor_mostrador'
+  const esGarantias     = rol === 'garantias'
+
+  // Permisos de inventario
+  const puedeVerInventario    = true // todos pueden ver
+  const puedeEditarInventario = esAdmin || esLiderAdmin || esLiderCom
+
+  // Permisos financieras
+  const puedeVerFinancieras   = esAdmin || esLiderAdmin || esLiderCom || esContadora
+
+  // Permisos despachos
+  const puedeVerDespachos     = true // todos pueden ver
+
+  // Compat con código viejo
+  const isAdmin  = esAdmin
+  const isAsesor = esAsesor
 
   return (
     <AuthContext.Provider value={{
-      session, perfil, rol, loading,
-      esAdmin, esLiderAdmin, esLiderCom, esContadora, esAsesor,
-      puedeVerFinancieras, puedeVerDespachos
+      session, perfil, loading,
+      esAdmin, esLiderAdmin, esLiderCom, esContadora,
+      esAsesor, esAsesorCall, esAsesorMostrador, esGarantias,
+      puedeVerInventario, puedeEditarInventario,
+      puedeVerFinancieras, puedeVerDespachos,
+      isAdmin, isAsesor,
+      login, logout
     }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
-export const useAuth = () => useContext(AuthContext)
+export const useAuth = () => {
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth debe usarse dentro de AuthProvider')
+  return ctx
+}

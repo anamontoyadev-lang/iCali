@@ -76,7 +76,7 @@ const INIT_FORM = {
 }
 
 export default function Inventario() {
-  const { esAdmin, esLiderAdmin } = useAuth()
+  const { esAdmin, esLiderAdmin, puedeEditarInventario } = useAuth()
   const [proveedores, setProveedores]       = useState([])
   const [compras, setCompras]               = useState([])
   const [loading, setLoading]               = useState(true)
@@ -299,7 +299,7 @@ export default function Inventario() {
   const totalDisp  = compras.filter(c => c.estado === 'disponible').length
   const totalVend  = compras.filter(c => c.estado === 'vendido').length
   const valorStock = compras.filter(c => c.estado === 'disponible').reduce((a,c) => a + Number(c.costo||0), 0)
-  const puedeEditar = esAdmin || esLiderAdmin
+  const puedeEditar = puedeEditarInventario || esAdmin || esLiderAdmin
 
   const th = { color:'#4a6a8a', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', padding:'10px 14px', textAlign:'left', borderBottom:'1px solid #1a2f52', whiteSpace:'nowrap' }
   const td = { padding:'10px 14px', color:'#cbd5e1', fontSize:13, borderBottom:'1px solid #0f1e36' }
