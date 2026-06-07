@@ -25,65 +25,71 @@ export default function Dashboard() {
   useEffect(() => { loadAll() }, [])
 
   async function loadAll() {
-    const hoy  = new Date().toISOString().split('T')[0]
-    const mes  = hoy.slice(0,7)+'-01'
-    const user = (await supabase.auth.getUser()).data.user
+    try {
+      const hoy  = new Date().toISOString().split('T')[0]
+      const mes  = hoy.slice(0,7)+'-01'
+      const user = (await supabase.auth.getUser()).data.user
 
-    let qVHoy = supabase.from('ventas').select('id,valor_venta').eq('fecha_venta',hoy)
-    let qVMes = supabase.from('ventas').select('id,valor_venta,costo_equipo').gte('fecha_venta',mes)
-    let qRec  = supabase.from('ventas').select('fecha_venta,nombre_cliente,producto,valor_venta,asesor_nombre,canal').order('created_at',{ascending:false}).limit(6)
+      const esAsesorPuro = (esAsesorCall || esAsesorMostrador) && !esAdmin && !esLiderAdmin && !esLiderCom
 
-    const esAsesorPuro = (esAsesorCall || esAsesorMostrador) && !esAdmin && !esLiderAdmin && !esLiderCom
-    if (esAsesorPuro && user) {
-      qVHoy = qVHoy.eq('asesor_id', user.id)
-      qVMes = qVMes.eq('asesor_id', user.id)
-      qRec  = qRec.eq('asesor_id', user.id)
+      // Ventas hoy
+      let qHoy = supabase.from('ventas').select('id').eq('fecha_venta', hoy).neq('estado','anulada').neq('estado','desistida')
+      if (esAsesorPuro && user) qHoy = qHoy.eq('asesor_id', user.id)
+      const { data: dHoy } = await qHoy
+
+      // Ventas mes
+      let qMes = supabase.from('ventas').select('id,valor_venta,costo_equipo,asesor_nombre,fecha_venta').gte('fecha_venta', mes).neq('estado','anulada').neq('estado','desistida')
+      if (esAsesorPuro && user) qMes = qMes.eq('asesor_id', user.id)
+      const { data: dMes } = await qMes
+
+      // Ventas recientes
+      let qRec = supabase.from('ventas').select('fecha_venta,nombre_cliente,producto,valor_venta,asesor_nombre,canal').order('created_at',{ascending:false}).limit(6)
+      if (esAsesorPuro && user) qRec = qRec.eq('asesor_id', user.id)
+      const { data: dRec } = await qRec
+
+      // Despachos
+      const { data: dDesp } = await supabase.from('despachos').select('id,estado')
+      // Lab
+      const { data: dLab } = await supabase.from('garantias_reparaciones').select('id,estado')
+      // Inventario
+      const { data: dInv } = await supabase.from('compras_proveedor').select('id,costo').eq('estado','disponible')
+      // Notificaciones
+      const { data: dNotifs } = await supabase.from('notificaciones').select('*').order('created_at',{ascending:false}).limit(10)
+
+      const valorMes  = (dMes||[]).reduce((a,v)=>a+Number(v.valor_venta||0),0)
+      const costoMes  = (dMes||[]).reduce((a,v)=>a+Number(v.costo_equipo||0),0)
+      const valorStock = (dInv||[]).reduce((a,v)=>a+Number(v.costo||0),0)
+      const despachosPend = (dDesp||[]).filter(d=>['pendiente','en_preparacion','en_transito','recogido'].includes(d.estado)).length
+      const labActivos = (dLab||[]).filter(g=>['recibido','diagnostico','en_reparacion','esperando_parte'].includes(g.estado)).length
+
+      setContadores({
+        ventasHoy:    (dHoy||[]).length,
+        ventasMes:    (dMes||[]).length,
+        valorMes, utilidadMes: valorMes - costoMes,
+        despachos:    (dDesp||[]).length,
+        despachosPend,
+        lab:          labActivos,
+        inventario:   (dInv||[]).length,
+        valorStock,
+        finPendientes: 0,
+      })
+      setNotifs(dNotifs||[])
+      setResumen({ ventasRecientes: dRec||[] })
+
+      // Financieras por separado para no bloquear si falla
+      if (puedeVerFinancieras) {
+        try {
+          const { data: dFin } = await supabase.from('financieras_pagos').select('id').eq('estado_desembolso','pendiente')
+          setContadores(prev => ({ ...prev, finPendientes: (dFin||[]).length }))
+        } catch(_) {}
+      }
+    } catch(err) {
+      console.error('Dashboard loadAll error:', err)
     }
-
-    const [
-      { data: dVHoy },
-      { data: dVMes },
-      { count: cDesp },
-      { count: cDespPend },
-      { count: cLab },
-      { data: dInv },
-      { count: cRetomas },
-      { data: dRec },
-      { data: dNotifs },
-      { count: cFin },
-    ] = await Promise.all([
-      qVHoy,
-      qVMes,
-      supabase.from('despachos').select('id',{count:'exact',head:true}),
-      supabase.from('despachos').select('id',{count:'exact',head:true}).in('estado',['pendiente','en_preparacion','en_transito','recogido']),
-      supabase.from('garantias_reparaciones').select('id',{count:'exact',head:true}).in('estado',['recibido','diagnostico','en_reparacion','esperando_parte']),
-      supabase.from('compras_proveedor').select('costo').eq('estado','disponible'),
-      supabase.from('retomas').select('id',{count:'exact',head:true}).in('estado',['recibida','en_verificacion','en_reparacion']),
-      qRec,
-      supabase.from('notificaciones').select('*').order('created_at',{ascending:false}).limit(10),
-      puedeVerFinancieras
-        ? supabase.from('financieras_pagos').select('id',{count:'exact',head:true}).eq('estado_desembolso','pendiente')
-        : Promise.resolve({count:0}),
-    ])
-
-    const valorMes   = (dVMes||[]).reduce((a,v)=>a+Number(v.valor_venta||0),0)
-    const costoMes   = (dVMes||[]).reduce((a,v)=>a+Number(v.costo_equipo||0),0)
-    const valorStock = (dInv||[]).reduce((a,v)=>a+Number(v.costo||0),0)
-
-    setContadores({
-      ventasHoy: (dVHoy||[]).length, ventasMes: (dVMes||[]).length,
-      valorMes, utilidadMes: valorMes - costoMes,
-      despachos: cDesp||0, despachosPend: cDespPend||0,
-      lab: cLab||0, retomas: cRetomas||0,
-      inventario: (dInv||[]).length, valorStock,
-      finPendientes: cFin||0,
-    })
-    setNotifs(dNotifs||[])
-    setResumen({ ventasRecientes: dRec||[] })
     setLoading(false)
   }
 
-  async function responderNotif(id, respuesta) {
+    async function responderNotif(id, respuesta) {
     const user = (await supabase.auth.getUser()).data.user
     await supabase.from('notificaciones').update({
       respondida: true, respuesta,
