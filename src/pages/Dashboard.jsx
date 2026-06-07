@@ -26,7 +26,10 @@ export default function Dashboard() {
 
   async function loadAll() {
     try {
-      const hoy  = new Date().toISOString().split('T')[0]
+      // Fecha en hora Colombia (UTC-5)
+      const ahora = new Date()
+      const bogota = new Date(ahora.getTime() - 5 * 60 * 60 * 1000)
+      const hoy  = bogota.toISOString().split('T')[0]
       const mes  = hoy.slice(0,7)+'-01'
       const user = (await supabase.auth.getUser()).data.user
 
@@ -54,7 +57,13 @@ export default function Dashboard() {
       // Inventario
       const { data: dInv } = await supabase.from('compras_proveedor').select('id,costo').eq('estado','disponible')
       // Notificaciones
-      const { data: dNotifs } = await supabase.from('notificaciones').select('*').order('created_at',{ascending:false}).limit(10)
+      // Notificaciones: admins ven todas, asesores solo las suyas o generales
+      const esAdminNot = esAdmin || esLiderAdmin || esLiderCom
+      let qNotifs = supabase.from('notificaciones').select('*').order('created_at',{ascending:false}).limit(10)
+      if (!esAdminNot && user) {
+        qNotifs = qNotifs.or(`creado_por.eq.${user.id},destinatario_rol.eq.${perfil?.rol || ''}`)
+      }
+      const { data: dNotifs } = await qNotifs
 
       const valorMes  = (dMes||[]).reduce((a,v)=>a+Number(v.valor_venta||0),0)
       const costoMes  = (dMes||[]).reduce((a,v)=>a+Number(v.costo_equipo||0),0)

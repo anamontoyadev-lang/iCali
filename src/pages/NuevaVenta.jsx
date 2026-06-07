@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { logActividad, logVenta } from '../lib/drive'
+import { useAuth } from '../lib/AuthContext'
 
 const ASESORES = {
   call_center: [
@@ -156,11 +157,15 @@ function Section({ title, children }) {
 }
 
 export default function NuevaVenta() {
-  const { perfil } = useAuth()
+  const { perfil, esAsesorCall, esAsesorMostrador, esAdmin, esLiderAdmin, esLiderCom } = useAuth()
   const navigate   = useNavigate()
+  const esAsesorPuro = (esAsesorCall || esAsesorMostrador) && !esAdmin && !esLiderAdmin && !esLiderCom
+  const nombreAsesor = perfil?.nombre ? `${perfil.nombre} ${perfil.apellido || ''}`.trim() : ''
+
   const [form, setForm] = useState({
     ...INIT,
-    asesor_nombre: perfil?.nombre ? `${perfil.nombre} ${perfil.apellido || ''}`.trim() : ''
+    asesor_nombre: nombreAsesor,
+    canal: esAsesorCall ? 'call_center' : esAsesorMostrador ? 'mostrador' : 'mostrador',
   })
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState('')
@@ -457,18 +462,30 @@ export default function NuevaVenta() {
             <Field label="Fecha de entrega">
               <input type="date" style={inp} value={form.fecha_entrega} onChange={e => set('fecha_entrega', e.target.value)} />
             </Field>
-            <Field label="Canal de venta" required>
-              <select style={sel} value={form.canal} onChange={e => { set('canal', e.target.value); set('asesor_nombre', '') }}>
-                <option value="mostrador">Mostrador</option>
-                <option value="call_center">Call Center</option>
-              </select>
-            </Field>
-            <Field label="Asesor" required>
-              <select style={sel} value={form.asesor_nombre} onChange={e => set('asesor_nombre', e.target.value)} required>
-                <option value="">Seleccionar asesor...</option>
-                {asesoresFiltrados.map(a => <option key={a} value={a}>{a}</option>)}
-              </select>
-            </Field>
+            {!esAsesorPuro ? (
+              <Field label="Canal de venta" required>
+                <select style={sel} value={form.canal} onChange={e => { set('canal', e.target.value); set('asesor_nombre', '') }}>
+                  <option value="mostrador">Mostrador</option>
+                  <option value="call_center">Call Center</option>
+                </select>
+              </Field>
+            ) : (
+              <Field label="Canal">
+                <div style={{ ...inp, color:'#8aabcc' }}>{form.canal === 'call_center' ? 'Call Center' : 'Mostrador'}</div>
+              </Field>
+            )}
+            {!esAsesorPuro ? (
+              <Field label="Asesor" required>
+                <select style={sel} value={form.asesor_nombre} onChange={e => set('asesor_nombre', e.target.value)} required>
+                  <option value="">Seleccionar asesor...</option>
+                  {asesoresFiltrados.map(a => <option key={a} value={a}>{a}</option>)}
+                </select>
+              </Field>
+            ) : (
+              <Field label="Asesor">
+                <div style={{ ...inp, color:'#10b981', fontWeight:500 }}>{form.asesor_nombre}</div>
+              </Field>
+            )}
             <Field label="# Factura">
               <input style={inp} value={form.no_factura} onChange={e => set('no_factura', e.target.value)} />
             </Field>
