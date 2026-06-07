@@ -810,7 +810,7 @@ export default function NuevaVenta() {
                 <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
                   {equiposSolicitados.map(e => (
                     <div key={e.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#0a1628', borderRadius:6, padding:'5px 10px' }}>
-                      <span style={{ color:'#fff', fontSize:11', fontFamily:'monospace' }}>IMEI: {e.imei} — {e.color}</span>
+                      <span style={{ color:'#fff', fontSize:11, fontFamily:'monospace' }}>IMEI: {e.imei} — {e.color}</span>
                       {!solicitudEnviada && (
                         <button type="button" onClick={() => quitarDeSolicitud(e.id)} style={{ background:'transparent', border:'none', color:'#ef4444', fontSize:14, cursor:'pointer' }}>×</button>
                       )}
