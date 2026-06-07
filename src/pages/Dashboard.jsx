@@ -59,7 +59,7 @@ export default function Dashboard() {
       supabase.from('compras_proveedor').select('costo').eq('estado','disponible'),
       supabase.from('retomas').select('id',{count:'exact',head:true}).in('estado',['recibida','en_verificacion','en_reparacion']),
       qRec,
-      supabase.from('notificaciones').select('*').eq('respondida',false).order('created_at',{ascending:false}).limit(10),
+      supabase.from('notificaciones').select('*').order('created_at',{ascending:false}).limit(10),
       puedeVerFinancieras
         ? supabase.from('financieras_pagos').select('id',{count:'exact',head:true}).eq('estado_desembolso','pendiente')
         : Promise.resolve({count:0}),
@@ -179,46 +179,71 @@ export default function Dashboard() {
           {/* NOTIFICACIONES */}
           {notifs.length > 0 && (
             <div style={{ marginBottom:28 }}>
-              <div style={{ color:'#3a5a7a', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:12 }}>
-                Notificaciones ({notifs.length})
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+                <div style={{ color:'#3a5a7a', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em' }}>
+                  Notificaciones
+                  {notifs.filter(n=>!n.respondida).length > 0 && (
+                    <span style={{ marginLeft:8, background:'#ef4444', color:'#fff', fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:10 }}>
+                      {notifs.filter(n=>!n.respondida).length} nueva{notifs.filter(n=>!n.respondida).length>1?'s':''}
+                    </span>
+                  )}
+                </div>
+                <span style={{ color:'#4a6a8a', fontSize:11 }}>Últimas {notifs.length}</span>
               </div>
-              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                {notifs.map(n => (
-                  <div key={n.id} style={{
-                    background:'#0d1a35',
-                    border: `1px solid ${n.tipo==='EQUIPO_LISTO_LABORATORIO'?'#10b981':n.tipo==='SOLICITUD_EQUIPO'?'#f59e0b':'#1a2f52'}`,
-                    borderRadius:10, padding:'12px 16px',
-                    display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap',
-                  }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                      <span style={{ fontSize:18 }}>
-                        {n.tipo==='EQUIPO_LISTO_LABORATORIO'?'🔬':n.tipo==='SOLICITUD_EQUIPO'?'🔔':'📌'}
-                      </span>
-                      <div>
-                        <div style={{ color:'#fff', fontSize:13, fontWeight:500 }}>{n.mensaje}</div>
-                        <div style={{ color:'#4a6a8a', fontSize:11, marginTop:2 }}>
-                          {n.datos?.producto && <span>{n.datos.producto} </span>}
-                          {n.datos?.imei && <span style={{ fontFamily:'monospace' }}>· {n.datos.imei}</span>}
-                          {n.datos?.cliente && <span> · {n.datos.cliente}</span>}
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                {notifs.map(n => {
+                  const pendiente = !n.respondida
+                  const icono = n.tipo==='EQUIPO_LISTO_LABORATORIO'?'🔬':n.tipo==='SOLICITUD_EQUIPO'?'🔔':'📌'
+                  const borderColor = pendiente
+                    ? (n.tipo==='EQUIPO_LISTO_LABORATORIO'?'#10b981':n.tipo==='SOLICITUD_EQUIPO'?'#f59e0b':'#3b82f6')
+                    : '#1a2f52'
+                  return (
+                    <div key={n.id} style={{
+                      background: pendiente ? '#0d1a35' : '#080f20',
+                      border: `1px solid ${borderColor}`,
+                      borderRadius:10, padding:'10px 14px',
+                      display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap',
+                      opacity: pendiente ? 1 : 0.6,
+                    }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:10, flex:1, minWidth:0 }}>
+                        <span style={{ fontSize:16, flexShrink:0 }}>{icono}</span>
+                        <div style={{ minWidth:0 }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                            <span style={{ color: pendiente?'#fff':'#8aabcc', fontSize:12, fontWeight: pendiente?500:400 }}>{n.mensaje}</span>
+                            {pendiente
+                              ? <span style={{ background:'#f59e0b22', color:'#f59e0b', fontSize:9, fontWeight:700, padding:'1px 5px', borderRadius:4, flexShrink:0 }}>PENDIENTE</span>
+                              : <span style={{ background:'#10b98122', color:'#10b981', fontSize:9, fontWeight:700, padding:'1px 5px', borderRadius:4, flexShrink:0 }}>
+                                  {n.respuesta==='ingresado'?'INGRESADO':n.respuesta==='si'?'ATENDIDO':n.respuesta==='no'?'NO DISPONIBLE':'LEÍDA'}
+                                </span>
+                            }
+                          </div>
+                          <div style={{ color:'#4a6a8a', fontSize:10, marginTop:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                            {n.datos?.producto && <span>{n.datos.producto}</span>}
+                            {n.datos?.imei && <span style={{ fontFamily:'monospace' }}> · {n.datos.imei}</span>}
+                            {n.datos?.cliente && <span> · {n.datos.cliente}</span>}
+                            <span style={{ marginLeft:6 }}>{new Date(n.created_at).toLocaleDateString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
+                          </div>
                         </div>
                       </div>
+                      {pendiente && (
+                        <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+                          {n.tipo === 'SOLICITUD_EQUIPO' && (
+                            <>
+                              <button onClick={() => responderNotif(n.id,'no')} style={{ padding:'5px 10px', background:'transparent', border:'1px solid #ef4444', borderRadius:6, color:'#ef4444', fontSize:11, fontWeight:600, cursor:'pointer' }}>✗</button>
+                              <button onClick={() => responderNotif(n.id,'si')} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>✓ Voy</button>
+                            </>
+                          )}
+                          {n.tipo === 'EQUIPO_LISTO_LABORATORIO' && (
+                            <button onClick={() => navigate('/laboratorio')} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>Ver lab →</button>
+                          )}
+                          {!['SOLICITUD_EQUIPO','EQUIPO_LISTO_LABORATORIO'].includes(n.tipo) && (
+                            <button onClick={() => responderNotif(n.id,'leida')} style={{ padding:'5px 10px', background:'#1a2f52', border:'none', borderRadius:6, color:'#8aabcc', fontSize:11, cursor:'pointer' }}>✓ Leída</button>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div style={{ display:'flex', gap:8, flexShrink:0 }}>
-                      {n.tipo === 'SOLICITUD_EQUIPO' && (
-                        <>
-                          <button onClick={() => responderNotif(n.id,'no')} style={{ padding:'6px 12px', background:'transparent', border:'1px solid #ef4444', borderRadius:6, color:'#ef4444', fontSize:11, fontWeight:600, cursor:'pointer' }}>✗ No disponible</button>
-                          <button onClick={() => responderNotif(n.id,'si')} style={{ padding:'6px 12px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>✓ Voy</button>
-                        </>
-                      )}
-                      {n.tipo === 'EQUIPO_LISTO_LABORATORIO' && (
-                        <button onClick={() => navigate('/laboratorio')} style={{ padding:'6px 12px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>Ver en lab →</button>
-                      )}
-                      {!['SOLICITUD_EQUIPO','EQUIPO_LISTO_LABORATORIO'].includes(n.tipo) && (
-                        <button onClick={() => responderNotif(n.id,'leida')} style={{ padding:'6px 12px', background:'#1a2f52', border:'none', borderRadius:6, color:'#8aabcc', fontSize:11, cursor:'pointer' }}>✓ Marcar leída</button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
