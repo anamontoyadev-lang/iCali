@@ -300,6 +300,37 @@ export default function Laboratorio() {
       fecha_entrega_estimada: editFormG.fecha_entrega_estimada || null,
       fecha_entrega_real: editFormG.fecha_entrega_real || null,
     }).eq('id', editandoG)
+
+    // Si el estado es 'listo', enviar notificacion a inventario
+    if (editFormG.estado === 'listo') {
+      const garantia = garantias.find(g => g.id === editandoG)
+      const user = (await supabase.auth.getUser()).data.user
+      // Verificar que no exista ya una notificacion pendiente para este equipo
+      const { data: existe } = await supabase.from('notificaciones')
+        .select('id').eq('tipo', 'EQUIPO_LISTO_LABORATORIO')
+        .eq('respondida', false)
+        .filter('datos->imei', 'eq', garantia?.imei || '')
+        .limit(1)
+      if (!existe || existe.length === 0) {
+        await supabase.from('notificaciones').insert({
+          tipo: 'EQUIPO_LISTO_LABORATORIO',
+          mensaje: 'Equipo listo en laboratorio — requiere ingreso a inventario',
+          datos: {
+            garantia_id:  editandoG,
+            imei:         garantia?.imei || '',
+            producto:     garantia?.producto || '',
+            cliente:      garantia?.cliente || '',
+            diagnostico:  editFormG.diagnostico || '',
+            solucion:     editFormG.solucion || '',
+            repuestos:    editFormG.repuestos || [],
+          },
+          creado_por:        user.id,
+          creado_por_nombre: 'Laboratorio',
+          destinatario_rol:  'inventario',
+        })
+      }
+    }
+
     setEditandoG(null); loadGarantias()
   }
 
