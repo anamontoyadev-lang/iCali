@@ -29,11 +29,12 @@ export default function Dashboard() {
     const mes  = hoy.slice(0,7)+'-01'
     const user = (await supabase.auth.getUser()).data.user
 
-    let qVHoy = supabase.from('ventas').select('id').eq('fecha_venta',hoy).not('estado','in','("anulada","desistida")')
-    let qVMes = supabase.from('ventas').select('id,valor_venta,costo_equipo').gte('fecha_venta',mes).not('estado','in','("anulada","desistida")')
+    let qVHoy = supabase.from('ventas').select('id,valor_venta').eq('fecha_venta',hoy)
+    let qVMes = supabase.from('ventas').select('id,valor_venta,costo_equipo').gte('fecha_venta',mes)
     let qRec  = supabase.from('ventas').select('fecha_venta,nombre_cliente,producto,valor_venta,asesor_nombre,canal').order('created_at',{ascending:false}).limit(6)
 
-    if ((esAsesor || esAsesorCall || esAsesorMostrador) && user) {
+    const esAsesorPuro = (esAsesorCall || esAsesorMostrador) && !esAdmin && !esLiderAdmin && !esLiderCom
+    if (esAsesorPuro && user) {
       qVHoy = qVHoy.eq('asesor_id', user.id)
       qVMes = qVMes.eq('asesor_id', user.id)
       qRec  = qRec.eq('asesor_id', user.id)
