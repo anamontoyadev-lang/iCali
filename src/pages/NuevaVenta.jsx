@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { logActividad, logVenta } from '../lib/drive'
-import { useAuth } from '../lib/AuthContext'
 
 const ASESORES = {
   call_center: [
