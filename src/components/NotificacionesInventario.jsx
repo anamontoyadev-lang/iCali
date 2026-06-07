@@ -71,6 +71,41 @@ export default function NotificacionesInventario() {
     })
   }
 
+  async function confirmarBajarEquipos(notif) {
+    const user = (await supabase.auth.getUser()).data.user
+    const d = notif.datos || {}
+    const equipos = d.equipos || (d.imei ? [{ imei: d.imei }] : [])
+    for (const eq of equipos) {
+      if (eq.imei) {
+        await supabase.from('compras_proveedor').update({
+          estado: 'con_asesor',
+          con_asesor: d.asesor || notif.creado_por_nombre,
+          fecha_prestamo: new Date().toISOString(),
+        }).eq('imei', eq.imei).eq('estado', 'disponible')
+      }
+    }
+    await supabase.from('notificaciones').update({
+      respondida: true, respuesta: 'si',
+      respondido_por: user?.email || 'inventario',
+    }).eq('id', notif.id)
+    loadNotifs()
+  }
+
+  async function confirmarRecogida(notif) {
+    const user = (await supabase.auth.getUser()).data.user
+    const d = notif.datos || {}
+    if (d.imei) {
+      await supabase.from('compras_proveedor').update({
+        estado: 'disponible', con_asesor: null, fecha_prestamo: null,
+      }).eq('imei', d.imei)
+    }
+    await supabase.from('notificaciones').update({
+      respondida: true, respuesta: 'recogido',
+      respondido_por: user?.email || 'inventario',
+    }).eq('id', notif.id)
+    loadNotifs()
+  }
+
   async function confirmarIngreso(e) {
     e.preventDefault()
     setGuardando(true)
