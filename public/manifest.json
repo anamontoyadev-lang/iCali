@@ -1,0 +1,25 @@
+{
+  "short_name": "iCali",
+  "name": "iCali Portal Comercial",
+  "description": "Portal de gestión comercial iCali Tecnología",
+  "icons": [
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0a1628",
+  "background_color": "#060d1f",
+  "orientation": "portrait",
+  "lang": "es"
+}
