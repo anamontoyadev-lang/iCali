@@ -33,12 +33,12 @@ export default function Dashboard() {
       const esAsesorPuro = (esAsesorCall || esAsesorMostrador) && !esAdmin && !esLiderAdmin && !esLiderCom
 
       // Ventas hoy
-      let qHoy = supabase.from('ventas').select('id').eq('fecha_venta', hoy).neq('estado','anulada').neq('estado','desistida')
+      let qHoy = supabase.from('ventas').select('id').eq('fecha_venta', hoy).neq('estado','anulada')
       if (esAsesorPuro && user) qHoy = qHoy.eq('asesor_id', user.id)
       const { data: dHoy } = await qHoy
 
       // Ventas mes
-      let qMes = supabase.from('ventas').select('id,valor_venta,costo_equipo,asesor_nombre,fecha_venta').gte('fecha_venta', mes).neq('estado','anulada').neq('estado','desistida')
+      let qMes = supabase.from('ventas').select('id,valor_venta,costo_equipo,asesor_nombre,fecha_venta').gte('fecha_venta', mes).neq('estado','anulada')
       if (esAsesorPuro && user) qMes = qMes.eq('asesor_id', user.id)
       const { data: dMes } = await qMes
 
