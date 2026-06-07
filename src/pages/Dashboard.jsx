@@ -29,8 +29,8 @@ export default function Dashboard() {
     const mes  = hoy.slice(0,7)+'-01'
     const user = (await supabase.auth.getUser()).data.user
 
-    let qVHoy = supabase.from('ventas').select('id',{count:'exact',head:true}).eq('fecha_venta',hoy).in('estado',['registrada','en_proceso','entregada'])
-    let qVMes = supabase.from('ventas').select('id,valor_venta,costo_equipo',{count:'exact'}).gte('fecha_venta',mes).in('estado',['registrada','en_proceso','entregada'])
+    let qVHoy = supabase.from('ventas').select('id').eq('fecha_venta',hoy).not('estado','in','("anulada","desistida")')
+    let qVMes = supabase.from('ventas').select('id,valor_venta,costo_equipo').gte('fecha_venta',mes).not('estado','in','("anulada","desistida")')
     let qRec  = supabase.from('ventas').select('fecha_venta,nombre_cliente,producto,valor_venta,asesor_nombre,canal').order('created_at',{ascending:false}).limit(6)
 
     if ((esAsesor || esAsesorCall || esAsesorMostrador) && user) {
@@ -40,8 +40,8 @@ export default function Dashboard() {
     }
 
     const [
-      { count: cVHoy },
-      { data: dVMes, count: cVMes },
+      { data: dVHoy },
+      { data: dVMes },
       { count: cDesp },
       { count: cDespPend },
       { count: cLab },
@@ -70,7 +70,7 @@ export default function Dashboard() {
     const valorStock = (dInv||[]).reduce((a,v)=>a+Number(v.costo||0),0)
 
     setContadores({
-      ventasHoy: cVHoy||0, ventasMes: cVMes||0,
+      ventasHoy: (dVHoy||[]).length, ventasMes: (dVMes||[]).length,
       valorMes, utilidadMes: valorMes - costoMes,
       despachos: cDesp||0, despachosPend: cDespPend||0,
       lab: cLab||0, retomas: cRetomas||0,
