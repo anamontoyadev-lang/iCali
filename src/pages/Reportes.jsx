@@ -102,6 +102,7 @@ export default function Reportes() {
         { data: rData },
         { data: pData },
         { data: aData },
+        { data: solData },
       ] = await Promise.all([
         qVentas,
         supabase.from('compras_proveedor').select('*, proveedores(nombre)').order('created_at', { ascending:false }).limit(1000),
