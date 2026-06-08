@@ -204,11 +204,14 @@ export default function Inventario() {
 
       setMsgOk(`✓ Equipo registrado correctamente`)
       if (guardarYOtro && modoLote) {
-        // Mantener proveedor y factura, limpiar solo datos del equipo
-        setForm(f => ({ ...INIT_FORM, proveedor_id: f.proveedor_id, no_factura: f.no_factura }))
+        // Volver al escaner para el siguiente equipo del lote
+        setForm({ ...INIT_FORM, proveedor_id: lote.proveedor_id, no_factura: lote.no_factura })
+        setShowForm(false)
+        setEscaner(true)
       } else {
         setForm(INIT_FORM)
         setShowForm(false)
+        if (modoLote) setModoLote(false)
       }
       setFotos([])
       setFotoPreviews([])
@@ -467,16 +470,32 @@ export default function Inventario() {
       {escaner && (
         <EscanerSecuencial
           onComplete={(valores) => {
-            setForm(f => ({
-              ...f,
-              imei:        valores.imei        || '',
-              imei2:       valores.imei2       || '',
-              serial_caja: valores.serial_caja || '',
-            }))
+            if (modoLote) {
+              // En modo lote: mantener proveedor y factura del lote
+              setForm({
+                ...INIT_FORM,
+                proveedor_id: lote.proveedor_id,
+                no_factura:   lote.no_factura,
+                imei:         valores.imei        || '',
+                imei2:        valores.imei2       || '',
+                serial_caja:  valores.serial_caja || '',
+              })
+            } else {
+              setForm(f => ({
+                ...f,
+                imei:        valores.imei        || '',
+                imei2:       valores.imei2       || '',
+                serial_caja: valores.serial_caja || '',
+              }))
+            }
             setEscaner(false)
             setShowForm(true)
           }}
-          onClose={() => setEscaner(false)}
+          onClose={() => {
+            setEscaner(false)
+            // Si cancela el escaner en modo lote, volver al modal de lote
+            if (modoLote) setShowForm(false)
+          }}
         />
       )}
 
@@ -509,12 +528,21 @@ export default function Inventario() {
               <button
                 disabled={!lote.proveedor_id}
                 onClick={() => {
+                  setModoLote(true)
+                  setEscaner(true)
+                }}
+                style={{ padding:'9px 20px', background: lote.proveedor_id ? '#0d2a1a' : '#1e3058', border: `1px solid ${lote.proveedor_id ? '#10b981' : '#1a2f52'}`, borderRadius:8, color: lote.proveedor_id ? '#10b981' : '#4a6a8a', fontSize:13, fontWeight:600, cursor: lote.proveedor_id ? 'pointer' : 'default' }}>
+                📷 Escanear equipos del lote
+              </button>
+              <button
+                disabled={!lote.proveedor_id}
+                onClick={() => {
                   setForm({ ...INIT_FORM, proveedor_id: lote.proveedor_id, no_factura: lote.no_factura })
                   setFotos([]); setFotoPreviews([])
                   setShowForm(true)
                 }}
-                style={{ padding:'9px 24px', background: lote.proveedor_id ? 'linear-gradient(135deg,#10b981,#059669)' : '#1e3058', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor: lote.proveedor_id ? 'pointer' : 'default' }}>
-                Iniciar lote → Agregar equipos
+                style={{ padding:'9px 20px', background: lote.proveedor_id ? 'linear-gradient(135deg,#10b981,#059669)' : '#1e3058', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor: lote.proveedor_id ? 'pointer' : 'default' }}>
+                ✏️ Ingresar manual
               </button>
             </div>
           </div>
@@ -688,7 +716,7 @@ export default function Inventario() {
                 <button type="button" onClick={() => { setShowForm(false); setFotos([]); setFotoPreviews([]) }} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>Cancelar</button>
                 {modoLote && (
                   <button type="submit" name="otro" disabled={saving} style={{ padding:'9px 20px', background: saving?'#1e3058':'#0d2a1a', border:'1px solid #10b981', borderRadius:8, color:'#10b981', fontSize:13, fontWeight:600, cursor:'pointer' }}>
-                    {saving ? '...' : '✓ Guardar y agregar otro'}
+                    {saving ? '...' : modoLote ? '✓ Guardar y escanear siguiente' : '✓ Guardar y agregar otro'}
                   </button>
                 )}
                 <button type="submit" disabled={saving} style={{ padding:'9px 24px', background: saving ? '#1e3058' : 'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>
