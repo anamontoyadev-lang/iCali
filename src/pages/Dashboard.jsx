@@ -15,7 +15,7 @@ const fmtK = n => {
 
 export default function Dashboard() {
   const { perfil, esAsesor, esAsesorCall, esAsesorMostrador, esAdmin,
-          esLiderCom, esLiderAdmin, esContadora, esGarantias,
+          esLiderCom, esLiderAdmin, esContadora, esGarantias, esInventarioRol,
           puedeVerFinancieras, puedeVerDespachos } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
@@ -259,7 +259,7 @@ export default function Dashboard() {
                       {n.tipo === 'EQUIPO_LISTO_LABORATORIO' && (
                         <button onClick={() => navigate('/laboratorio')} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>Ver lab →</button>
                       )}
-                      {n.tipo === 'DEVOLUCION_EQUIPO' && (esAdmin || esLiderAdmin) && (
+                      {n.tipo === 'DEVOLUCION_EQUIPO' && (esAdmin || esLiderAdmin || esInventarioRol) && (
                         <button onClick={() => confirmarRecogidaDashboard(n)} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>✓ Confirmé recogida</button>
                       )}
                       {!['SOLICITUD_EQUIPO','EQUIPO_LISTO_LABORATORIO','DEVOLUCION_EQUIPO'].includes(n.tipo) && (

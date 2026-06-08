@@ -20,8 +20,8 @@ const inpS = {
 }
 
 export default function NotificacionesInventario() {
-  const { esAdmin, esLiderAdmin } = useAuth()
-  const esInventario = esAdmin || esLiderAdmin
+  const { esAdmin, esLiderAdmin, esInventarioRol } = useAuth()
+  const esInventario = esAdmin || esLiderAdmin || esInventarioRol
   const [minimizado, setMinimizado] = useState(false)
   const [notifs, setNotifs]         = useState([])
   const [formIngreso, setFormIngreso] = useState(null) // notif activa para ingresar

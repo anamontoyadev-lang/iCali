@@ -54,10 +54,11 @@ export function AuthProvider({ children }) {
   const esAsesorCall    = rol === 'asesor_call_center' || rol === 'asesor'
   const esAsesorMostrador = rol === 'asesor_mostrador'
   const esGarantias     = rol === 'garantias'
+  const esInventarioRol = rol === 'inventario'
 
   // Permisos de inventario
   const puedeVerInventario    = true // todos pueden ver
-  const puedeEditarInventario = esAdmin || esLiderAdmin || esLiderCom
+  const puedeEditarInventario = esAdmin || esLiderAdmin || esLiderCom || esInventarioRol
 
   // Permisos financieras
   const puedeVerFinancieras   = esAdmin || esLiderAdmin || esLiderCom || esContadora
@@ -76,6 +77,7 @@ export function AuthProvider({ children }) {
       esAsesor, esAsesorCall, esAsesorMostrador, esGarantias,
       puedeVerInventario, puedeEditarInventario,
       puedeVerFinancieras, puedeVerDespachos,
+      esInventarioRol,
       isAdmin, isAsesor,
       login, logout
     }}>

@@ -12,6 +12,7 @@ const ROLES_LABEL = {
   asesor_call_center: 'Asesor Call Center',
   garantias:          'Garantías y Reparaciones',
   laboratorio:        'Laboratorio',
+  inventario:         'Inventario',
 }
 
 export default function Layout() {
