@@ -96,6 +96,10 @@ export default function Inventario() {
   const [saving, setSaving]       = useState(false)
   const [msgOk, setMsgOk]         = useState('')
   const [msgErr, setMsgErr]       = useState('')
+  // Devolución a proveedor
+  const [confirmDev, setConfirmDev] = useState(null) // equipo a devolver
+  const [motivoDev, setMotivoDev]   = useState('')
+  const [guardandoDev, setGuardandoDev] = useState(false)
 
   // Escáner secuencial
   const [escaner, setEscaner] = useState(false)
@@ -158,6 +162,28 @@ export default function Inventario() {
       } catch(e) {}
     }
     return urls
+  }
+
+  async function devolverAProveedor() {
+    if (!motivoDev.trim()) return
+    setGuardandoDev(true)
+    const user = (await supabase.auth.getUser()).data.user
+    await supabase.from('compras_proveedor').update({
+      estado: 'devuelto',
+      observaciones: `DEVUELTO AL PROVEEDOR — ${motivoDev} | ${new Date().toLocaleDateString('es-CO')} | ${user?.email || ''}`,
+    }).eq('id', confirmDev.id)
+    await logInventario({
+      usuario:   user?.email || '',
+      producto:  confirmDev.producto,
+      imei:      confirmDev.imei,
+      proveedor: confirmDev.proveedores?.nombre || '',
+      costo:     confirmDev.costo,
+      accion:    'DEVOLUCION_PROVEEDOR',
+    })
+    setConfirmDev(null)
+    setMotivoDev('')
+    setGuardandoDev(false)
+    loadAll()
   }
 
   async function guardarEquipo(e) {
@@ -347,6 +373,7 @@ export default function Inventario() {
         {[
           { label:'Disponibles', val:totalDisp, color:'#10b981' },
           { label:'Vendidos', val:totalVend, color:'#4a6a8a' },
+          { label:'Devueltos', val:compras.filter(c=>c.estado==='devuelto').length, color:'#ef4444' },
           { label:'Total', val:compras.length, color:'#3b82f6' },
           { label:'Valor stock', val:fmt(valorStock), color:'#f59e0b', small:true },
         ].map(k => (
@@ -367,7 +394,7 @@ export default function Inventario() {
           <option value="">Todos los estados</option>
           <option value="disponible">Disponible</option>
           <option value="vendido">Vendido</option>
-          <option value="devuelto">Devuelto</option>
+          <option value="devuelto">Devuelto al proveedor</option>
         </select>
         <select value={filtroEstadoEq} onChange={e => setFiltroEstadoEq(e.target.value)} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 12px', color: filtroEstadoEq ? '#fff' : '#4a6a8a', fontSize:13, cursor:'pointer' }}>
           <option value="">Condición del equipo</option>
@@ -403,6 +430,7 @@ export default function Inventario() {
                 <th style={th}>Factura</th>
                 <th style={th}>Proveedor</th>
                 <th style={th}>Estado</th>
+                {puedeEditar && <th style={th}>Acción</th>}
               </tr>
             </thead>
             <tbody>
@@ -451,13 +479,23 @@ export default function Inventario() {
                     <td style={{ ...td, fontSize:12 }}>{c.proveedores?.nombre || '—'}</td>
                     <td style={td}>
                       <span style={{
-                        background: c.estado==='disponible' ? '#0f3d2a' : c.estado==='vendido' ? '#1a1a2e' : '#2a1a0a',
-                        color: c.estado==='disponible' ? '#10b981' : c.estado==='vendido' ? '#4a6a8a' : '#f59e0b',
+                        background: c.estado==='disponible' ? '#0f3d2a' : c.estado==='vendido' ? '#1a1a2e' : c.estado==='devuelto' ? '#2a1a1a' : '#2a1a0a',
+                        color: c.estado==='disponible' ? '#10b981' : c.estado==='vendido' ? '#4a6a8a' : c.estado==='devuelto' ? '#ef4444' : '#f59e0b',
                         fontSize:11, padding:'2px 8px', borderRadius:4, fontWeight:500
                       }}>
-                        {c.estado === 'disponible' ? 'Disponible' : c.estado === 'vendido' ? 'Vendido' : c.estado}
+                        {c.estado === 'disponible' ? 'Disponible' : c.estado === 'vendido' ? 'Vendido' : c.estado === 'devuelto' ? 'Devuelto' : c.estado}
                       </span>
                     </td>
+                    {puedeEditar && (
+                      <td style={td}>
+                        {c.estado === 'disponible' && (
+                          <button onClick={() => { setConfirmDev(c); setMotivoDev('') }}
+                            style={{ padding:'4px 10px', background:'transparent', border:'1px solid #ef4444', borderRadius:6, color:'#ef4444', fontSize:11, cursor:'pointer', whiteSpace:'nowrap' }}>
+                            ↩ Devolver
+                          </button>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 )
               })}
@@ -805,6 +843,41 @@ export default function Inventario() {
           </div>
         </div>
       )}
+      {/* MODAL DEVOLVER A PROVEEDOR */}
+      {confirmDev && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.82)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1001 }}>
+          <div style={{ background:'#0d1a35', border:'1px solid #ef4444', borderRadius:14, padding:28, width:'100%', maxWidth:420, fontFamily:"'DM Sans', system-ui" }}>
+            <div style={{ fontSize:28, textAlign:'center', marginBottom:12 }}>↩</div>
+            <h3 style={{ color:'#fff', textAlign:'center', margin:'0 0 6px', fontSize:16 }}>Devolver equipo al proveedor</h3>
+            <div style={{ background:'#0a1628', borderRadius:8, padding:'10px 14px', marginBottom:16 }}>
+              <div style={{ color:'#e2e8f0', fontSize:13, fontWeight:500 }}>{confirmDev.producto}</div>
+              <div style={{ color:'#8aabcc', fontSize:11, fontFamily:'monospace', marginTop:2 }}>IMEI: {confirmDev.imei}</div>
+              <div style={{ color:'#4a6a8a', fontSize:11, marginTop:2 }}>Proveedor: {confirmDev.proveedores?.nombre || '—'}</div>
+            </div>
+            <div style={{ marginBottom:16 }}>
+              <label style={{ color:'#8aabcc', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'.06em', display:'block', marginBottom:6 }}>Motivo de devolución *</label>
+              <textarea
+                value={motivoDev}
+                onChange={e => setMotivoDev(e.target.value)}
+                placeholder="ej: Pantalla con falla, batería hinchada, daño físico..."
+                style={{ background:'#0a1628', border:'1px solid #1a2f52', borderRadius:8, padding:'9px 12px', color:'#fff', fontSize:13, width:'100%', boxSizing:'border-box', outline:'none', resize:'vertical', minHeight:80 }}
+                autoFocus
+              />
+            </div>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={() => { setConfirmDev(null); setMotivoDev('') }}
+                style={{ flex:1, padding:'10px 0', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>
+                Cancelar
+              </button>
+              <button onClick={devolverAProveedor} disabled={!motivoDev.trim() || guardandoDev}
+                style={{ flex:1, padding:'10px 0', background: motivoDev.trim() ? 'linear-gradient(135deg,#ef4444,#dc2626)' : '#1e3058', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor: motivoDev.trim() ? 'pointer' : 'default' }}>
+                {guardandoDev ? 'Procesando...' : '↩ Confirmar devolución'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
