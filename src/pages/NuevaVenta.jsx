@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { logActividad, logVenta } from '../lib/drive'
+import SolicitudEquiposPanel from '../components/SolicitudEquiposPanel'
 
 const ASESORES = {
   call_center: [
@@ -672,6 +673,18 @@ export default function NuevaVenta() {
             )}
           </Section>
 
+          {/* SECCIÓN SOLICITUD DE EQUIPOS A INVENTARIO */}
+          <SolicitudEquiposPanel
+            equiposSolicitados={equiposSolicitados}
+            setEquiposSolicitados={setEquiposSolicitados}
+            solicitudEnviada={solicitudEnviada}
+            setSolicitudEnviada={setSolicitudEnviada}
+            enviandoNotif={enviandoNotif}
+            setEnviandoNotif={setEnviandoNotif}
+            asesorNombre={form.asesor_nombre}
+            clienteNombre={form.nombre_cliente}
+          />
+
           <Section title="💰 Valores">
             <Field label="Valor de venta $" required>
               <input style={inp} value={form.valor_venta} onChange={e => set('valor_venta', e.target.value)} required />
@@ -790,35 +803,6 @@ export default function NuevaVenta() {
               </div>
               <button onClick={() => setShowStock(false)} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:20, cursor:'pointer' }}>×</button>
             </div>
-
-            {/* Panel solicitud múltiple */}
-            {equiposSolicitados.length > 0 && (
-              <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:10, padding:'12px 16px', marginBottom:12 }}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-                  <div style={{ color:'#f59e0b', fontSize:12, fontWeight:600 }}>
-                    🔔 Equipos a solicitar ({equiposSolicitados.length}/5)
-                  </div>
-                  {!solicitudEnviada ? (
-                    <button type="button" onClick={enviarSolicitudEquipos} disabled={enviandoNotif}
-                      style={{ padding:'6px 14px', background:'#f59e0b', border:'none', borderRadius:6, color:'#000', fontSize:11, fontWeight:700, cursor:'pointer' }}>
-                      {enviandoNotif ? '...' : 'Enviar solicitud a inventario →'}
-                    </button>
-                  ) : (
-                    <span style={{ color:'#10b981', fontSize:11, fontWeight:600 }}>✓ Solicitud enviada — esperando respuesta</span>
-                  )}
-                </div>
-                <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
-                  {equiposSolicitados.map(e => (
-                    <div key={e.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#0a1628', borderRadius:6, padding:'5px 10px' }}>
-                      <span style={{ color:'#fff', fontSize:11, fontFamily:'monospace' }}>IMEI: {e.imei} — {e.color}</span>
-                      {!solicitudEnviada && (
-                        <button type="button" onClick={() => quitarDeSolicitud(e.id)} style={{ background:'transparent', border:'none', color:'#ef4444', fontSize:14, cursor:'pointer' }}>×</button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
               {stockDisponible.map(eq => {

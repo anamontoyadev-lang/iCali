@@ -71,10 +71,33 @@ export default function NotificacionesInventario() {
     })
   }
 
+  async function confirmarUnEquipo(notifId, equipo, asesor, allEquipos) {
+    // Marcar este equipo como con_asesor
+    await supabase.from('compras_proveedor').update({
+      estado: 'con_asesor',
+      con_asesor: asesor,
+      fecha_prestamo: new Date().toISOString(),
+    }).eq('id', equipo.id).eq('estado', 'disponible')
+
+    // Actualizar la notificación marcando este equipo como confirmado
+    const equiposActualizados = allEquipos.map(e =>
+      e.id === equipo.id ? { ...e, confirmado: true } : e
+    )
+    const todosConfirmados = equiposActualizados.every(e => e.confirmado)
+
+    await supabase.from('notificaciones').update({
+      datos: { ...((await supabase.from('notificaciones').select('datos').eq('id', notifId).single()).data?.datos || {}), equipos: equiposActualizados },
+      respondida: todosConfirmados,
+      respuesta: todosConfirmados ? 'si' : null,
+    }).eq('id', notifId)
+
+    loadNotifs()
+  }
+
   async function confirmarBajarEquipos(notif) {
     const user = (await supabase.auth.getUser()).data.user
     const d = notif.datos || {}
-    const equipos = d.equipos || (d.imei ? [{ imei: d.imei }] : [])
+    const equipos = d.equipos || (d.imei ? [{ imei: d.imei, id: null }] : [])
     for (const eq of equipos) {
       if (eq.imei) {
         await supabase.from('compras_proveedor').update({
@@ -196,10 +219,44 @@ export default function NotificacionesInventario() {
                       </div>
                     )}
                   </div>
-                  <div style={{ display:'flex', gap:8 }}>
-                    <button onClick={() => responderSolicitud(n.id, 'no')} style={{ flex:1, padding:'8px 0', background:'transparent', border:'1px solid #ef4444', borderRadius:7, color:'#ef4444', fontSize:12, fontWeight:600, cursor:'pointer' }}>✗ No puedo bajar</button>
-                    <button onClick={() => confirmarBajarEquipos(n)} style={{ flex:2, padding:'8px 0', background:'linear-gradient(135deg,#f59e0b,#d97706)', border:'none', borderRadius:7, color:'#000', fontSize:12, fontWeight:700, cursor:'pointer' }}>✓ Voy a bajar los equipos</button>
-                  </div>
+                  {/* Confirmar uno a uno */}
+                  {Array.isArray(n.datos?.equipos) ? (
+                    <div>
+                      <div style={{ color:'#8aabcc', fontSize:10, fontWeight:600, textTransform:'uppercase', marginBottom:6 }}>Confirmar equipo a equipo:</div>
+                      <div style={{ display:'flex', flexDirection:'column', gap:4, marginBottom:8 }}>
+                        {n.datos.equipos.map((eq, i) => (
+                          <div key={eq.id||i} style={{
+                            display:'flex', alignItems:'center', justifyContent:'space-between',
+                            background: eq.confirmado ? 'rgba(16,185,129,0.08)' : '#0a1628',
+                            border: `1px solid ${eq.confirmado ? '#10b981' : '#1a2f52'}`,
+                            borderRadius:7, padding:'7px 10px', gap:8,
+                          }}>
+                            <div>
+                              <div style={{ color:'#e2e8f0', fontSize:11, fontWeight:500 }}>{eq.producto}</div>
+                              <div style={{ color:'#8aabcc', fontSize:10, fontFamily:'monospace' }}>IMEI: {eq.imei} {eq.color && `· ${eq.color}`}</div>
+                            </div>
+                            {eq.confirmado ? (
+                              <span style={{ color:'#10b981', fontSize:11, fontWeight:600, flexShrink:0 }}>✓ Bajado</span>
+                            ) : (
+                              <button onClick={() => confirmarUnEquipo(n.id, eq, n.datos.asesor, n.datos.equipos)}
+                                style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:10, fontWeight:700, cursor:'pointer', flexShrink:0 }}>
+                                ✓ Bajé este
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <button onClick={() => responderSolicitud(n.id, 'no')}
+                        style={{ width:'100%', padding:'6px 0', background:'transparent', border:'1px solid #ef4444', borderRadius:6, color:'#ef4444', fontSize:11, cursor:'pointer' }}>
+                        ✗ No puedo bajar ninguno
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display:'flex', gap:8 }}>
+                      <button onClick={() => responderSolicitud(n.id, 'no')} style={{ flex:1, padding:'8px 0', background:'transparent', border:'1px solid #ef4444', borderRadius:7, color:'#ef4444', fontSize:12, fontWeight:600, cursor:'pointer' }}>✗ No puedo</button>
+                      <button onClick={() => confirmarBajarEquipos(n)} style={{ flex:2, padding:'8px 0', background:'linear-gradient(135deg,#f59e0b,#d97706)', border:'none', borderRadius:7, color:'#000', fontSize:12, fontWeight:700, cursor:'pointer' }}>✓ Voy con el equipo</button>
+                    </div>
+                  )}
                 </>
               )}
 
