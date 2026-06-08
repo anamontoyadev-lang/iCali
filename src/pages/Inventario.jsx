@@ -500,7 +500,7 @@ export default function Inventario() {
       )}
 
       {/* MODAL CONFIGURAR LOTE */}
-      {modoLote && !showForm && (
+      {modoLote && !showForm && !escaner && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.78)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
           <div style={{ background:'#0d1a35', border:'1px solid #10b981', borderRadius:14, padding:28, width:'100%', maxWidth:420, fontFamily:"'DM Sans', system-ui" }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
