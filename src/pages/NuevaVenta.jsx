@@ -173,6 +173,7 @@ export default function NuevaVenta() {
   const [coloresDisponibles, setColoresDisponibles] = useState([])
   const [colorPersonalizado, setColorPersonalizado] = useState(false)
   const [proveedores, setProveedores] = useState([])
+  const [productosInventario, setProductosInventario] = useState([])
   const [costoAutoInfo, setCostoAutoInfo] = useState(null)
 
   // Stock por referencia
@@ -195,6 +196,15 @@ export default function NuevaVenta() {
   useEffect(() => {
     supabase.from('proveedores').select('id,nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setProveedores(data || []))
+    // Cargar productos únicos del inventario disponible
+    supabase.from('compras_proveedor')
+      .select('producto')
+      .eq('estado', 'disponible')
+      .order('producto')
+      .then(({ data }) => {
+        const unicos = [...new Set((data||[]).map(d => d.producto).filter(Boolean))].sort()
+        setProductosInventario(unicos)
+      })
   }, [])
 
   useEffect(() => {
@@ -555,8 +565,14 @@ export default function NuevaVenta() {
             <Field label="Producto" required span={2}>
               <select style={sel} value={form.producto} onChange={e => set('producto', e.target.value)} required>
                 <option value="">Seleccionar producto...</option>
-                {PRODUCTOS.map(p => <option key={p} value={p}>{p}</option>)}
+                {productosInventario.length > 0
+                  ? productosInventario.map(p => <option key={p} value={p}>{p}</option>)
+                  : PRODUCTOS.map(p => <option key={p} value={p}>{p}</option>)
+                }
               </select>
+              {productosInventario.length === 0 && (
+                <div style={{ color:'#f59e0b', fontSize:10, marginTop:3 }}>⚠ No hay equipos disponibles en inventario</div>
+              )}
             </Field>
 
             {/* STOCK DISPONIBLE */}

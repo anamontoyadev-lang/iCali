@@ -106,7 +106,17 @@ export default function Dashboard() {
       respondida: true, respuesta,
       respondido_por: user?.email||'',
     }).eq('id', id)
-    setNotifs(n => n.filter(x => x.id !== id))
+    setNotifs(n => n.map(x => x.id===id ? {...x, respondida:true, respuesta} : x))
+  }
+
+  async function confirmarRecogidaDashboard(notif) {
+    const d = notif.datos || {}
+    if (d.imei) {
+      await supabase.from('compras_proveedor').update({
+        estado: 'disponible', con_asesor: null, fecha_prestamo: null,
+      }).eq('imei', d.imei)
+    }
+    await responderNotif(notif.id, 'recogido')
   }
 
   const fecha = new Date().toLocaleDateString('es-CO',{ weekday:'long', year:'numeric', month:'long', day:'numeric' })
@@ -249,7 +259,10 @@ export default function Dashboard() {
                       {n.tipo === 'EQUIPO_LISTO_LABORATORIO' && (
                         <button onClick={() => navigate('/laboratorio')} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>Ver lab →</button>
                       )}
-                      {!['SOLICITUD_EQUIPO','EQUIPO_LISTO_LABORATORIO'].includes(n.tipo) && (
+                      {n.tipo === 'DEVOLUCION_EQUIPO' && (esAdmin || esLiderAdmin) && (
+                        <button onClick={() => confirmarRecogidaDashboard(n)} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>✓ Confirmé recogida</button>
+                      )}
+                      {!['SOLICITUD_EQUIPO','EQUIPO_LISTO_LABORATORIO','DEVOLUCION_EQUIPO'].includes(n.tipo) && (
                         <button onClick={() => responderNotif(n.id,'leida')} style={{ padding:'5px 10px', background:'#1a2f52', border:'none', borderRadius:6, color:'#8aabcc', fontSize:11, cursor:'pointer' }}>✓ Leída</button>
                       )}
                     </div>
