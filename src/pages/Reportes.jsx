@@ -110,7 +110,7 @@ export default function Reportes() {
         supabase.from('retomas').select('*, ventas(nombre_cliente,asesor_nombre,fecha_venta)').order('created_at', { ascending:false }).limit(500),
         supabase.from('proveedores').select('*, abonos_proveedor(*)').eq('activo', true).order('nombre'),
         supabase.from('abonos_proveedor').select('*, proveedores(nombre)').order('created_at', { ascending:false }).limit(500),
-        supabase.from('notificaciones').select('*').eq('tipo','SOLICITUD_EQUIPO').order('created_at',{ascending:false}).limit(500),
+        supabase.from('notificaciones').select('*').in('tipo',['SOLICITUD_EQUIPO','DEVOLUCION_EQUIPO']).order('created_at',{ascending:false}).limit(500),
       ])
 
       const ventas = vData || []
@@ -756,13 +756,45 @@ export default function Reportes() {
 
           {/* ── SOLICITUDES ASESORES ── */}
           {tab === 'solicitudes' && (() => {
-            const pendientes       = rawSolicitudes.filter(s => !s.respondida)
-            const atendidas        = rawSolicitudes.filter(s => s.respondida && s.respuesta === 'si')
-            const rechazadas       = rawSolicitudes.filter(s => s.respondida && s.respuesta === 'no')
+            // Separar por tipo
+            const solicitudes    = rawSolicitudes.filter(s => s.tipo === 'SOLICITUD_EQUIPO')
+            const devoluciones   = rawSolicitudes.filter(s => s.tipo === 'DEVOLUCION_EQUIPO')
+            const pendientes     = solicitudes.filter(s => !s.respondida)
+            const atendidas      = solicitudes.filter(s => s.respondida && s.respuesta === 'si')
+            const rechazadas     = solicitudes.filter(s => s.respondida && s.respuesta === 'no')
             const equiposConAsesor = rawInventario.filter(i => i.estado === 'con_asesor')
-            // Devoluciones
-            const rawDevoluciones  = rawSolicitudes.filter(s => s.tipo === 'DEVOLUCION_EQUIPO' || (s.datos?.equipos && s.respondida && s.respuesta === 'recogido'))
-            const pendienteRecoger = rawInventario.filter(i => i.estado === 'con_asesor') // equipos que asesor solicitó devolver pero inventario no ha confirmado
+            const pendienteRecoger = devoluciones.filter(s => !s.respondida)
+            const recogidos      = devoluciones.filter(s => s.respondida && s.respuesta === 'recogido')
+
+            // Consolidar movimientos por IMEI
+            // Para cada equipo extraer todos sus movimientos en orden cronológico
+            const movimientosPorImei = {}
+            rawSolicitudes.forEach(s => {
+              const equipos = Array.isArray(s.datos?.equipos)
+                ? s.datos.equipos
+                : s.datos?.imei ? [{ imei: s.datos.imei, producto: s.datos.producto }] : []
+              equipos.forEach(eq => {
+                if (!eq.imei) return
+                if (!movimientosPorImei[eq.imei]) {
+                  movimientosPorImei[eq.imei] = {
+                    imei: eq.imei,
+                    producto: eq.producto || s.datos?.producto || '',
+                    asesor: s.creado_por_nombre || s.datos?.asesor || '',
+                    movimientos: []
+                  }
+                }
+                movimientosPorImei[eq.imei].movimientos.push({
+                  tipo: s.tipo,
+                  fecha: s.created_at,
+                  estado: !s.respondida ? 'pendiente' : s.respuesta,
+                  respondido_por: s.respondido_por,
+                  fecha_resp: s.updated_at,
+                  asesor: s.creado_por_nombre || s.datos?.asesor || '',
+                })
+              })
+            })
+            const equiposConMovimientos = Object.values(movimientosPorImei)
+              .sort((a,b) => new Date(b.movimientos[0]?.fecha||0) - new Date(a.movimientos[0]?.fecha||0))
 
             function dlSolicitudes() {
               const rows = rawSolicitudes.map(s => ({
@@ -782,11 +814,12 @@ export default function Reportes() {
               <>
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:12, marginBottom:20 }}>
                   {[
-                    { label:'Total solicitudes',      val:rawSolicitudes.length,    color:'#0066ff' },
-                    { label:'Pendientes por atender', val:pendientes.length,        color:'#f59e0b' },
-                    { label:'Entregados a asesor',    val:atendidas.length,         color:'#10b981' },
-                    { label:'Rechazadas',             val:rechazadas.length,        color:'#ef4444' },
-                    { label:'Con asesor ahora',       val:equiposConAsesor.length,  color:'#8b5cf6' },
+                    { label:'Solicitudes enviadas',    val:solicitudes.length,        color:'#0066ff' },
+                    { label:'Pendientes entregar',    val:pendientes.length,         color:'#f59e0b' },
+                    { label:'Entregados a asesor',    val:atendidas.length,          color:'#10b981' },
+                    { label:'Con asesor ahora',       val:equiposConAsesor.length,   color:'#8b5cf6' },
+                    { label:'Pendiente recoger',      val:pendienteRecoger.length,   color:'#f97316' },
+                    { label:'Recogidos inventario',   val:recogidos.length,          color:'#3b82f6' },
                   ].map(k => (
                     <div key={k.label} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:10, padding:'12px 16px' }}>
                       <div style={{ color:'#5a7aaa', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:4 }}>{k.label}</div>
@@ -827,48 +860,65 @@ export default function Reportes() {
                   </div>
                 )}
 
-                {/* Historial solicitudes */}
+                {/* Trazabilidad por equipo */}
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-                  <div style={{ color:'#8aabcc', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'.07em' }}>Historial de solicitudes</div>
+                  <div style={{ color:'#8aabcc', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'.07em' }}>
+                    Trazabilidad de equipos ({equiposConMovimientos.length})
+                  </div>
                   <button onClick={dlSolicitudes} style={{ padding:'7px 14px', background:'transparent', border:'1px solid #10b981', borderRadius:7, color:'#10b981', fontSize:11, fontWeight:600, cursor:'pointer' }}>📥 Descargar Excel</button>
                 </div>
-                <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:12, overflow:'auto' }}>
-                  <table style={{ width:'100%', borderCollapse:'collapse' }}>
-                    <thead><tr>{['Fecha','Asesor solicitó','Equipos','Estado','Respondido por','Fecha resp.'].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
-                    <tbody>
-                      {rawSolicitudes.map(s => (
-                        <tr key={s.id}>
-                          <td style={{ ...td, fontSize:11, whiteSpace:'nowrap' }}>{s.created_at?.slice(0,16)||'—'}</td>
-                          <td style={{ ...td, color:'#e2e8f0', fontWeight:500 }}>{s.creado_por_nombre||'—'}</td>
-                          <td style={{ ...td, fontSize:11 }}>
-                            {Array.isArray(s.datos?.equipos)
-                              ? s.datos.equipos.map((e,i) => <div key={i} style={{ color:'#8aabcc' }}>{e.producto} <span style={{ fontFamily:'monospace', fontSize:10 }}>{e.imei}</span></div>)
-                              : <span style={{ color:'#8aabcc' }}>{s.datos?.imei||s.mensaje}</span>
-                            }
-                          </td>
-                          <td style={td}>
-                            {(() => {
-                              let bg, color, label
-                              if (!s.respondida) {
-                                bg='rgba(245,158,11,0.15)'; color='#f59e0b'; label='⏳ Pendiente'
-                              } else if (s.respuesta === 'si') {
-                                bg='rgba(16,185,129,0.15)'; color='#10b981'; label='✅ Entregado al asesor'
-                              } else if (s.respuesta === 'recogido') {
-                                bg='rgba(59,130,246,0.15)'; color='#60a5fa'; label='📥 Equipo recogido'
-                              } else if (s.respuesta === 'no') {
-                                bg='rgba(239,68,68,0.15)'; color='#ef4444'; label='✗ Rechazada'
-                              } else {
-                                bg='rgba(107,114,128,0.15)'; color='#9ca3af'; label=s.respuesta||'—'
-                              }
-                              return <span style={{ background:bg, color, fontSize:10, padding:'3px 8px', borderRadius:4, fontWeight:600, whiteSpace:'nowrap' }}>{label}</span>
-                            })()}
-                          </td>
-                          <td style={{ ...td, fontSize:11, color:'#4a6a8a' }}>{s.respondido_por||'—'}</td>
-                          <td style={{ ...td, fontSize:10, color:'#4a6a8a' }}>{s.updated_at ? new Date(s.updated_at).toLocaleDateString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                  {equiposConMovimientos.map(eq => (
+                    <div key={eq.imei} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:10, overflow:'hidden' }}>
+                      {/* Header equipo */}
+                      <div style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', borderBottom:'1px solid #0f1e36', background:'#0a1628' }}>
+                        <div style={{ flex:1 }}>
+                          <div style={{ color:'#e2e8f0', fontSize:13, fontWeight:500 }}>{eq.producto || '—'}</div>
+                          <div style={{ color:'#8aabcc', fontSize:11, fontFamily:'monospace', marginTop:2 }}>IMEI: {eq.imei}</div>
+                        </div>
+                        <div style={{ color:'#4a6a8a', fontSize:11 }}>👤 {eq.asesor}</div>
+                      </div>
+                      {/* Timeline movimientos */}
+                      <div style={{ padding:'10px 14px' }}>
+                        {eq.movimientos.sort((a,b) => new Date(a.fecha)-new Date(b.fecha)).map((m,i) => {
+                          const esSolicitud = m.tipo === 'SOLICITUD_EQUIPO'
+                          let estadoColor, estadoLabel, estadoBg
+                          if (m.estado === 'pendiente' && esSolicitud) { estadoColor='#f59e0b'; estadoLabel='⏳ Pendiente entrega'; estadoBg='rgba(245,158,11,0.1)' }
+                          else if (m.estado === 'si') { estadoColor='#10b981'; estadoLabel='✅ Entregado al asesor'; estadoBg='rgba(16,185,129,0.1)' }
+                          else if (m.estado === 'no') { estadoColor='#ef4444'; estadoLabel='✗ No entregado'; estadoBg='rgba(239,68,68,0.1)' }
+                          else if (m.estado === 'pendiente' && !esSolicitud) { estadoColor='#f97316'; estadoLabel='📤 Pendiente recogida'; estadoBg='rgba(249,115,22,0.1)' }
+                          else if (m.estado === 'recogido') { estadoColor='#3b82f6'; estadoLabel='📥 Recogido — en inventario'; estadoBg='rgba(59,130,246,0.1)' }
+                          else { estadoColor='#9ca3af'; estadoLabel=m.estado; estadoBg='rgba(156,163,175,0.1)' }
+                          return (
+                            <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom: i<eq.movimientos.length-1?10:0 }}>
+                              {/* Línea de tiempo */}
+                              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flexShrink:0 }}>
+                                <div style={{ width:10, height:10, borderRadius:'50%', background:estadoColor, marginTop:3 }} />
+                                {i < eq.movimientos.length-1 && <div style={{ width:2, height:20, background:'#1a2f52', margin:'2px 0' }} />}
+                              </div>
+                              <div style={{ flex:1, background:estadoBg, border:`1px solid ${estadoColor}33`, borderRadius:7, padding:'6px 10px' }}>
+                                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:4 }}>
+                                  <span style={{ color:estadoColor, fontSize:11, fontWeight:700 }}>{estadoLabel}</span>
+                                  <span style={{ color:'#4a6a8a', fontSize:10 }}>
+                                    {new Date(m.fecha).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+                                  </span>
+                                </div>
+                                {m.respondido_por && (
+                                  <div style={{ color:'#4a6a8a', fontSize:10, marginTop:2 }}>
+                                    Por: {m.respondido_por}
+                                    {m.fecha_resp && ` · ${new Date(m.fecha_resp).toLocaleDateString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}`}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                  {equiposConMovimientos.length === 0 && (
+                    <div style={{ color:'#4a6a8a', fontSize:13, textAlign:'center', padding:30 }}>Sin movimientos registrados</div>
+                  )}
                 </div>
               </>
             )
