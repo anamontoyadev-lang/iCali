@@ -72,7 +72,8 @@ const INIT_FORM = {
   fecha_compra: new Date().toISOString().split('T')[0],
   observaciones:'',
   sticker:'',
-  bateria: ''
+  bateria: '',
+  no_factura: ''
 }
 
 export default function Inventario() {
@@ -86,6 +87,9 @@ export default function Inventario() {
   const [buscar, setBuscar]                 = useState('')
 
   const [showForm, setShowForm]   = useState(false)
+  // Modo lote: proveedor + factura compartidos entre varios equipos
+  const [lote, setLote] = useState({ proveedor_id:'', no_factura:'' })
+  const [modoLote, setModoLote] = useState(false)
   const [form, setForm]           = useState(INIT_FORM)
   const [fotos, setFotos]         = useState([])
   const [fotoPreviews, setFotoPreviews] = useState([])
@@ -158,6 +162,7 @@ export default function Inventario() {
 
   async function guardarEquipo(e) {
     e.preventDefault()
+    const guardarYOtro = e.nativeEvent?.submitter?.name === 'otro'
     setSaving(true)
     setMsgErr('')
     try {
@@ -182,6 +187,7 @@ export default function Inventario() {
         observaciones:   form.observaciones,
         fotos:           fotUrls.length ? fotUrls : null,
         registrado_por:  user.id,
+        no_factura:      form.no_factura || null,
         estado:          'disponible'
       })
       if (error) throw new Error(error.message)
@@ -197,7 +203,13 @@ export default function Inventario() {
       })
 
       setMsgOk(`✓ Equipo registrado correctamente`)
-      setForm(INIT_FORM)
+      if (guardarYOtro && modoLote) {
+        // Mantener proveedor y factura, limpiar solo datos del equipo
+        setForm(f => ({ ...INIT_FORM, proveedor_id: f.proveedor_id, no_factura: f.no_factura }))
+      } else {
+        setForm(INIT_FORM)
+        setShowForm(false)
+      }
       setFotos([])
       setFotoPreviews([])
       loadAll()
@@ -228,6 +240,7 @@ export default function Inventario() {
       precio_venta_est: find('precio venta','precio estimado','pvp','venta'),
       estado_equipo: find('estado','condicion','condition'),
       proveedor:  find('proveedor','supplier','vendor'),
+      no_factura: find('factura','invoice','no factura','numero factura','nro'),
       bateria:    find('bateria','battery','bat'),
     }
     setExcelCols(cols)
@@ -242,6 +255,7 @@ export default function Inventario() {
       precio_venta_est: Number(String(r[cols.precio_venta_est]||0).replace(/[^0-9.]/g,'')),
       estado_equipo: String(r[cols.estado_equipo] || 'nuevo').trim().toLowerCase(),
       proveedor:  String(r[cols.proveedor]|| '').trim(),
+      no_factura: String(r[cols.no_factura] || '').trim(),
       bateria:    r[cols.bateria] ? Number(r[cols.bateria]) : null,
       _ok: true, _msg: ''
     })).filter(r => r.imei || r.producto)
@@ -260,7 +274,7 @@ export default function Inventario() {
     const validos = excelRows.filter(r => r._ok)
     let ok = 0, err = 0
     for (const r of validos) {
-      const prov = proveedores.find(p => p.nombre.toLowerCase().includes(r.proveedor.toLowerCase())) || proveedores[0]
+      const prov = lote.proveedor_id ? { id: lote.proveedor_id } : (proveedores.find(p => p.nombre.toLowerCase().includes((r.proveedor||'').toLowerCase())) || proveedores[0])
       const estadoNorm = ['nuevo','exhibicion','usado','en_laboratorio','para_reparar'].includes(r.estado_equipo)
         ? r.estado_equipo : 'nuevo'
       const { error } = await supabase.from('compras_proveedor').insert({
@@ -276,7 +290,8 @@ export default function Inventario() {
         bateria:          r.bateria || null,
         registrado_por:   user.id,
         estado:           'disponible',
-        fecha_compra:     new Date().toISOString().split('T')[0]
+        fecha_compra:     new Date().toISOString().split('T')[0],
+        no_factura:       lote.no_factura || r.no_factura || null
       })
       if (error) err++; else ok++
     }
@@ -318,7 +333,8 @@ export default function Inventario() {
           <div style={{ display:'flex', gap:8 }}>
             <button onClick={abrirEscaner} style={{ padding:'9px 16px', background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, color:'#8aabcc', fontSize:13, cursor:'pointer' }}>📷 Escanear</button>
             <button onClick={() => fileExcelRef.current?.click()} style={{ padding:'9px 16px', background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, color:'#8aabcc', fontSize:13, cursor:'pointer' }}>📊 Carga masiva</button>
-            <button onClick={() => { setShowForm(true); setForm(INIT_FORM); setFotos([]); setFotoPreviews([]) }} style={{ padding:'9px 18px', background:'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>+ Ingresar equipo</button>
+            <button onClick={() => { setModoLote(true) }} style={{ padding:'9px 16px', background:'#0d1a35', border:'1px solid #10b981', borderRadius:8, color:'#10b981', fontSize:13, fontWeight:600, cursor:'pointer' }}>📦 Ingreso por lote</button>
+            <button onClick={() => { setShowForm(true); setModoLote(false); setForm(INIT_FORM); setFotos([]); setFotoPreviews([]) }} style={{ padding:'9px 18px', background:'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>+ Ingresar equipo</button>
             <input ref={fileExcelRef} type="file" accept=".xlsx,.xls,.csv" style={{ display:'none' }} onChange={leerExcel} />
           </div>
         )}
@@ -381,6 +397,7 @@ export default function Inventario() {
                 <th style={th}>P. Venta est.</th>
                 <th style={th}>Sticker</th>
                 <th style={th}>Condición</th>
+                <th style={th}>Factura</th>
                 <th style={th}>Proveedor</th>
                 <th style={th}>Estado</th>
               </tr>
@@ -427,6 +444,7 @@ export default function Inventario() {
                         ? <span style={{ background: condicion.color+'22', color: condicion.color, fontSize:11, padding:'2px 8px', borderRadius:4, fontWeight:500 }}>{condicion.label}</span>
                         : '—'}
                     </td>
+                    <td style={{ ...td, fontSize:12, color:'#8aabcc' }}>{c.no_factura || '—'}</td>
                     <td style={{ ...td, fontSize:12 }}>{c.proveedores?.nombre || '—'}</td>
                     <td style={td}>
                       <span style={{
@@ -462,24 +480,80 @@ export default function Inventario() {
         />
       )}
 
+      {/* MODAL CONFIGURAR LOTE */}
+      {modoLote && !showForm && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.78)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
+          <div style={{ background:'#0d1a35', border:'1px solid #10b981', borderRadius:14, padding:28, width:'100%', maxWidth:420, fontFamily:"'DM Sans', system-ui" }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+              <h3 style={{ color:'#fff', margin:0, fontSize:16 }}>📦 Configurar lote de ingreso</h3>
+              <button onClick={() => setModoLote(false)} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:20, cursor:'pointer' }}>×</button>
+            </div>
+            <p style={{ color:'#8aabcc', fontSize:13, margin:'0 0 16px' }}>
+              Define el proveedor y número de factura una sola vez. Luego agrega cada equipo del mismo pedido.
+            </p>
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              <div>
+                <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Proveedor *</label>
+                <select style={sel} value={lote.proveedor_id} onChange={e => setLote(l=>({...l, proveedor_id:e.target.value}))}>
+                  <option value="">Seleccionar...</option>
+                  {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>N° Factura</label>
+                <input style={inp} value={lote.no_factura} onChange={e => setLote(l=>({...l, no_factura:e.target.value}))} placeholder="ej: FAC-2024-001 o 12345" />
+              </div>
+            </div>
+            <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
+              <button onClick={() => setModoLote(false)} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>Cancelar</button>
+              <button
+                disabled={!lote.proveedor_id}
+                onClick={() => {
+                  setForm({ ...INIT_FORM, proveedor_id: lote.proveedor_id, no_factura: lote.no_factura })
+                  setFotos([]); setFotoPreviews([])
+                  setShowForm(true)
+                }}
+                style={{ padding:'9px 24px', background: lote.proveedor_id ? 'linear-gradient(135deg,#10b981,#059669)' : '#1e3058', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor: lote.proveedor_id ? 'pointer' : 'default' }}>
+                Iniciar lote → Agregar equipos
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL INGRESAR EQUIPO */}
       {showForm && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.78)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
           <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:14, padding:28, width:'100%', maxWidth:580, fontFamily:"'DM Sans', system-ui", maxHeight:'92vh', overflow:'auto' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-              <h3 style={{ color:'#fff', margin:0, fontSize:16 }}>Ingresar equipo al inventario</h3>
+              <div>
+                <h3 style={{ color:'#fff', margin:'0 0 4px', fontSize:16 }}>Ingresar equipo al inventario</h3>
+                {modoLote && (
+                  <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                    <span style={{ background:'rgba(16,185,129,0.15)', color:'#10b981', fontSize:11, padding:'2px 8px', borderRadius:4 }}>
+                      📦 Lote: {proveedores.find(p=>p.id===lote.proveedor_id)?.nombre}
+                    </span>
+                    {lote.no_factura && <span style={{ background:'rgba(59,130,246,0.15)', color:'#60a5fa', fontSize:11, padding:'2px 8px', borderRadius:4 }}>FAC: {lote.no_factura}</span>}
+                  </div>
+                )}
+              </div>
               <button onClick={() => { setShowForm(false); setFotos([]); setFotoPreviews([]) }} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:20, cursor:'pointer' }}>×</button>
             </div>
 
             <form onSubmit={guardarEquipo}>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px 14px' }}>
 
-                <div style={{ gridColumn:'span 2' }}>
+                <div>
                   <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Proveedor *</label>
                   <select required style={sel} value={form.proveedor_id} onChange={e => setForm(f=>({...f, proveedor_id:e.target.value}))}>
                     <option value="">Seleccionar...</option>
                     {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
                   </select>
+                </div>
+
+                <div>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>N° Factura</label>
+                  <input style={inp} value={form.no_factura} onChange={e => setForm(f=>({...f, no_factura:e.target.value}))} placeholder="ej: FAC-2024-001" />
                 </div>
 
                 <div style={{ gridColumn:'span 2' }}>
@@ -612,8 +686,13 @@ export default function Inventario() {
 
               <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
                 <button type="button" onClick={() => { setShowForm(false); setFotos([]); setFotoPreviews([]) }} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>Cancelar</button>
+                {modoLote && (
+                  <button type="submit" name="otro" disabled={saving} style={{ padding:'9px 20px', background: saving?'#1e3058':'#0d2a1a', border:'1px solid #10b981', borderRadius:8, color:'#10b981', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                    {saving ? '...' : '✓ Guardar y agregar otro'}
+                  </button>
+                )}
                 <button type="submit" disabled={saving} style={{ padding:'9px 24px', background: saving ? '#1e3058' : 'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>
-                  {saving ? 'Guardando...' : 'Registrar equipo'}
+                  {saving ? 'Guardando...' : modoLote ? 'Guardar y cerrar lote' : 'Registrar equipo'}
                 </button>
               </div>
             </form>
@@ -633,6 +712,23 @@ export default function Inventario() {
               <button onClick={() => { setShowExcel(false); setExcelRows([]); setImportResult(null) }} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:20, cursor:'pointer' }}>×</button>
             </div>
 
+            {/* Campos globales para el lote Excel */}
+            {!importResult && (
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px 14px', marginBottom:14, padding:'12px 14px', background:'rgba(59,130,246,0.06)', border:'1px solid rgba(59,130,246,0.2)', borderRadius:10 }}>
+                <div>
+                  <label style={{ color:'#8aabcc', fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'.06em', display:'block', marginBottom:4 }}>Proveedor (aplica a todos)</label>
+                  <select style={{ ...sel, fontSize:12 }} value={lote.proveedor_id} onChange={e => setLote(l=>({...l, proveedor_id:e.target.value}))}>
+                    <option value="">Del archivo Excel</option>
+                    {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ color:'#8aabcc', fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'.06em', display:'block', marginBottom:4 }}>N° Factura (aplica a todos)</label>
+                  <input style={{ ...inp, fontSize:12 }} value={lote.no_factura} onChange={e => setLote(l=>({...l, no_factura:e.target.value}))} placeholder="ej: FAC-2024-001" />
+                </div>
+              </div>
+            )}
+
             {importResult && (
               <div style={{ marginBottom:12, padding:'10px 16px', background:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:8, color:'#10b981', fontSize:13 }}>
                 ✓ Importados: {importResult.ok} · Errores: {importResult.err} · Omitidos: {importResult.omitidos}
@@ -643,7 +739,7 @@ export default function Inventario() {
               <table style={{ width:'100%', borderCollapse:'collapse', minWidth:700 }}>
                 <thead>
                   <tr>
-                    {['','IMEI 1','IMEI 2','Producto','GB','Color','Bat%','Costo','P.Venta','Condición'].map(h => (
+                    {['','Factura','IMEI 1','IMEI 2','Producto','GB','Color','Bat%','Costo','P.Venta','Condición'].map(h => (
                       <th key={h} style={{ color:'#4a6a8a', fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'.06em', padding:'7px 10px', textAlign:'left', borderBottom:'1px solid #1a2f52', background:'#0d1a35', position:'sticky', top:0, whiteSpace:'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -654,6 +750,7 @@ export default function Inventario() {
                       <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36' }}>
                         {r._ok ? <span style={{ color:'#10b981' }}>✓</span> : <span style={{ color:'#ef4444', fontSize:11 }}>⚠ {r._msg}</span>}
                       </td>
+                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:11, color:'#60a5fa' }}>{r.no_factura || '—'}</td>
                       <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:11, fontFamily:'monospace', color:'#8aabcc' }}>{r.imei || '—'}</td>
                       <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:11, fontFamily:'monospace', color:'#6a8aaa' }}>{r.imei2 || '—'}</td>
                       <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:12, color:'#e2e8f0' }}>{r.producto || '—'}</td>
