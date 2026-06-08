@@ -18,14 +18,21 @@ const fmtK = n => {
 const COLORS = ['#0066ff','#10b981','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#f97316','#ef4444']
 const MESES  = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 
-const TABS = [
+const TABS_ADMIN = [
   { key:'dashboard',    label:'📊 Dashboard' },
   { key:'ventas',       label:'🛍 Ventas' },
   { key:'inventario',   label:'📦 Inventario' },
+  { key:'inv_detalle',  label:'📦 Inv. Detalle' },
+  { key:'solicitudes',  label:'🔔 Solicitudes' },
   { key:'despachos',    label:'🚚 Despachos' },
   { key:'retomas',      label:'🔄 Retomas' },
   { key:'proveedores',  label:'🏭 Proveedores' },
   { key:'todo',         label:'📋 Todo junto' },
+]
+
+const TABS_INVENTARIO = [
+  { key:'inv_detalle',  label:'📦 Inventario' },
+  { key:'solicitudes',  label:'🔔 Solicitudes' },
 ]
 
 function downloadXLSX(data, filename, sheetName = 'Datos') {
@@ -49,8 +56,9 @@ const th = { color:'#4a6a8a', fontSize:11, fontWeight:600, textTransform:'upperc
 const td = { padding:'10px 14px', color:'#cbd5e1', fontSize:13, borderBottom:'1px solid #0f1e36' }
 
 export default function Reportes() {
-  const { esAsesor, perfil } = useAuth()
-  const [tab, setTab]         = useState('dashboard')
+  const { esAsesor, esAdmin, esLiderAdmin, esLiderCom, esInventarioRol, perfil } = useAuth()
+  const tabDefault = (esInventarioRol && !esAdmin) ? 'inv_detalle' : 'dashboard'
+  const [tab, setTab]         = useState(tabDefault)
   const [periodo, setPeriodo] = useState(new Date().toISOString().slice(0,7))
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState('')
@@ -71,6 +79,7 @@ export default function Reportes() {
   const [rawRetomas, setRawRetomas]       = useState([])
   const [rawProveedores, setRawProveedores] = useState([])
   const [rawAbonos, setRawAbonos]         = useState([])
+  const [rawSolicitudes, setRawSolicitudes] = useState([])
 
   useEffect(() => { loadAll() }, [periodo])
 
@@ -100,6 +109,7 @@ export default function Reportes() {
         supabase.from('retomas').select('*, ventas(nombre_cliente,asesor_nombre,fecha_venta)').order('created_at', { ascending:false }).limit(500),
         supabase.from('proveedores').select('*, abonos_proveedor(*)').eq('activo', true).order('nombre'),
         supabase.from('abonos_proveedor').select('*, proveedores(nombre)').order('created_at', { ascending:false }).limit(500),
+        supabase.from('notificaciones').select('*').eq('tipo','SOLICITUD_EQUIPO').order('created_at',{ascending:false}).limit(500),
       ])
 
       const ventas = vData || []
@@ -109,6 +119,7 @@ export default function Reportes() {
       setRawRetomas(rData || [])
       setRawProveedores(pData || [])
       setRawAbonos(aData || [])
+      setRawSolicitudes(solData || [])
 
       // Dashboard calcs
       const totalValor = ventas.reduce((a,v) => a + Number(v.valor_venta||0), 0)
@@ -310,7 +321,7 @@ export default function Reportes() {
 
       {/* Tabs */}
       <div style={{ display:'flex', gap:4, marginBottom:20, flexWrap:'wrap', borderBottom:'1px solid #1a2f52', paddingBottom:12 }}>
-        {TABS.map(t => (
+        {(esInventarioRol && !esAdmin && !esLiderAdmin && !esLiderCom ? TABS_INVENTARIO : TABS_ADMIN).map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{
             padding:'7px 14px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:600,
             background: tab === t.key ? 'linear-gradient(135deg,#0066ff,#0044bb)' : '#0d1a35',
@@ -612,6 +623,238 @@ export default function Reportes() {
               )}
             </>
           )}
+
+          {/* ── INVENTARIO DETALLE ── */}
+          {tab === 'inv_detalle' && (() => {
+            const disponibles  = rawInventario.filter(i => i.estado === 'disponible')
+            const vendidos     = rawInventario.filter(i => i.estado === 'vendido')
+            const devueltos    = rawInventario.filter(i => i.estado === 'devuelto')
+            const conAsesor    = rawInventario.filter(i => i.estado === 'con_asesor')
+            const enLab        = rawInventario.filter(i => i.estado_equipo === 'en_laboratorio')
+            const valorStock   = disponibles.reduce((a,i) => a + Number(i.costo||0), 0)
+
+            // Ingresos por día
+            const byDia = {}
+            rawInventario.forEach(i => {
+              const d = (i.fecha_compra || i.created_at?.slice(0,10) || '').slice(8,10)
+              if (!byDia[d]) byDia[d] = { dia: Number(d)||0, ingresos:0 }
+              byDia[d].ingresos++
+            })
+            const tendInv = Object.values(byDia).sort((a,b)=>a.dia-b.dia)
+
+            // Por proveedor
+            const byProv = {}
+            rawInventario.forEach(i => {
+              const k = i.proveedores?.nombre || 'Sin proveedor'
+              if (!byProv[k]) byProv[k] = { name:k, equipos:0, valor:0 }
+              byProv[k].equipos++
+              byProv[k].valor += Number(i.costo||0)
+            })
+            const topProv = Object.values(byProv).sort((a,b)=>b.equipos-a.equipos).slice(0,6)
+
+            // Por producto
+            const byProd = {}
+            rawInventario.filter(i=>i.estado==='disponible').forEach(i => {
+              const k = (i.producto||'Otro').split(' ')[0] + ' ' + (i.producto||'').split(' ')[1]
+              if (!byProd[k]) byProd[k] = { name:k, value:0 }
+              byProd[k].value++
+            })
+            const topProdInv = Object.values(byProd).sort((a,b)=>b.value-a.value).slice(0,8)
+
+            function dlInvDetalle() {
+              const wb = XLSX.utils.book_new()
+              const sheets = [
+                { name:'Disponibles',   rows: disponibles },
+                { name:'Vendidos',      rows: vendidos },
+                { name:'Devueltos',     rows: devueltos },
+                { name:'Con asesor',    rows: conAsesor },
+                { name:'En laboratorio',rows: enLab },
+              ]
+              sheets.forEach(s => {
+                if (s.rows.length > 0) {
+                  const data = s.rows.map(i => ({
+                    'Producto': i.producto, 'IMEI': i.imei||'', 'Color': i.color||'',
+                    'Batería': i.bateria??'', 'Costo': i.costo||0,
+                    'P.Venta est': i.precio_venta_est||0, 'Sticker': i.sticker||'',
+                    'Condición': i.estado_equipo||'', 'Proveedor': i.proveedores?.nombre||'',
+                    'Factura': i.no_factura||'', 'Fecha': i.fecha_compra||'',
+                    'Con asesor': i.con_asesor||'', 'Observaciones': i.observaciones||'',
+                  }))
+                  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), s.name)
+                }
+              })
+              XLSX.writeFile(wb, `Inventario_Detalle_iCali_${periodo}.xlsx`)
+            }
+
+            return (
+              <>
+                {/* KPIs */}
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:12, marginBottom:20 }}>
+                  {[
+                    { label:'Disponibles',    val:disponibles.length,  color:'#10b981' },
+                    { label:'Vendidos',        val:vendidos.length,     color:'#4a6a8a' },
+                    { label:'Con asesor',      val:conAsesor.length,    color:'#f59e0b' },
+                    { label:'En laboratorio',  val:enLab.length,        color:'#8b5cf6' },
+                    { label:'Devueltos prov.', val:devueltos.length,    color:'#ef4444' },
+                    { label:'Valor stock',     val:fmtK(valorStock),    color:'#0066ff', small:true },
+                  ].map(k => (
+                    <div key={k.label} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:10, padding:'12px 16px' }}>
+                      <div style={{ color:'#5a7aaa', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:4 }}>{k.label}</div>
+                      <div style={{ color:k.color, fontSize:k.small?16:22, fontWeight:700 }}>{k.val}</div>
+                      <div style={{ height:3, background:k.color, borderRadius:2, marginTop:8, opacity:.5 }} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Gráficas */}
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:20 }}>
+                  {chartCard('Ingresos por día', (
+                    <ResponsiveContainer width="100%" height={180}>
+                      <BarChart data={tendInv}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1a2f52" />
+                        <XAxis dataKey="dia" tick={{ fill:'#4a6a8a', fontSize:11 }} />
+                        <YAxis tick={{ fill:'#4a6a8a', fontSize:11 }} allowDecimals={false} />
+                        <Tooltip {...tooltipStyle} formatter={v=>[v+' equipos']} />
+                        <Bar dataKey="ingresos" fill="#0066ff" radius={[4,4,0,0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ))}
+                  {chartCard('Stock disponible por referencia', (
+                    <ResponsiveContainer width="100%" height={180}>
+                      <BarChart data={topProdInv} margin={{ bottom:40 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1a2f52" />
+                        <XAxis dataKey="name" tick={{ fill:'#8aabcc', fontSize:9 }} angle={-30} textAnchor="end" interval={0} />
+                        <YAxis tick={{ fill:'#4a6a8a', fontSize:11 }} allowDecimals={false} />
+                        <Tooltip {...tooltipStyle} formatter={v=>[v+' equipos']} />
+                        <Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ))}
+                </div>
+
+                {chartCard('Equipos por proveedor', (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={topProv} layout="vertical" margin={{ left:120, right:20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1a2f52" />
+                      <XAxis type="number" tick={{ fill:'#4a6a8a', fontSize:11 }} allowDecimals={false} />
+                      <YAxis type="category" dataKey="name" tick={{ fill:'#8aabcc', fontSize:11 }} width={120} />
+                      <Tooltip {...tooltipStyle} formatter={v=>[v+' equipos']} />
+                      <Bar dataKey="equipos" fill="#8b5cf6" radius={[0,4,4,0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ))}
+
+                <div style={{ display:'flex', justifyContent:'flex-end', marginTop:14 }}>
+                  <button onClick={dlInvDetalle} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #10b981', borderRadius:8, color:'#10b981', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                    📥 Descargar Excel completo (5 pestañas)
+                  </button>
+                </div>
+              </>
+            )
+          })()}
+
+          {/* ── SOLICITUDES ASESORES ── */}
+          {tab === 'solicitudes' && (() => {
+            const pendientes  = rawSolicitudes.filter(s => !s.respondida)
+            const atendidas   = rawSolicitudes.filter(s => s.respondida && s.respuesta === 'si')
+            const rechazadas  = rawSolicitudes.filter(s => s.respondida && s.respuesta === 'no')
+            const equiposConAsesor = rawInventario.filter(i => i.estado === 'con_asesor')
+
+            function dlSolicitudes() {
+              const rows = rawSolicitudes.map(s => ({
+                'Fecha': s.created_at?.slice(0,16)||'',
+                'Asesor': s.creado_por_nombre||'',
+                'Mensaje': s.mensaje||'',
+                'Equipos solicitados': Array.isArray(s.datos?.equipos)
+                  ? s.datos.equipos.map(e => `${e.producto} IMEI:${e.imei}`).join(' | ')
+                  : s.datos?.imei||'',
+                'Estado': s.respondida ? (s.respuesta==='si'?'Atendida':'Rechazada') : 'Pendiente',
+                'Respondido por': s.respondido_por||'',
+              }))
+              downloadXLSX(rows, `Solicitudes_iCali_${periodo}.xlsx`, 'Solicitudes')
+            }
+
+            return (
+              <>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:12, marginBottom:20 }}>
+                  {[
+                    { label:'Total solicitudes', val:rawSolicitudes.length, color:'#0066ff' },
+                    { label:'Pendientes',         val:pendientes.length,    color:'#f59e0b' },
+                    { label:'Atendidas',          val:atendidas.length,     color:'#10b981' },
+                    { label:'Rechazadas',         val:rechazadas.length,    color:'#ef4444' },
+                    { label:'Equipos con asesor', val:equiposConAsesor.length, color:'#8b5cf6' },
+                  ].map(k => (
+                    <div key={k.label} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:10, padding:'12px 16px' }}>
+                      <div style={{ color:'#5a7aaa', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:4 }}>{k.label}</div>
+                      <div style={{ color:k.color, fontSize:22, fontWeight:700 }}>{k.val}</div>
+                      <div style={{ height:3, background:k.color, borderRadius:2, marginTop:8, opacity:.5 }} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Equipos actualmente con asesores */}
+                {equiposConAsesor.length > 0 && (
+                  <div style={{ marginBottom:20 }}>
+                    <div style={{ color:'#f59e0b', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'.07em', marginBottom:10 }}>
+                      📦 Equipos actualmente con asesores ({equiposConAsesor.length})
+                    </div>
+                    <div style={{ background:'#0d1a35', border:'1px solid rgba(245,158,11,0.3)', borderRadius:12, overflow:'auto' }}>
+                      <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                        <thead><tr>{['Producto','IMEI','Color','Asesor','Desde','Proveedor'].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
+                        <tbody>
+                          {equiposConAsesor.map(e => (
+                            <tr key={e.id}>
+                              <td style={{ ...td, fontSize:12, color:'#e2e8f0' }}>{e.producto}</td>
+                              <td style={{ ...td, fontSize:11, fontFamily:'monospace', color:'#8aabcc' }}>{e.imei||'—'}</td>
+                              <td style={{ ...td, fontSize:12 }}>{e.color||'—'}</td>
+                              <td style={{ ...td, color:'#f59e0b', fontWeight:500 }}>{e.con_asesor||'—'}</td>
+                              <td style={{ ...td, fontSize:11 }}>{e.fecha_prestamo ? new Date(e.fecha_prestamo).toLocaleDateString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—'}</td>
+                              <td style={{ ...td, fontSize:12 }}>{e.proveedores?.nombre||'—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Historial solicitudes */}
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+                  <div style={{ color:'#8aabcc', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'.07em' }}>Historial de solicitudes</div>
+                  <button onClick={dlSolicitudes} style={{ padding:'7px 14px', background:'transparent', border:'1px solid #10b981', borderRadius:7, color:'#10b981', fontSize:11, fontWeight:600, cursor:'pointer' }}>📥 Descargar Excel</button>
+                </div>
+                <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:12, overflow:'auto' }}>
+                  <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                    <thead><tr>{['Fecha','Asesor','Equipos','Estado','Respondido por'].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
+                    <tbody>
+                      {rawSolicitudes.map(s => (
+                        <tr key={s.id}>
+                          <td style={{ ...td, fontSize:11, whiteSpace:'nowrap' }}>{s.created_at?.slice(0,16)||'—'}</td>
+                          <td style={{ ...td, color:'#e2e8f0', fontWeight:500 }}>{s.creado_por_nombre||'—'}</td>
+                          <td style={{ ...td, fontSize:11 }}>
+                            {Array.isArray(s.datos?.equipos)
+                              ? s.datos.equipos.map((e,i) => <div key={i} style={{ color:'#8aabcc' }}>{e.producto} <span style={{ fontFamily:'monospace', fontSize:10 }}>{e.imei}</span></div>)
+                              : <span style={{ color:'#8aabcc' }}>{s.datos?.imei||s.mensaje}</span>
+                            }
+                          </td>
+                          <td style={td}>
+                            <span style={{
+                              background: !s.respondida?'rgba(245,158,11,0.15)':s.respuesta==='si'?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)',
+                              color: !s.respondida?'#f59e0b':s.respuesta==='si'?'#10b981':'#ef4444',
+                              fontSize:10, padding:'2px 8px', borderRadius:4, fontWeight:600
+                            }}>
+                              {!s.respondida?'PENDIENTE':s.respuesta==='si'?'ATENDIDA':'RECHAZADA'}
+                            </span>
+                          </td>
+                          <td style={{ ...td, fontSize:11, color:'#4a6a8a' }}>{s.respondido_por||'—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )
+          })()}
 
           {/* ── TODO JUNTO ── */}
           {tab === 'todo' && (

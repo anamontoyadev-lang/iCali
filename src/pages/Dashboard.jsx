@@ -127,11 +127,11 @@ export default function Dashboard() {
     { key:'ventas',      label:'Ventas',              icon:'🛍️', path:'/ventas',       badge: contadores.ventasHoy, badgeLabel:'hoy', color:'#0066ff',  show: true },
     { key:'despachos',   label:'Despachos',            icon:'🚚', path:'/despachos',    badge: contadores.despachosPend, badgeLabel:'activos', color:'#f59e0b', show: puedeVerDespachos || esAdmin || esLiderCom || esLiderAdmin },
     { key:'laboratorio', label:'Laboratorio',          icon:'🔬', path:'/laboratorio',  badge: contadores.lab, badgeLabel:'en proceso', color:'#8b5cf6', show: true },
-    { key:'inventario',  label:'Inventario',           icon:'📦', path:'/inventario',   badge: contadores.inventario, badgeLabel:'disponibles', color:'#10b981', show: esAdmin || esLiderAdmin || esLiderCom },
+    { key:'inventario',  label:'Inventario',           icon:'📦', path:'/inventario',   badge: contadores.inventario, badgeLabel:'disponibles', color:'#10b981', show: esAdmin || esLiderAdmin || esLiderCom || esInventarioRol },
     { key:'proveedores', label:'Proveedores',          icon:'🏭', path:'/proveedores',  badge: null, badgeLabel:'', color:'#14b8a6', show: esAdmin || esLiderAdmin },
     { key:'financieras', label:'Financieras',          icon:'💳', path:'/financieras',  badge: contadores.finPendientes||null, badgeLabel:'pendientes', color:'#f43f5e', show: puedeVerFinancieras },
     { key:'extractos',   label:'Extractos',            icon:'📄', path:'/extractos',    badge: null, badgeLabel:'', color:'#6366f1', show: puedeVerFinancieras },
-    { key:'reportes',    label:'Reportes',             icon:'📊', path:'/reportes',     badge: null, badgeLabel:'', color:'#0ea5e9', show: esAdmin || esLiderAdmin || esLiderCom || esContadora },
+    { key:'reportes',    label:'Reportes',             icon:'📊', path:'/reportes',     badge: null, badgeLabel:'', color:'#0ea5e9', show: esAdmin || esLiderAdmin || esLiderCom || esContadora || esInventarioRol },
     { key:'usuarios',    label:'Usuarios',             icon:'👥', path:'/usuarios',     badge: null, badgeLabel:'', color:'#ec4899', show: esAdmin },
   ].filter(m => m.show)
 
