@@ -756,10 +756,13 @@ export default function Reportes() {
 
           {/* ── SOLICITUDES ASESORES ── */}
           {tab === 'solicitudes' && (() => {
-            const pendientes  = rawSolicitudes.filter(s => !s.respondida)
-            const atendidas   = rawSolicitudes.filter(s => s.respondida && s.respuesta === 'si')
-            const rechazadas  = rawSolicitudes.filter(s => s.respondida && s.respuesta === 'no')
+            const pendientes       = rawSolicitudes.filter(s => !s.respondida)
+            const atendidas        = rawSolicitudes.filter(s => s.respondida && s.respuesta === 'si')
+            const rechazadas       = rawSolicitudes.filter(s => s.respondida && s.respuesta === 'no')
             const equiposConAsesor = rawInventario.filter(i => i.estado === 'con_asesor')
+            // Devoluciones
+            const rawDevoluciones  = rawSolicitudes.filter(s => s.tipo === 'DEVOLUCION_EQUIPO' || (s.datos?.equipos && s.respondida && s.respuesta === 'recogido'))
+            const pendienteRecoger = rawInventario.filter(i => i.estado === 'con_asesor') // equipos que asesor solicitó devolver pero inventario no ha confirmado
 
             function dlSolicitudes() {
               const rows = rawSolicitudes.map(s => ({
@@ -779,11 +782,11 @@ export default function Reportes() {
               <>
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:12, marginBottom:20 }}>
                   {[
-                    { label:'Total solicitudes', val:rawSolicitudes.length, color:'#0066ff' },
-                    { label:'Pendientes',         val:pendientes.length,    color:'#f59e0b' },
-                    { label:'Atendidas',          val:atendidas.length,     color:'#10b981' },
-                    { label:'Rechazadas',         val:rechazadas.length,    color:'#ef4444' },
-                    { label:'Equipos con asesor', val:equiposConAsesor.length, color:'#8b5cf6' },
+                    { label:'Total solicitudes',      val:rawSolicitudes.length,    color:'#0066ff' },
+                    { label:'Pendientes por atender', val:pendientes.length,        color:'#f59e0b' },
+                    { label:'Entregados a asesor',    val:atendidas.length,         color:'#10b981' },
+                    { label:'Rechazadas',             val:rechazadas.length,        color:'#ef4444' },
+                    { label:'Con asesor ahora',       val:equiposConAsesor.length,  color:'#8b5cf6' },
                   ].map(k => (
                     <div key={k.label} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:10, padding:'12px 16px' }}>
                       <div style={{ color:'#5a7aaa', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:4 }}>{k.label}</div>
@@ -801,7 +804,7 @@ export default function Reportes() {
                     </div>
                     <div style={{ background:'#0d1a35', border:'1px solid rgba(245,158,11,0.3)', borderRadius:12, overflow:'auto' }}>
                       <table style={{ width:'100%', borderCollapse:'collapse' }}>
-                        <thead><tr>{['Producto','IMEI','Color','Asesor','Desde','Proveedor'].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
+                        <thead><tr>{['Producto','IMEI','Color','Asesor','Desde','Estado','Proveedor'].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
                         <tbody>
                           {equiposConAsesor.map(e => (
                             <tr key={e.id}>
@@ -810,6 +813,11 @@ export default function Reportes() {
                               <td style={{ ...td, fontSize:12 }}>{e.color||'—'}</td>
                               <td style={{ ...td, color:'#f59e0b', fontWeight:500 }}>{e.con_asesor||'—'}</td>
                               <td style={{ ...td, fontSize:11 }}>{e.fecha_prestamo ? new Date(e.fecha_prestamo).toLocaleDateString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—'}</td>
+                              <td style={td}>
+                                <span style={{ background:'rgba(245,158,11,0.15)', color:'#f59e0b', fontSize:10, padding:'2px 8px', borderRadius:4, fontWeight:600 }}>
+                                  📦 Con asesor
+                                </span>
+                              </td>
                               <td style={{ ...td, fontSize:12 }}>{e.proveedores?.nombre||'—'}</td>
                             </tr>
                           ))}
@@ -826,7 +834,7 @@ export default function Reportes() {
                 </div>
                 <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:12, overflow:'auto' }}>
                   <table style={{ width:'100%', borderCollapse:'collapse' }}>
-                    <thead><tr>{['Fecha','Asesor','Equipos','Estado','Respondido por'].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
+                    <thead><tr>{['Fecha','Asesor solicitó','Equipos','Estado','Respondido por','Fecha resp.'].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
                     <tbody>
                       {rawSolicitudes.map(s => (
                         <tr key={s.id}>
@@ -839,15 +847,24 @@ export default function Reportes() {
                             }
                           </td>
                           <td style={td}>
-                            <span style={{
-                              background: !s.respondida?'rgba(245,158,11,0.15)':s.respuesta==='si'?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)',
-                              color: !s.respondida?'#f59e0b':s.respuesta==='si'?'#10b981':'#ef4444',
-                              fontSize:10, padding:'2px 8px', borderRadius:4, fontWeight:600
-                            }}>
-                              {!s.respondida?'PENDIENTE':s.respuesta==='si'?'ATENDIDA':'RECHAZADA'}
-                            </span>
+                            {(() => {
+                              let bg, color, label
+                              if (!s.respondida) {
+                                bg='rgba(245,158,11,0.15)'; color='#f59e0b'; label='⏳ Pendiente'
+                              } else if (s.respuesta === 'si') {
+                                bg='rgba(16,185,129,0.15)'; color='#10b981'; label='✅ Entregado al asesor'
+                              } else if (s.respuesta === 'recogido') {
+                                bg='rgba(59,130,246,0.15)'; color='#60a5fa'; label='📥 Equipo recogido'
+                              } else if (s.respuesta === 'no') {
+                                bg='rgba(239,68,68,0.15)'; color='#ef4444'; label='✗ Rechazada'
+                              } else {
+                                bg='rgba(107,114,128,0.15)'; color='#9ca3af'; label=s.respuesta||'—'
+                              }
+                              return <span style={{ background:bg, color, fontSize:10, padding:'3px 8px', borderRadius:4, fontWeight:600, whiteSpace:'nowrap' }}>{label}</span>
+                            })()}
                           </td>
                           <td style={{ ...td, fontSize:11, color:'#4a6a8a' }}>{s.respondido_por||'—'}</td>
+                          <td style={{ ...td, fontSize:10, color:'#4a6a8a' }}>{s.updated_at ? new Date(s.updated_at).toLocaleDateString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—'}</td>
                         </tr>
                       ))}
                     </tbody>
