@@ -58,11 +58,12 @@ export default function Dashboard() {
       // Inventario
       const { data: dInv } = await supabase.from('compras_proveedor').select('id,costo').eq('estado','disponible')
       // Notificaciones
-      // Notificaciones: admins ven todas, asesores solo las suyas o generales
+      // Notificaciones: admins ven todas, asesores solo las suyas
       const esAdminNot = esAdmin || esLiderAdmin || esLiderCom
       let qNotifs = supabase.from('notificaciones').select('*').order('created_at',{ascending:false}).limit(10)
       if (!esAdminNot && user) {
-        qNotifs = qNotifs.or(`creado_por.eq.${user.id},destinatario_rol.eq.${perfil?.rol || ''}`)
+        // Asesores ven: las que crearon + las respuestas dirigidas a ellos
+        qNotifs = qNotifs.or(`creado_por.eq.${user.id},destinatario_rol.eq.asesor`)
       }
       const { data: dNotifs } = await qNotifs
 

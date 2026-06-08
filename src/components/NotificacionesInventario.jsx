@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../lib/AuthContext'
 
 const fmt = n => new Intl.NumberFormat('es-CO',{ style:'currency', currency:'COP', maximumFractionDigits:0 }).format(n||0)
 
@@ -19,7 +20,10 @@ const inpS = {
 }
 
 export default function NotificacionesInventario() {
-  const [notifs, setNotifs]       = useState([])
+  const { esAdmin, esLiderAdmin, perfil } = useAuth()
+  const esInventario = esAdmin || esLiderAdmin || perfil?.rol === 'inventario'
+  const [minimizado, setMinimizado] = useState(false)
+  const [notifs, setNotifs]         = useState([])
   const [formIngreso, setFormIngreso] = useState(null) // notif activa para ingresar
   const [campos, setCampos]       = useState({})
   const [guardando, setGuardando] = useState(false)
@@ -91,6 +95,16 @@ export default function NotificacionesInventario() {
       respuesta: todosConfirmados ? 'si' : null,
     }).eq('id', notifId)
 
+    // Notificar al asesor que inventario bajó el equipo
+    await supabase.from('notificaciones').insert({
+      tipo: 'SOLICITUD_RESPONDIDA',
+      mensaje: `✅ Inventario confirmó: equipo ${equipo.imei} en camino`,
+      datos: { imei: equipo.imei, producto: equipo.producto, asesor: asesor },
+      creado_por: (await supabase.auth.getUser()).data.user?.id,
+      creado_por_nombre: 'Inventario',
+      destinatario_rol: 'asesor',
+      respondida: false,
+    })
     loadNotifs()
   }
 
@@ -172,6 +186,7 @@ export default function NotificacionesInventario() {
     setGuardando(false)
   }
 
+  if (!esInventario) return null
   if (notifs.length === 0 && !formIngreso) return null
 
   return (
@@ -183,7 +198,18 @@ export default function NotificacionesInventario() {
           display: 'flex', flexDirection: 'column', gap: 10,
           maxWidth: 380, fontFamily: "'DM Sans', system-ui",
         }}>
-          {notifs.map(n => (
+          {/* Header con contador y botón minimizar */}
+          {notifs.length > 0 && (
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:10, padding:'8px 12px' }}>
+              <span style={{ color:'#fff', fontSize:12, fontWeight:600 }}>
+                🔔 {notifs.filter(n=>!n.respondida).length} notificación{notifs.filter(n=>!n.respondida).length!==1?'es':''} pendiente{notifs.filter(n=>!n.respondida).length!==1?'s':''}
+              </span>
+              <button onClick={() => setMinimizado(m => !m)} style={{ background:'transparent', border:'none', color:'#8aabcc', fontSize:11, cursor:'pointer', padding:'2px 8px', borderRadius:4, border:'1px solid #1a2f52' }}>
+                {minimizado ? '▲ Ver' : '▼ Minimizar'}
+              </button>
+            </div>
+          )}
+          {!minimizado && notifs.map(n => (
             <div key={n.id} style={{
               background: '#0d1a35',
               border: `1px solid ${n.tipo === 'EQUIPO_LISTO_LABORATORIO' ? '#10b981' : '#f59e0b'}`,

@@ -612,6 +612,32 @@ export default function NuevaVenta() {
               </div>
             )}
 
+            {/* Panel solicitud + resumen equipos con asesor */}
+            <div style={{ gridColumn:'span 2' }}>
+              <SolicitudEquiposPanel
+                equiposSolicitados={equiposSolicitados}
+                setEquiposSolicitados={setEquiposSolicitados}
+                solicitudEnviada={solicitudEnviada}
+                setSolicitudEnviada={setSolicitudEnviada}
+                enviandoNotif={enviandoNotif}
+                setEnviandoNotif={setEnviandoNotif}
+                asesorNombre={form.asesor_nombre}
+                clienteNombre={form.nombre_cliente}
+                onSeleccionarParaVenta={(eq) => {
+                  setEquipoSeleccionado(eq)
+                  setForm(f => ({
+                    ...f,
+                    imei: eq.imei || '',
+                    color: eq.color || '',
+                    costo_equipo: String(eq.costo || ''),
+                    proveedor: eq.proveedores?.nombre || f.proveedor,
+                    _de_inventario: false, // viene del asesor, no del stock directo
+                  }))
+                  setCostoAutoInfo({ costo: eq.costo, fuente: `Equipo solicitado · IMEI ${eq.imei}` })
+                }}
+              />
+            </div>
+
             <Field label="Color">
               {coloresDisponibles.length > 0 ? (
                 <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
@@ -672,18 +698,6 @@ export default function NuevaVenta() {
               </Field>
             )}
           </Section>
-
-          {/* SECCIÓN SOLICITUD DE EQUIPOS A INVENTARIO */}
-          <SolicitudEquiposPanel
-            equiposSolicitados={equiposSolicitados}
-            setEquiposSolicitados={setEquiposSolicitados}
-            solicitudEnviada={solicitudEnviada}
-            setSolicitudEnviada={setSolicitudEnviada}
-            enviandoNotif={enviandoNotif}
-            setEnviandoNotif={setEnviandoNotif}
-            asesorNombre={form.asesor_nombre}
-            clienteNombre={form.nombre_cliente}
-          />
 
           <Section title="💰 Valores">
             <Field label="Valor de venta $" required>
