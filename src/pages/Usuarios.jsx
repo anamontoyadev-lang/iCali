@@ -15,6 +15,20 @@ const ROLES = [
   { value:'retomas',            label:'Retomas',              color:'#a78bfa' },
 ]
 
+const PERMISOS_POR_ROL = {
+  admin:              'Todo el sistema',
+  lider_admin:        'Todo excepto gestión usuarios',
+  lider_comercial:    'Ventas, Laboratorio, Inventario, Reportes',
+  contadora:          'Financieras, Extractos, Reportes',
+  asesor_mostrador:   'Ventas propias, ver Laboratorio',
+  asesor_call_center: 'Ventas propias, ver Laboratorio',
+  inventario:         'Inventario completo, ver Ventas, ver Lab, Reportes inv',
+  retomas:            'Laboratorio tab Retomas, notificaciones retomas',
+  garantias:          'Laboratorio tab Garantías y Reparaciones',
+  laboratorio:        'Laboratorio completo',
+  asesor:             'Ventas propias',
+}
+
 const SUPABASE_URL  = process.env.REACT_APP_SUPABASE_URL
 const SUPABASE_ANON = process.env.REACT_APP_SUPABASE_ANON_KEY
 
@@ -215,6 +229,11 @@ export default function Usuarios() {
                 <select required style={sel} value={formCrear.rol} onChange={e => setFormCrear(f=>({...f,rol:e.target.value}))}>
                   {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
+                {formCrear.rol && (
+                  <div style={{ marginTop:6, padding:'6px 10px', background:'rgba(59,130,246,0.08)', border:'1px solid rgba(59,130,246,0.2)', borderRadius:6, color:'#60a5fa', fontSize:11 }}>
+                    🔐 Acceso: {PERMISOS_POR_ROL[formCrear.rol] || 'Estándar'}
+                  </div>
+                )}
               </FormField>
             </div>
             {msgError && <ErrMsg msg={msgError} />}
@@ -234,6 +253,11 @@ export default function Usuarios() {
                 <select required style={sel} value={formEditar.rol} onChange={e => setFormEditar(f=>({...f,rol:e.target.value}))}>
                   {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
+                {formEditar.rol && (
+                  <div style={{ marginTop:6, padding:'6px 10px', background:'rgba(59,130,246,0.08)', border:'1px solid rgba(59,130,246,0.2)', borderRadius:6, color:'#60a5fa', fontSize:11 }}>
+                    🔐 Acceso: {PERMISOS_POR_ROL[formEditar.rol] || 'Estándar'}
+                  </div>
+                )}
               </FormField>
             </div>
             <div style={{ marginTop:12, padding:'10px 14px', background:'rgba(59,130,246,0.08)', border:'1px solid rgba(59,130,246,0.2)', borderRadius:8, color:'#8aabcc', fontSize:12 }}>📧 {modalEditar.email}</div>

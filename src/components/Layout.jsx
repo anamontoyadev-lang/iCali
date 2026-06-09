@@ -42,7 +42,7 @@ export default function Layout() {
     { to:'/ventas',       label:'Ventas',      icon: <IconVentas />,    show: true },
     { to:'/despachos',    label:'Despachos',   icon: <IconDesp />,      show: puedeVerDespachos || esAdmin || esLiderAdmin || esLiderCom },
     { to:'/laboratorio',  label:'Laboratorio', icon: <IconLab />,       show: true }, // todos ven lab
-    { to:'/proveedores',  label:'Proveedores', icon: <IconProv />,      show: true },
+    { to:'/proveedores',  label:'Proveedores', icon: <IconProv />,      show: esAdmin || esLiderAdmin || esLiderCom || esInventarioRol },
     { to:'/inventario',   label:'Inventario',  icon: <IconInv />,       show: esAdmin || esLiderAdmin || esLiderCom || esInventarioRol },
     { to:'/financieras',  label:'Financieras', icon: <IconFin />,       show: puedeVerFinancieras },
     { to:'/extractos',    label:'Extractos',   icon: <IconDoc />,       show: puedeVerFinancieras },
@@ -75,7 +75,7 @@ export default function Layout() {
   const SideNav = ({ onNav }) => (
     <div style={{ display:'flex', flexDirection:'column' }}>
       <SectionLabel txt="Principal" />
-      {navItems.slice(0,6).map(item => (
+      {navItems.filter(i => ['/','/ventas','/despachos','/laboratorio','/proveedores','/inventario'].includes(i.to)).map(item => (
         <NavLink key={item.to} to={item.to} end={item.to==='/'} style={navStyle} onClick={onNav}>
           {item.icon} {item.label}
         </NavLink>

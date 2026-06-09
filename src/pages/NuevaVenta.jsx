@@ -403,6 +403,8 @@ export default function NuevaVenta() {
     e.preventDefault()
     setError('')
     setSaving(true)
+    // Capturar _patinado antes de cualquier setState
+    const esPatinado = !!form._patinado
     const user = (await supabase.auth.getUser()).data.user
     if (!user) { setError('Sesión expirada'); setSaving(false); return }
 
@@ -449,7 +451,7 @@ export default function NuevaVenta() {
 
     // Marcar salida en inventario
     if (form.imei.trim().length >= 10 && venta?.id) {
-      if (form._patinado) {
+      if (esPatinado) {
         // Equipo patinado — insertar en inventario como patinado_vendido
         const prov = proveedores.find(p => p.nombre === form.proveedor)
         let provId = prov?.id
@@ -474,6 +476,7 @@ export default function NuevaVenta() {
           observaciones:   'Equipo patinado — conseguido para venta directa',
         })
       } else {
+        // Equipo normal de inventario — marcar como vendido
         await supabase.from('compras_proveedor')
           .update({ estado: 'vendido', venta_id: venta.id })
           .eq('imei', form.imei.trim())

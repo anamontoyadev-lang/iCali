@@ -77,11 +77,20 @@ export default function NotificacionesInventario() {
 
   async function confirmarUnEquipo(notifId, equipo, asesor, allEquipos) {
     // Marcar este equipo como con_asesor
-    await supabase.from('compras_proveedor').update({
-      estado: 'con_asesor',
-      con_asesor: asesor,
-      fecha_prestamo: new Date().toISOString(),
-    }).eq('id', equipo.id).eq('estado', 'disponible')
+    // Actualizar por id si existe, si no por imei
+    if (equipo.id) {
+      await supabase.from('compras_proveedor').update({
+        estado: 'con_asesor',
+        con_asesor: asesor,
+        fecha_prestamo: new Date().toISOString(),
+      }).eq('id', equipo.id).eq('estado', 'disponible')
+    } else if (equipo.imei) {
+      await supabase.from('compras_proveedor').update({
+        estado: 'con_asesor',
+        con_asesor: asesor,
+        fecha_prestamo: new Date().toISOString(),
+      }).eq('imei', equipo.imei).eq('estado', 'disponible')
+    }
 
     // Actualizar la notificación marcando este equipo como confirmado
     const equiposActualizados = allEquipos.map(e =>
