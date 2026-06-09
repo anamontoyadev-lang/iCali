@@ -18,6 +18,7 @@ const ROLES_LABEL = {
 
 export default function Layout() {
   const { perfil, rol, esAdmin, esLiderAdmin, esLiderCom, esContadora,
+          esInventarioRol, esRetomas, esGarantias,
           puedeVerFinancieras, puedeVerDespachos } = useAuth()
   const navigate  = useNavigate()
   const location  = useLocation()
@@ -42,10 +43,10 @@ export default function Layout() {
     { to:'/despachos',    label:'Despachos',   icon: <IconDesp />,      show: puedeVerDespachos || esAdmin || esLiderAdmin || esLiderCom },
     { to:'/laboratorio',  label:'Laboratorio', icon: <IconLab />,       show: true }, // todos ven lab
     { to:'/proveedores',  label:'Proveedores', icon: <IconProv />,      show: true },
-    { to:'/inventario',   label:'Inventario',  icon: <IconInv />,       show: true },
+    { to:'/inventario',   label:'Inventario',  icon: <IconInv />,       show: esAdmin || esLiderAdmin || esLiderCom || esInventarioRol },
     { to:'/financieras',  label:'Financieras', icon: <IconFin />,       show: puedeVerFinancieras },
     { to:'/extractos',    label:'Extractos',   icon: <IconDoc />,       show: puedeVerFinancieras },
-    { to:'/reportes',     label:'Reportes',    icon: <IconReport />,    show: esAdmin || esLiderAdmin || esLiderCom || esContadora },
+    { to:'/reportes',     label:'Reportes',    icon: <IconReport />,    show: esAdmin || esLiderAdmin || esLiderCom || esContadora || esInventarioRol },
     { to:'/usuarios',     label:'Usuarios',    icon: <IconUsers />,     show: esAdmin },
   ].filter(i => i.show)
 
@@ -55,7 +56,7 @@ export default function Layout() {
     { to:'/ventas',      label:'Ventas',   icon:'🛍️' },
     { to:'/despachos',   label:'Despacho', icon:'🚚', show: puedeVerDespachos||esAdmin||esLiderAdmin||esLiderCom },
     { to:'/laboratorio', label:'Lab',      icon:'🔬' },
-    { to:'/reportes',    label:'Reportes', icon:'📊', show: esAdmin||esLiderAdmin||esLiderCom||esContadora },
+    { to:'/reportes',    label:'Reportes', icon:'📊', show: esAdmin||esLiderAdmin||esLiderCom||esContadora||esInventarioRol },
   ].filter(i => i.show !== false)
 
   const navStyle = ({ isActive }) => ({
@@ -87,7 +88,7 @@ export default function Layout() {
           </NavLink>
         ))}
       </>}
-      <SectionLabel txt="Análisis" />
+      {(esAdmin || esLiderAdmin || esLiderCom || esContadora || esInventarioRol) && <SectionLabel txt="Análisis" />}
       {navItems.filter(i=>i.to==='/reportes').map(item => (
         <NavLink key={item.to} to={item.to} style={navStyle} onClick={onNav}>
           {item.icon} {item.label}

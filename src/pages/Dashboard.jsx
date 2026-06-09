@@ -131,7 +131,7 @@ export default function Dashboard() {
 
   // Módulos según rol
   const modulos = [
-    { key:'ventas',      label:'Ventas',              icon:'🛍️', path:'/ventas',       badge: contadores.ventasHoy, badgeLabel:'hoy', color:'#0066ff',  show: true }, // todos
+    { key:'ventas',      label:'Ventas',              icon:'🛍️', path:'/ventas',       badge: contadores.ventasHoy, badgeLabel:'hoy', color:'#0066ff',  show: true },
     { key:'despachos',   label:'Despachos',            icon:'🚚', path:'/despachos',    badge: contadores.despachosPend, badgeLabel:'activos', color:'#f59e0b', show: puedeVerDespachos || esAdmin || esLiderCom || esLiderAdmin },
     { key:'laboratorio', label:'Laboratorio',          icon:'🔬', path:'/laboratorio',  badge: contadores.lab, badgeLabel:'en proceso', color:'#8b5cf6', show: true },
     { key:'retomas',     label:'Retomas',              icon:'🔄', path:'/laboratorio',  badge: contadores.retomas, badgeLabel:'activas', color:'#a78bfa', show: esRetomas },

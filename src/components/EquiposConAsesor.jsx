@@ -18,10 +18,14 @@ export default function EquiposConAsesor() {
       .eq('estado', 'con_asesor')
       .order('fecha_prestamo', { ascending: false })
 
-    // Asesor solo ve los suyos
-    if (!esAdmin && !esLiderAdmin && !esLiderCom && perfil?.nombre) {
-      const nombre = `${perfil.nombre} ${perfil.apellido || ''}`.trim()
-      q = q.ilike('con_asesor', `%${nombre}%`)
+    // Asesor solo ve los suyos — buscar por nombre o apellido
+    if (!esAdmin && !esLiderAdmin && !esLiderCom && perfil) {
+      const nombre = perfil.nombre || ''
+      const apellido = perfil.apellido || ''
+      // Buscar por nombre o apellido parcial
+      if (nombre) {
+        q = q.ilike('con_asesor', `%${nombre}%`)
+      }
     }
 
     const { data } = await q
