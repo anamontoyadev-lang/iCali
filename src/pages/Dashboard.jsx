@@ -15,7 +15,7 @@ const fmtK = n => {
 
 export default function Dashboard() {
   const { perfil, esAsesor, esAsesorCall, esAsesorMostrador, esAdmin,
-          esLiderCom, esLiderAdmin, esContadora, esGarantias, esInventarioRol,
+          esLiderCom, esLiderAdmin, esContadora, esGarantias, esInventarioRol, esRetomas,
           puedeVerFinancieras, puedeVerDespachos } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
@@ -62,8 +62,15 @@ export default function Dashboard() {
       const esAdminNot = esAdmin || esLiderAdmin || esLiderCom
       let qNotifs = supabase.from('notificaciones').select('*').order('created_at',{ascending:false}).limit(10)
       if (!esAdminNot && user) {
-        // Asesores ven: las que crearon + las respuestas dirigidas a ellos
-        qNotifs = qNotifs.or(`creado_por.eq.${user.id},destinatario_rol.eq.asesor`)
+        if (esRetomas) {
+          // Diego ve notificaciones de retomas
+          qNotifs = qNotifs.or(`destinatario_rol.eq.retomas,creado_por.eq.${user.id}`)
+        } else if (esGarantias) {
+          qNotifs = qNotifs.or(`destinatario_rol.eq.garantias,creado_por.eq.${user.id}`)
+        } else {
+          // Asesores ven las suyas
+          qNotifs = qNotifs.or(`creado_por.eq.${user.id},destinatario_rol.eq.asesor`)
+        }
       }
       const { data: dNotifs } = await qNotifs
 
@@ -127,6 +134,7 @@ export default function Dashboard() {
     { key:'ventas',      label:'Ventas',              icon:'🛍️', path:'/ventas',       badge: contadores.ventasHoy, badgeLabel:'hoy', color:'#0066ff',  show: true },
     { key:'despachos',   label:'Despachos',            icon:'🚚', path:'/despachos',    badge: contadores.despachosPend, badgeLabel:'activos', color:'#f59e0b', show: puedeVerDespachos || esAdmin || esLiderCom || esLiderAdmin },
     { key:'laboratorio', label:'Laboratorio',          icon:'🔬', path:'/laboratorio',  badge: contadores.lab, badgeLabel:'en proceso', color:'#8b5cf6', show: true },
+    { key:'retomas',     label:'Retomas',              icon:'🔄', path:'/laboratorio',  badge: contadores.retomas, badgeLabel:'activas', color:'#a78bfa', show: esRetomas },
     { key:'inventario',  label:'Inventario',           icon:'📦', path:'/inventario',   badge: contadores.inventario, badgeLabel:'disponibles', color:'#10b981', show: esAdmin || esLiderAdmin || esLiderCom || esInventarioRol },
     { key:'proveedores', label:'Proveedores',          icon:'🏭', path:'/proveedores',  badge: null, badgeLabel:'', color:'#14b8a6', show: esAdmin || esLiderAdmin },
     { key:'financieras', label:'Financieras',          icon:'💳', path:'/financieras',  badge: contadores.finPendientes||null, badgeLabel:'pendientes', color:'#f43f5e', show: puedeVerFinancieras },

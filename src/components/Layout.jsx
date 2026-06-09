@@ -13,6 +13,7 @@ const ROLES_LABEL = {
   garantias:          'Garantías y Reparaciones',
   laboratorio:        'Laboratorio',
   inventario:         'Inventario',
+  retomas:            'Retomas',
 }
 
 export default function Layout() {
@@ -39,7 +40,7 @@ export default function Layout() {
     { to:'/',             label:'Dashboard',   icon: <IconDash />,      show: true },
     { to:'/ventas',       label:'Ventas',      icon: <IconVentas />,    show: true },
     { to:'/despachos',    label:'Despachos',   icon: <IconDesp />,      show: puedeVerDespachos || esAdmin || esLiderAdmin || esLiderCom },
-    { to:'/laboratorio',  label:'Laboratorio', icon: <IconLab />,       show: true },
+    { to:'/laboratorio',  label:'Laboratorio', icon: <IconLab />,       show: true }, // todos ven lab
     { to:'/proveedores',  label:'Proveedores', icon: <IconProv />,      show: true },
     { to:'/inventario',   label:'Inventario',  icon: <IconInv />,       show: true },
     { to:'/financieras',  label:'Financieras', icon: <IconFin />,       show: puedeVerFinancieras },

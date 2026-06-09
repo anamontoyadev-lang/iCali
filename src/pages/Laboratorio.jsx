@@ -145,8 +145,9 @@ function RepuestosWidget({ reps, onQuitar, onAgregar }) {
 }
 
 export default function Laboratorio() {
-  const { esAdmin, esLiderAdmin, esLiderCom } = useAuth()
-  const [tab, setTab] = useState('garantias')
+  const { esAdmin, esLiderAdmin, esLiderCom, esRetomas, esGarantias } = useAuth()
+  const tabDefault = esRetomas ? 'retomas' : 'garantias'
+  const [tab, setTab] = useState(tabDefault)
 
   // Retomas
   const [retomas, setRetomas]     = useState([])
@@ -361,7 +362,7 @@ export default function Laboratorio() {
           <h1 style={{ color:'#fff', fontSize:20, fontWeight:600, margin:'0 0 4px' }}>🔬 Laboratorio</h1>
           <p style={{ color:'#4a6a8a', fontSize:13, margin:0 }}>Retomas · Garantías y Reparaciones</p>
         </div>
-        {tab === 'garantias' && (esAdmin || esLiderAdmin || esLiderCom) && (
+        {tab === 'garantias' && (esAdmin || esLiderAdmin || esLiderCom || esGarantias) && (
           <button onClick={() => setShowFormG(true)} style={{ padding:'10px 20px', background:'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>
             + Nuevo ingreso
           </button>
@@ -430,7 +431,7 @@ export default function Laboratorio() {
                       <td style={{ ...td, fontSize:12 }}>{r.quien_tiene||r.punto_tienda||'—'}</td>
                       <td style={td}><div style={{ fontSize:12 }}>{r.ventas?.nombre_cliente||'—'}</div><div style={{ color:'#4a6a8a', fontSize:11 }}>{r.ventas?.asesor_nombre}</div></td>
                       <td style={{ ...td, fontSize:12, whiteSpace:'nowrap' }}>{r.fecha_recepcion?new Date(r.fecha_recepcion+'T12:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}):'—'}</td>
-                      {(esAdmin||esLiderAdmin||esLiderCom) && (
+                      {(esAdmin||esLiderAdmin||esLiderCom||esRetomas) && (
                         <td style={td}><button onClick={() => { setEditandoR(r.id); setEditFormR({ imei_retoma:r.imei_retoma||'', referencia:r.referencia||'', capacidad_gb:r.capacidad_gb||'', color:r.color||'', porcentaje_bateria:r.porcentaje_bateria||'', valor_retoma:r.valor_retoma||'', costo_estimado:r.costo_estimado||'', quien_tiene:r.quien_tiene||'', punto_tienda:r.punto_tienda||'', estado:r.estado, observaciones:r.observaciones||'' }) }} style={{ background:'#1a2f52', border:'none', borderRadius:6, color:'#8aabcc', fontSize:12, padding:'5px 10px', cursor:'pointer' }}>Editar</button></td>
                       )}
                     </tr>
@@ -502,7 +503,7 @@ export default function Laboratorio() {
                       <td style={{ ...td, fontSize:12, whiteSpace:'nowrap', color:'#f59e0b' }}>{g.fecha_entrega_estimada?new Date(g.fecha_entrega_estimada+'T12:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short'}):'—'}</td>
                       <td style={{ ...td, fontSize:12, whiteSpace:'nowrap', color:'#10b981' }}>{g.fecha_entrega_real?new Date(g.fecha_entrega_real+'T12:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short'}):'—'}</td>
                       <td style={{ ...td, fontSize:12 }}>{g.asesor||'—'}</td>
-                      {(esAdmin||esLiderAdmin||esLiderCom) && (
+                      {(esAdmin||esLiderAdmin||esLiderCom||esGarantias) && (
                         <td style={td}><button onClick={() => { setEditandoG(g.id); setEditFormG({ tipo:g.tipo, diagnostico:g.diagnostico||'', solucion:g.solucion||'', costo_mano_obra:g.costo_mano_obra||'', costo_repuestos:g.costo_repuestos||0, repuestos:Array.isArray(g.repuestos)?g.repuestos:[], estado:g.estado, observaciones:g.observaciones||'', fecha_entrega_estimada:g.fecha_entrega_estimada||'', fecha_entrega_real:g.fecha_entrega_real||'' }) }} style={{ background:'#1a2f52', border:'none', borderRadius:6, color:'#8aabcc', fontSize:12, padding:'5px 10px', cursor:'pointer' }}>Editar</button></td>
                       )}
                     </tr>
