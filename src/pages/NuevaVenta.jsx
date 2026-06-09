@@ -633,7 +633,10 @@ export default function NuevaVenta() {
               {form._patinado && (
                 <div style={{ marginTop:8, background:'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.25)', borderRadius:8, padding:'10px 12px' }}>
                   <div style={{ color:'#f59e0b', fontSize:11, fontWeight:600, marginBottom:8 }}>🔍 Equipo a conseguir (patinado)</div>
-                  <input style={{ ...inp, marginBottom:6 }} required value={form.producto} onChange={e => set('producto', e.target.value)} placeholder="Nombre del equipo ej: iPhone 15 Pro 256GB - USADO" />
+                  <select required style={{ ...inp, marginBottom:6 }} value={form.producto} onChange={e => set('producto', e.target.value)}>
+                    <option value="">Seleccionar referencia del equipo...</option>
+                    {PRODUCTOS.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
                   <div style={{ color:'#8aabcc', fontSize:10, marginTop:2 }}>Este equipo ingresará a inventario como patinado al registrar la venta.</div>
                 </div>
               )}
