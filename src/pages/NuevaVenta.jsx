@@ -83,6 +83,8 @@ const REFERENCIAS_RETOMA = [
   'Samsung S21','Samsung S22','Samsung S23','Samsung S24','Samsung S25','Otro'
 ]
 
+const CIUDADES_COLOMBIA = ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena', 'Cúcuta', 'Bucaramanga', 'Pereira', 'Santa Marta', 'Ibagué', 'Pasto', 'Manizales', 'Neiva', 'Villavicencio', 'Armenia', 'Valledupar', 'Montería', 'Sincelejo', 'Popayán', 'Floridablanca', 'Soledad', 'Itagüí', 'Bello', 'Buenaventura', 'Barrancabermeja', 'Palmira', 'Tunja', 'Florencia', 'Quibdó', 'Riohacha', 'San Andrés', 'Yopal', 'Arauca', 'Tumaco', 'Apartadó', 'Envigado', 'Sabaneta', 'La Ceja', 'Rionegro', 'Girón', 'Piedecuesta', 'Zipaquirá', 'Fusagasugá', 'Soacha', 'Chía', 'Cajicá', 'Mosquera', 'Facatativá', 'Espinal', 'Girardot', 'Melgar', 'Buga', 'Tuluá', 'Cartago', 'Santander de Quilichao', 'Magangué', 'Lorica', 'Aguachica', 'Ocaña', 'Duitama', 'Sogamoso', 'Dosquebradas', 'La Virginia', 'Pitalito', 'Garzón', 'Ipiales', 'La Unión', 'Otra ciudad']
+
 const METODOS = [
   { value:'contado',       label:'Contado' },
   { value:'transferencia', label:'Transferencia' },
@@ -447,10 +449,36 @@ export default function NuevaVenta() {
 
     // Marcar salida en inventario
     if (form.imei.trim().length >= 10 && venta?.id) {
-      await supabase.from('compras_proveedor')
-        .update({ estado: 'vendido', venta_id: venta.id })
-        .eq('imei', form.imei.trim())
-        .eq('estado', 'disponible')
+      if (form._patinado) {
+        // Equipo patinado — insertar en inventario como patinado_vendido
+        const prov = proveedores.find(p => p.nombre === form.proveedor)
+        let provId = prov?.id
+        if (!provId && form.proveedor.trim()) {
+          // Crear proveedor nuevo
+          const { data: newProv } = await supabase.from('proveedores').insert({
+            nombre: form.proveedor.trim(), activo: true
+          }).select().single()
+          provId = newProv?.id
+        }
+        await supabase.from('compras_proveedor').insert({
+          proveedor_id:    provId,
+          producto:        form.producto,
+          imei:            form.imei.trim(),
+          color:           colorFinal || '',
+          costo:           num(form.costo_equipo),
+          estado:          'patinado_vendido',
+          estado_equipo:   'usado',
+          fecha_compra:    form.fecha_venta,
+          registrado_por:  user.id,
+          venta_id:        venta.id,
+          observaciones:   'Equipo patinado — conseguido para venta directa',
+        })
+      } else {
+        await supabase.from('compras_proveedor')
+          .update({ estado: 'vendido', venta_id: venta.id })
+          .eq('imei', form.imei.trim())
+          .eq('estado', 'disponible')
+      }
     }
 
     if (form.tiene_retoma && venta?.id) {
@@ -462,6 +490,24 @@ export default function NuevaVenta() {
         referencia:   refFinal,
         valor_retoma: num(form.valor_retoma)
       }).eq('venta_id', venta.id)
+
+      // Notificar a retomas (Diego) para valoración
+      await supabase.from('notificaciones').insert({
+        tipo:              'VALORACION_RETOMA',
+        mensaje:           `Nueva retoma para valorar — ${refFinal}`,
+        datos: {
+          venta_id:     venta.id,
+          referencia:   refFinal,
+          imei:         form.imei_retoma || '',
+          valor_est:    num(form.valor_retoma),
+          asesor:       form.asesor_nombre,
+          cliente:      form.nombre_cliente,
+          producto_venta: form.producto,
+        },
+        creado_por:        user.id,
+        creado_por_nombre: form.asesor_nombre,
+        destinatario_rol:  'retomas',
+      })
     }
 
     await supabase.from('logs_actividad').insert({
@@ -557,21 +603,39 @@ export default function NuevaVenta() {
               <input type="email" style={inp} value={form.email_cliente} onChange={e => set('email_cliente', e.target.value)} />
             </Field>
             <Field label="Ciudad" required>
-              <input style={inp} value={form.ciudad_cliente} onChange={e => set('ciudad_cliente', e.target.value)} required />
+              <select style={sel} value={CIUDADES_COLOMBIA.includes(form.ciudad_cliente)?form.ciudad_cliente:form.ciudad_cliente?'Otra ciudad':''} 
+                onChange={e => set('ciudad_cliente', e.target.value === 'Otra ciudad' ? '' : e.target.value)} required>
+                <option value="">Seleccionar ciudad...</option>
+                {CIUDADES_COLOMBIA.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              {(form.ciudad_cliente && !CIUDADES_COLOMBIA.slice(0,-1).includes(form.ciudad_cliente)) && (
+                <input style={{ ...inp, marginTop:6 }} value={form.ciudad_cliente} onChange={e => set('ciudad_cliente', e.target.value)} placeholder="Escribe la ciudad..." autoFocus />
+              )}
             </Field>
           </Section>
 
           <Section title="📱 Producto">
             <Field label="Producto" required span={2}>
-              <select style={sel} value={form.producto} onChange={e => set('producto', e.target.value)} required>
+              <select style={sel} value={form._patinado ? '__patinado__' : form.producto} 
+                onChange={e => {
+                  if (e.target.value === '__patinado__') {
+                    set('_patinado', true)
+                    set('producto', '')
+                  } else {
+                    set('_patinado', false)
+                    set('producto', e.target.value)
+                  }
+                }} required={!form._patinado}>
                 <option value="">Seleccionar producto...</option>
-                {productosInventario.length > 0
-                  ? productosInventario.map(p => <option key={p} value={p}>{p}</option>)
-                  : PRODUCTOS.map(p => <option key={p} value={p}>{p}</option>)
-                }
+                {(productosInventario.length > 0 ? productosInventario : PRODUCTOS).map(p => <option key={p} value={p}>{p}</option>)}
+                <option value="__patinado__">🔍 Otro / Conseguir equipo</option>
               </select>
-              {productosInventario.length === 0 && (
-                <div style={{ color:'#f59e0b', fontSize:10, marginTop:3 }}>⚠ No hay equipos disponibles en inventario</div>
+              {form._patinado && (
+                <div style={{ marginTop:8, background:'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.25)', borderRadius:8, padding:'10px 12px' }}>
+                  <div style={{ color:'#f59e0b', fontSize:11, fontWeight:600, marginBottom:8 }}>🔍 Equipo a conseguir (patinado)</div>
+                  <input style={{ ...inp, marginBottom:6 }} required value={form.producto} onChange={e => set('producto', e.target.value)} placeholder="Nombre del equipo ej: iPhone 15 Pro 256GB - USADO" />
+                  <div style={{ color:'#8aabcc', fontSize:10, marginTop:2 }}>Este equipo ingresará a inventario como patinado al registrar la venta.</div>
+                </div>
               )}
             </Field>
 
