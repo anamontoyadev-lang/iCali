@@ -68,8 +68,8 @@ export default function Dashboard() {
         } else if (esGarantias) {
           qNotifs = qNotifs.or(`destinatario_rol.eq.garantias,creado_por.eq.${user.id}`)
         } else {
-          // Asesores ven las suyas
-          qNotifs = qNotifs.or(`creado_por.eq.${user.id},destinatario_rol.eq.asesor`)
+          // Asesores ven las suyas + las dirigidas a ellos por ID (ej: Diego en camino)
+          qNotifs = qNotifs.or(`creado_por.eq.${user.id},destinatario_rol.eq.asesor,destinatario_id.eq.${user.id}`)
         }
       }
       const { data: dNotifs } = await qNotifs
@@ -124,6 +124,28 @@ export default function Dashboard() {
       }).eq('imei', d.imei)
     }
     await responderNotif(notif.id, 'recogido')
+  }
+
+  async function diegoVaEnCamino(notif) {
+    const d = notif.datos || {}
+    const user = (await supabase.auth.getUser()).data.user
+    // Notificar al asesor que Diego viene en camino
+    if (d.asesor_id) {
+      await supabase.from('notificaciones').insert({
+        tipo:              'DIEGO_EN_CAMINO',
+        mensaje:           `🔬 Diego viene en camino a valorar la retoma — ${d.referencia || ''}`,
+        datos: {
+          referencia:   d.referencia,
+          asesor:       d.asesor,
+          valorador:    user?.email || 'Diego',
+        },
+        creado_por:        user.id,
+        creado_por_nombre: 'Diego (Retomas)',
+        destinatario_rol:  null,
+        destinatario_id:   d.asesor_id,
+      })
+    }
+    await responderNotif(notif.id, 'en_camino')
   }
 
   const fecha = new Date().toLocaleDateString('es-CO',{ weekday:'long', year:'numeric', month:'long', day:'numeric' })
@@ -264,13 +286,19 @@ export default function Dashboard() {
                           <button onClick={() => responderNotif(n.id,'si')} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>✓ Voy</button>
                         </>
                       )}
+                      {n.tipo === 'VALORACION_RETOMA' && (esRetomas || esAdmin || esLiderAdmin) && (
+                        <button onClick={() => diegoVaEnCamino(n)} style={{ padding:'5px 10px', background:'#8b5cf6', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>🚶 Voy en camino</button>
+                      )}
+                      {n.tipo === 'RECOGIDA_RETOMA' && (esRetomas || esAdmin || esLiderAdmin) && (
+                        <button onClick={() => navigate('/laboratorio')} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>✓ Registrar retoma →</button>
+                      )}
                       {n.tipo === 'EQUIPO_LISTO_LABORATORIO' && (
                         <button onClick={() => navigate('/laboratorio')} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>Ver lab →</button>
                       )}
                       {n.tipo === 'DEVOLUCION_EQUIPO' && (esAdmin || esLiderAdmin || esInventarioRol) && (
                         <button onClick={() => confirmarRecogidaDashboard(n)} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>✓ Confirmé recogida</button>
                       )}
-                      {!['SOLICITUD_EQUIPO','EQUIPO_LISTO_LABORATORIO','DEVOLUCION_EQUIPO'].includes(n.tipo) && (
+                      {!['SOLICITUD_EQUIPO','EQUIPO_LISTO_LABORATORIO','DEVOLUCION_EQUIPO','VALORACION_RETOMA','RECOGIDA_RETOMA'].includes(n.tipo) && (
                         <button onClick={() => responderNotif(n.id,'leida')} style={{ padding:'5px 10px', background:'#1a2f52', border:'none', borderRadius:6, color:'#8aabcc', fontSize:11, cursor:'pointer' }}>✓ Leída</button>
                       )}
                     </div>

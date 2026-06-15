@@ -146,7 +146,7 @@ export default function EditarVenta() {
       : (form.referencia_retoma || 'pendiente')
     await supabase.from('notificaciones').insert({
       tipo:              'VALORACION_RETOMA',
-      mensaje:           `Nueva retoma para valorar — ${refFinal}`,
+      mensaje:           `📋 ${form.asesor_nombre} solicita valoración de retoma — ${refFinal}`,
       datos: {
         venta_id:     id,
         referencia:   refFinal,
@@ -156,6 +156,7 @@ export default function EditarVenta() {
         bateria:      form.retoma_bateria || '',
         valor_est:    num(form.valor_retoma),
         asesor:       form.asesor_nombre,
+        asesor_id:    user.id,
         cliente:      form.nombre_cliente,
         producto_venta: form.producto,
       },
@@ -361,7 +362,16 @@ export default function EditarVenta() {
                 </select>
               </Field>
               <Field label="Color">
-                <input style={inp} value={form.retoma_color || ''} onChange={e => set('retoma_color', e.target.value)} placeholder="ej: Negro" />
+                <select style={sel}
+                  value={['Negro','Blanco','Rojo','Azul','Verde','Morado','Rosa','Amarillo','Medianoche','Luz de estrella','Grafito','Oro','Plata','Negro medianoche','Blanco estrella','Sierra Azul','Negro titanio','Titanio blanco','Titanio azul','Titanio natural','Titanio arena del desierto','Verde azulado','Ultramarino','Azul cielo'].includes(form.retoma_color||'') ? (form.retoma_color||'') : (form.retoma_color ? 'Otro' : '')}
+                  onChange={e => set('retoma_color', e.target.value === 'Otro' ? '' : e.target.value)}>
+                  <option value="">Seleccionar color...</option>
+                  {['Negro','Blanco','Rojo','Azul','Verde','Morado','Rosa','Amarillo','Medianoche','Luz de estrella','Grafito','Oro','Plata','Negro medianoche','Blanco estrella','Sierra Azul','Negro titanio','Titanio blanco','Titanio azul','Titanio natural','Titanio arena del desierto','Verde azulado','Ultramarino','Azul cielo'].map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="Otro">✏️ Otro color...</option>
+                </select>
+                {(form.retoma_color && !['Negro','Blanco','Rojo','Azul','Verde','Morado','Rosa','Amarillo','Medianoche','Luz de estrella','Grafito','Oro','Plata','Negro medianoche','Blanco estrella','Sierra Azul','Negro titanio','Titanio blanco','Titanio azul','Titanio natural','Titanio arena del desierto','Verde azulado','Ultramarino','Azul cielo'].includes(form.retoma_color)) && (
+                  <input style={{ ...inp, marginTop:6 }} value={form.retoma_color} onChange={e => set('retoma_color', e.target.value)} placeholder="Escribe el color..." autoFocus />
+                )}
               </Field>
               <Field label="Batería %">
                 <input style={inp} type="number" min="0" max="100" value={form.retoma_bateria || ''} onChange={e => set('retoma_bateria', e.target.value)} placeholder="ej: 87" />
