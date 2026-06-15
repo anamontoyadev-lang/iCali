@@ -534,26 +534,10 @@ export default function NuevaVenta() {
         observaciones:  valoroAsesor ? `Valorado por asesor ${form.asesor_nombre}` : 'Pendiente valoración de Diego',
       }).eq('venta_id', venta.id)
 
-      if (valoroAsesor) {
-        // El asesor ya valoró — notificar a Diego para recoger al cierre de la venta
-        await supabase.from('notificaciones').insert({
-          tipo:              'RECOGIDA_RETOMA',
-          mensaje:           `Recoger retoma valorada por asesor — ${refFinal}`,
-          datos: {
-            venta_id:     venta.id,
-            referencia:   refFinal,
-            imei:         form.imei_retoma || '',
-            valor_retoma: num(form.valor_retoma),
-            asesor:       form.asesor_nombre,
-            cliente:      form.nombre_cliente,
-            producto_venta: form.producto,
-          },
-          creado_por:        user.id,
-          creado_por_nombre: form.asesor_nombre,
-          destinatario_rol:  'retomas',
-        })
-      } else if (!retomaNotifEnviada) {
-        // Fallback: si por algún motivo no se notificó al elegir "Diego valora"
+      if (!valoroAsesor && !retomaNotifEnviada) {
+        // Fallback Diego: si no se notificó al elegir "Diego valora"
+        // (normalmente ya se envió al hacer click en el botón)
+        // Fallback: si no se notificó al elegir "Diego valora"
         await supabase.from('notificaciones').insert({
           tipo:              'VALORACION_RETOMA',
           mensaje:           `Nueva retoma para valorar — ${refFinal}`,

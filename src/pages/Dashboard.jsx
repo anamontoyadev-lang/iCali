@@ -286,11 +286,17 @@ export default function Dashboard() {
                           <button onClick={() => responderNotif(n.id,'si')} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>✓ Voy</button>
                         </>
                       )}
-                      {n.tipo === 'VALORACION_RETOMA' && (esRetomas || esAdmin || esLiderAdmin) && (
+                      {n.tipo === 'VALORACION_RETOMA' && !n.respondida && (esRetomas || esAdmin || esLiderAdmin) && (
                         <button onClick={() => diegoVaEnCamino(n)} style={{ padding:'5px 10px', background:'#8b5cf6', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>🚶 Voy en camino</button>
                       )}
                       {n.tipo === 'RECOGIDA_RETOMA' && (esRetomas || esAdmin || esLiderAdmin) && (
-                        <button onClick={() => navigate('/laboratorio')} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>✓ Registrar retoma →</button>
+                        <button onClick={async () => {
+                          // Marcar como respondida y navegar a laboratorio
+                          await responderNotif(n.id, 'recogido')
+                          navigate('/laboratorio')
+                        }} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>
+                          ✓ Fui a recoger — registrar →
+                        </button>
                       )}
                       {n.tipo === 'EQUIPO_LISTO_LABORATORIO' && (
                         <button onClick={() => navigate('/laboratorio')} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>Ver lab →</button>
