@@ -126,11 +126,13 @@ const INIT = {
   comision_compartida: false, asesor_compartido: '',
   es_domicilio: false, tiene_retoma: false, observaciones: '',
   imei_retoma: '', referencia_retoma: '', referencia_retoma_otro: '', valor_retoma: '',
+  retoma_gb: '', retoma_color: '', retoma_bateria: '',
+  retoma_valorador: 'asesor', // 'asesor' | 'diego'
 }
 
 const inp = {
-  background:'#0a1628', border:'1px solid #1a2f52',
-  borderRadius:8, padding:'9px 12px', color:'#fff',
+  background:'#ffffff', border:'1px solid #cbd5e1',
+  borderRadius:8, padding:'9px 12px', color:'#0f172a',
   fontSize:13, width:'100%', boxSizing:'border-box', outline:'none'
 }
 const sel = { ...inp, cursor:'pointer' }
@@ -139,8 +141,8 @@ const fmt = n => new Intl.NumberFormat('es-CO',{ style:'currency', currency:'COP
 function Field({ label, children, required, span }) {
   return (
     <div style={{ gridColumn: span ? `span ${span}` : undefined }}>
-      <label style={{ display:'block', color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:5 }}>
-        {label}{required && <span style={{ color:'#f43f5e' }}> *</span>}
+      <label style={{ display:'block', color:'#475569', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:5 }}>
+        {label}{required && <span style={{ color:'#dc2626' }}> *</span>}
       </label>
       {children}
     </div>
@@ -150,7 +152,7 @@ function Field({ label, children, required, span }) {
 function Section({ title, children }) {
   return (
     <div style={{ marginBottom:28 }}>
-      <div style={{ color:'#4a7aaa', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', borderBottom:'1px solid #1a2f52', paddingBottom:8, marginBottom:16 }}>{title}</div>
+      <div style={{ color:'#1e3a8a', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', borderBottom:'1px solid #cbd5e1', paddingBottom:8, marginBottom:16 }}>{title}</div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px,1fr))', gap:'12px 14px' }}>
         {children}
       </div>
@@ -488,29 +490,56 @@ export default function NuevaVenta() {
       const refFinal = form.referencia_retoma === 'Otro'
         ? (form.referencia_retoma_otro || 'pendiente')
         : (form.referencia_retoma || 'pendiente')
+      const valoroAsesor = form.retoma_valorador === 'asesor'
+
       await supabase.from('retomas').update({
-        imei_retoma:  form.imei_retoma || 'pendiente',
-        referencia:   refFinal,
-        valor_retoma: num(form.valor_retoma)
+        imei_retoma:    form.imei_retoma || 'pendiente',
+        referencia:     refFinal,
+        capacidad_gb:   form.retoma_gb || null,
+        color:          form.retoma_color || null,
+        porcentaje_bateria: form.retoma_bateria ? Number(form.retoma_bateria) : null,
+        valor_retoma:   num(form.valor_retoma),
+        estado:         valoroAsesor ? 'verificada' : 'recibida',
+        observaciones:  valoroAsesor ? `Valorado por asesor ${form.asesor_nombre}` : 'Pendiente valoración de Diego',
       }).eq('venta_id', venta.id)
 
-      // Notificar a retomas (Diego) para valoración
-      await supabase.from('notificaciones').insert({
-        tipo:              'VALORACION_RETOMA',
-        mensaje:           `Nueva retoma para valorar — ${refFinal}`,
-        datos: {
-          venta_id:     venta.id,
-          referencia:   refFinal,
-          imei:         form.imei_retoma || '',
-          valor_est:    num(form.valor_retoma),
-          asesor:       form.asesor_nombre,
-          cliente:      form.nombre_cliente,
-          producto_venta: form.producto,
-        },
-        creado_por:        user.id,
-        creado_por_nombre: form.asesor_nombre,
-        destinatario_rol:  'retomas',
-      })
+      if (valoroAsesor) {
+        // El asesor ya valoró — notificar a Diego para recoger al cierre de la venta
+        await supabase.from('notificaciones').insert({
+          tipo:              'RECOGIDA_RETOMA',
+          mensaje:           `Recoger retoma valorada por asesor — ${refFinal}`,
+          datos: {
+            venta_id:     venta.id,
+            referencia:   refFinal,
+            imei:         form.imei_retoma || '',
+            valor_retoma: num(form.valor_retoma),
+            asesor:       form.asesor_nombre,
+            cliente:      form.nombre_cliente,
+            producto_venta: form.producto,
+          },
+          creado_por:        user.id,
+          creado_por_nombre: form.asesor_nombre,
+          destinatario_rol:  'retomas',
+        })
+      } else {
+        // Diego debe venir a valorar
+        await supabase.from('notificaciones').insert({
+          tipo:              'VALORACION_RETOMA',
+          mensaje:           `Nueva retoma para valorar — ${refFinal}`,
+          datos: {
+            venta_id:     venta.id,
+            referencia:   refFinal,
+            imei:         form.imei_retoma || '',
+            valor_est:    num(form.valor_retoma),
+            asesor:       form.asesor_nombre,
+            cliente:      form.nombre_cliente,
+            producto_venta: form.producto,
+          },
+          creado_por:        user.id,
+          creado_por_nombre: form.asesor_nombre,
+          destinatario_rol:  'retomas',
+        })
+      }
     }
 
     await supabase.from('logs_actividad').insert({
@@ -550,11 +579,11 @@ export default function NuevaVenta() {
     <div style={{ padding:'clamp(16px, 4vw, 32px)', maxWidth:900, fontFamily:"'DM Sans', system-ui, sans-serif" }}>
       <div style={{ marginBottom:28 }}>
         <button onClick={() => navigate('/ventas')} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:13, cursor:'pointer', padding:0, marginBottom:12 }}>← Volver a ventas</button>
-        <h1 style={{ color:'#fff', fontSize:20, fontWeight:600, margin:0 }}>Registrar venta</h1>
+        <h1 style={{ color:'#0f172a', fontSize:20, fontWeight:600, margin:0 }}>Registrar venta</h1>
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:14, padding:'clamp(16px, 4vw, 28px) clamp(14px, 4vw, 32px)' }}>
+        <div style={{ background:'#ffffff', border:'1px solid #e2e8f0', borderRadius:14, padding:'clamp(16px, 4vw, 28px) clamp(14px, 4vw, 32px)', boxShadow:'0 1px 3px rgba(0,0,0,0.06)' }}>
 
           <Section title="📅 Información general">
             <Field label="Fecha de venta" required>
@@ -669,11 +698,11 @@ export default function NuevaVenta() {
                 {equipoSeleccionado && (
                   <div style={{ background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:10, padding:'12px 16px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                     <div>
-                      <div style={{ color:'#10b981', fontSize:12, fontWeight:600, marginBottom:4 }}>✓ Equipo seleccionado del inventario</div>
+                      <div style={{ color:'#059669', fontSize:12, fontWeight:600, marginBottom:4 }}>✓ Equipo seleccionado del inventario</div>
                       <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
-                        <span style={{ color:'#8aabcc', fontSize:12 }}>IMEI: <span style={{ color:'#fff', fontFamily:'monospace' }}>{equipoSeleccionado.imei}</span></span>
-                        {equipoSeleccionado.color && <span style={{ color:'#8aabcc', fontSize:12 }}>Color: <span style={{ color:'#fff' }}>{equipoSeleccionado.color}</span></span>}
-                        {equipoSeleccionado.bateria != null && <span style={{ color:'#8aabcc', fontSize:12 }}>Batería: <span style={{ color: equipoSeleccionado.bateria >= 80 ? '#10b981' : '#f59e0b' }}>{equipoSeleccionado.bateria}%</span></span>}
+                        <span style={{ color:'#475569', fontSize:12 }}>IMEI: <span style={{ color:'#0f172a', fontFamily:'monospace' }}>{equipoSeleccionado.imei}</span></span>
+                        {equipoSeleccionado.color && <span style={{ color:'#475569', fontSize:12 }}>Color: <span style={{ color:'#0f172a' }}>{equipoSeleccionado.color}</span></span>}
+                        {equipoSeleccionado.bateria != null && <span style={{ color:'#475569', fontSize:12 }}>Batería: <span style={{ color: equipoSeleccionado.bateria >= 80 ? '#10b981' : '#f59e0b' }}>{equipoSeleccionado.bateria}%</span></span>}
                         {condSeleccionada && <span style={{ background: condSeleccionada.color+'22', color: condSeleccionada.color, fontSize:11, padding:'2px 8px', borderRadius:4 }}>{condSeleccionada.label}</span>}
                         {equipoSeleccionado.sticker && <span style={{ color:'#f59e0b', fontSize:11 }}>{equipoSeleccionado.sticker}</span>}
                       </div>
@@ -819,7 +848,7 @@ export default function NuevaVenta() {
 
           <Section title="⚙️ Opciones adicionales">
             <Field label="¿Es domicilio?">
-              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#fff', fontSize:13, cursor:'pointer' }}>
+              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#0f172a', fontSize:13, cursor:'pointer' }}>
                 <input type="checkbox" checked={form.es_domicilio} onChange={e => set('es_domicilio', e.target.checked)} />
                 Sí, tiene despacho
               </label>
@@ -830,7 +859,7 @@ export default function NuevaVenta() {
               </Field>
             )}
             <Field label="¿Comisión compartida?">
-              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#fff', fontSize:13, cursor:'pointer' }}>
+              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#0f172a', fontSize:13, cursor:'pointer' }}>
                 <input type="checkbox" checked={form.comision_compartida} onChange={e => set('comision_compartida', e.target.checked)} />
                 Sí, compartida
               </label>
@@ -850,7 +879,7 @@ export default function NuevaVenta() {
 
           <Section title="🔄 Retoma">
             <Field label="¿Tiene retoma?">
-              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#fff', fontSize:13, cursor:'pointer' }}>
+              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#0f172a', fontSize:13, cursor:'pointer' }}>
                 <input type="checkbox" checked={form.tiene_retoma} onChange={e => set('tiene_retoma', e.target.checked)} />
                 Sí, incluye retoma
               </label>
@@ -870,9 +899,54 @@ export default function NuevaVenta() {
               <Field label="IMEI retoma">
                 <input style={inp} value={form.imei_retoma} onChange={e => set('imei_retoma', e.target.value)} />
               </Field>
-              <Field label="Valor retoma $">
-                <input style={inp} value={form.valor_retoma} onChange={e => set('valor_retoma', e.target.value)} />
+              <Field label="Almacenamiento">
+                <select style={sel} value={form.retoma_gb} onChange={e => set('retoma_gb', e.target.value)}>
+                  <option value="">Seleccionar...</option>
+                  {['32GB','64GB','128GB','256GB','512GB','1TB'].map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
               </Field>
+              <Field label="Color">
+                <input style={inp} value={form.retoma_color} onChange={e => set('retoma_color', e.target.value)} placeholder="ej: Negro" />
+              </Field>
+              <Field label="Batería %">
+                <input style={inp} type="number" min="0" max="100" value={form.retoma_bateria} onChange={e => set('retoma_bateria', e.target.value)} placeholder="ej: 87" />
+              </Field>
+
+              <Field label="¿Quién valora el equipo?" span={2}>
+                <div style={{ display:'flex', gap:10 }}>
+                  <button type="button" onClick={() => set('retoma_valorador','asesor')}
+                    style={{ flex:1, padding:'12px', border:`2px solid ${form.retoma_valorador==='asesor'?'#0066ff':'#cbd5e1'}`, borderRadius:8, cursor:'pointer',
+                      background: form.retoma_valorador==='asesor' ? 'rgba(0,102,255,0.08)' : '#ffffff', textAlign:'left' }}>
+                    <div style={{ color: form.retoma_valorador==='asesor'?'#0066ff':'#475569', fontWeight:700, fontSize:13 }}>👤 Yo valoro el equipo</div>
+                    <div style={{ color:'#64748b', fontSize:11, marginTop:2 }}>Ingreso el valor directamente. Al cerrar la venta, Diego recogerá el equipo.</div>
+                  </button>
+                  <button type="button" onClick={() => set('retoma_valorador','diego')}
+                    style={{ flex:1, padding:'12px', border:`2px solid ${form.retoma_valorador==='diego'?'#0066ff':'#cbd5e1'}`, borderRadius:8, cursor:'pointer',
+                      background: form.retoma_valorador==='diego' ? 'rgba(0,102,255,0.08)' : '#ffffff', textAlign:'left' }}>
+                    <div style={{ color: form.retoma_valorador==='diego'?'#0066ff':'#475569', fontWeight:700, fontSize:13 }}>🔬 Diego valora</div>
+                    <div style={{ color:'#64748b', fontSize:11, marginTop:2 }}>Se notifica a Diego para que venga a valorar el equipo antes de continuar.</div>
+                  </button>
+                </div>
+              </Field>
+
+              <Field label={form.retoma_valorador === 'asesor' ? 'Valor retoma $ (tu valoración)' : 'Valor estimado $ (referencia para Diego)'}>
+                <input style={inp} value={form.valor_retoma} onChange={e => set('valor_retoma', e.target.value)} placeholder="0" />
+              </Field>
+
+              {form.retoma_valorador === 'diego' && (
+                <Field span={2}>
+                  <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:8, padding:'10px 14px', color:'#92400e', fontSize:12 }}>
+                    🔬 Al guardar la venta se enviará una notificación a Diego para que valore este equipo. Podrás continuar con el resto del proceso mientras tanto.
+                  </div>
+                </Field>
+              )}
+              {form.retoma_valorador === 'asesor' && (
+                <Field span={2}>
+                  <div style={{ background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:8, padding:'10px 14px', color:'#065f46', fontSize:12 }}>
+                    ✓ Al cerrar la venta se notificará a Diego para recoger este equipo y registrarlo en retomas.
+                  </div>
+                </Field>
+              )}
             </>}
           </Section>
         </div>
