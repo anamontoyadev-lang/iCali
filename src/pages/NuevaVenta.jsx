@@ -362,6 +362,35 @@ export default function NuevaVenta() {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const num = v => Number(String(v).replace(/\./g,'').replace(/,/g,'.').replace(/[^\d.]/g,'')) || 0
+  const [retomaNotifEnviada, setRetomaNotifEnviada] = useState(false)
+
+  // Notificar a Diego inmediatamente cuando el asesor elige "Diego valora"
+  async function notificarValoracionRetoma() {
+    if (retomaNotifEnviada) return
+    const user = (await supabase.auth.getUser()).data.user
+    const refFinal = form.referencia_retoma === 'Otro'
+      ? (form.referencia_retoma_otro || 'pendiente')
+      : (form.referencia_retoma || 'pendiente')
+    await supabase.from('notificaciones').insert({
+      tipo:              'VALORACION_RETOMA',
+      mensaje:           `Nueva retoma para valorar — ${refFinal}`,
+      datos: {
+        referencia:   refFinal,
+        imei:         form.imei_retoma || '',
+        gb:           form.retoma_gb || '',
+        color:        form.retoma_color || '',
+        bateria:      form.retoma_bateria || '',
+        valor_est:    num(form.valor_retoma),
+        asesor:       form.asesor_nombre,
+        cliente:      form.nombre_cliente,
+        producto_venta: form.producto,
+      },
+      creado_por:        user.id,
+      creado_por_nombre: form.asesor_nombre,
+      destinatario_rol:  'retomas',
+    })
+    setRetomaNotifEnviada(true)
+  }
   const asesoresFiltrados = form.canal === 'call_center' ? ASESORES.call_center : ASESORES.mostrador
   const colorFinal = colorPersonalizado ? form.color_custom : form.color
 
@@ -521,8 +550,8 @@ export default function NuevaVenta() {
           creado_por_nombre: form.asesor_nombre,
           destinatario_rol:  'retomas',
         })
-      } else {
-        // Diego debe venir a valorar
+      } else if (!retomaNotifEnviada) {
+        // Fallback: si por algún motivo no se notificó al elegir "Diego valora"
         await supabase.from('notificaciones').insert({
           tipo:              'VALORACION_RETOMA',
           mensaje:           `Nueva retoma para valorar — ${refFinal}`,
@@ -657,7 +686,7 @@ export default function NuevaVenta() {
                     <div style={{ color: form.retoma_valorador==='asesor'?'#0066ff':'#475569', fontWeight:700, fontSize:13 }}>👤 Yo valoro el equipo</div>
                     <div style={{ color:'#64748b', fontSize:11, marginTop:2 }}>Ingreso el valor directamente — será parte del pago. Al cerrar la venta, Diego recogerá el equipo.</div>
                   </button>
-                  <button type="button" onClick={() => set('retoma_valorador','diego')}
+                  <button type="button" onClick={() => { set('retoma_valorador','diego'); notificarValoracionRetoma() }}
                     style={{ flex:1, padding:'12px', border:`2px solid ${form.retoma_valorador==='diego'?'#0066ff':'#cbd5e1'}`, borderRadius:8, cursor:'pointer',
                       background: form.retoma_valorador==='diego' ? 'rgba(0,102,255,0.08)' : '#ffffff', textAlign:'left' }}>
                     <div style={{ color: form.retoma_valorador==='diego'?'#0066ff':'#475569', fontWeight:700, fontSize:13 }}>🔬 Diego valora</div>
@@ -673,7 +702,9 @@ export default function NuevaVenta() {
               {form.retoma_valorador === 'diego' && (
                 <Field span={2}>
                   <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:8, padding:'10px 14px', color:'#92400e', fontSize:12 }}>
-                    🔬 Al guardar se notificará a Diego para venir a valorar este equipo. Puedes continuar llenando el resto del formulario y guardar como borrador (⏸ Pausar venta) mientras esperas su confirmación.
+                    {retomaNotifEnviada
+                      ? '✅ Notificación enviada a Diego — está en camino para valorar el equipo. Puedes continuar llenando el resto del formulario y guardar como borrador (⏸ Pausar venta) mientras esperas su confirmación.'
+                      : '🔬 Notificando a Diego...'}
                   </div>
                 </Field>
               )}

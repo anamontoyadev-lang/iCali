@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { logActividad } from '../lib/drive'
+import SolicitudEquiposPanel from '../components/SolicitudEquiposPanel'
 
 const ASESORES = {
   call_center: [
@@ -30,18 +31,45 @@ const METODOS = [
   { value:'mixto',         label:'Mixto' },
 ]
 
+const REFERENCIAS_RETOMA = [
+  'iPhone 6','iPhone 6S','iPhone 7','iPhone 7 Plus',
+  'iPhone 8','iPhone 8 Plus','iPhone X','iPhone XR','iPhone XS','iPhone XS Max',
+  'iPhone 11','iPhone 11 Pro','iPhone 11 Pro Max',
+  'iPhone 12','iPhone 12 Mini','iPhone 12 Pro','iPhone 12 Pro Max',
+  'iPhone 13','iPhone 13 Mini','iPhone 13 Pro','iPhone 13 Pro Max',
+  'iPhone 14','iPhone 14 Plus','iPhone 14 Pro','iPhone 14 Pro Max',
+  'iPhone 15','iPhone 15 Plus','iPhone 15 Pro','iPhone 15 Pro Max',
+  'iPhone 16','iPhone 16 Plus','iPhone 16 Pro','iPhone 16 Pro Max',
+  'Otro'
+]
+
+const CIUDADES_COLOMBIA = [
+  'Bogotá','Medellín','Cali','Barranquilla','Cartagena','Cúcuta','Bucaramanga',
+  'Pereira','Santa Marta','Ibagué','Pasto','Manizales','Neiva','Villavicencio',
+  'Armenia','Valledupar','Montería','Sincelejo','Popayán','Floridablanca',
+  'Soledad','Itagüí','Bello','Buenaventura','Barrancabermeja','Palmira',
+  'Tunja','Florencia','Quibdó','Riohacha','San Andrés','Yopal','Arauca',
+  'Tumaco','Apartadó','Envigado','Sabaneta','La Ceja','Rionegro',
+  'Girón','Piedecuesta','Zipaquirá','Fusagasugá','Soacha','Chía','Cajicá',
+  'Mosquera','Facatativá','Espinal','Girardot','Melgar','Buga','Tuluá',
+  'Cartago','Santander de Quilichao','Magangué','Lorica','Aguachica','Ocaña',
+  'Duitama','Sogamoso','Dosquebradas','La Virginia','Pitalito','Garzón',
+  'Ipiales','La Unión','Otra ciudad'
+]
+
 const inp = {
-  background:'#0a1628', border:'1px solid #1a2f52',
-  borderRadius:8, padding:'9px 12px', color:'#fff',
+  background:'#ffffff', border:'1px solid #cbd5e1',
+  borderRadius:8, padding:'9px 12px', color:'#0f172a',
   fontSize:13, width:'100%', boxSizing:'border-box', outline:'none'
 }
 const sel = { ...inp, cursor:'pointer' }
+const num = v => Number(String(v).replace(/\./g,'').replace(/,/g,'.').replace(/[^\d.]/g,'')) || 0
 
 function Field({ label, children, required, span }) {
   return (
     <div style={{ gridColumn: span ? `span ${span}` : undefined }}>
-      <label style={{ display:'block', color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:5 }}>
-        {label}{required && <span style={{ color:'#f43f5e' }}> *</span>}
+      <label style={{ display:'block', color:'#475569', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:5 }}>
+        {label}{required && <span style={{ color:'#dc2626' }}> *</span>}
       </label>
       {children}
     </div>
@@ -51,7 +79,7 @@ function Field({ label, children, required, span }) {
 function Section({ title, children }) {
   return (
     <div style={{ marginBottom:28 }}>
-      <div style={{ color:'#4a7aaa', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', borderBottom:'1px solid #1a2f52', paddingBottom:8, marginBottom:16 }}>{title}</div>
+      <div style={{ color:'#1e3a8a', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', borderBottom:'1px solid #cbd5e1', paddingBottom:8, marginBottom:16 }}>{title}</div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px,1fr))', gap:'14px 16px' }}>
         {children}
       </div>
@@ -70,6 +98,14 @@ export default function EditarVenta() {
   const [success, setSuccess] = useState(false)
   const [proveedores, setProveedores] = useState([])
 
+  // Cotización de equipos
+  const [equiposSolicitados, setEquiposSolicitados] = useState([])
+  const [solicitudEnviada, setSolicitudEnviada]     = useState(false)
+  const [enviandoNotif, setEnviandoNotif]           = useState(false)
+
+  // Retoma — notificación inmediata a Diego
+  const [retomaNotifEnviada, setRetomaNotifEnviada] = useState(false)
+
   useEffect(() => {
     loadVenta()
     supabase.from('proveedores').select('id,nombre').eq('activo',true).order('nombre')
@@ -79,12 +115,56 @@ export default function EditarVenta() {
   async function loadVenta() {
     const { data, error } = await supabase.from('ventas').select('*').eq('id', id).single()
     if (error || !data) { navigate('/ventas'); return }
-    setForm(data)
+
+    // Cargar datos de retoma si existen
+    const { data: retoma } = await supabase.from('retomas').select('*').eq('venta_id', id).maybeSingle()
+
+    setForm({
+      ...data,
+      tiene_retoma: data.tiene_retoma || false,
+      referencia_retoma: retoma?.referencia || '',
+      referencia_retoma_otro: '',
+      imei_retoma: retoma?.imei_retoma === 'pendiente' ? '' : (retoma?.imei_retoma || ''),
+      retoma_gb: retoma?.capacidad_gb || '',
+      retoma_color: retoma?.color || '',
+      retoma_bateria: retoma?.porcentaje_bateria || '',
+      valor_retoma: retoma?.valor_retoma || '',
+      retoma_valorador: retoma?.estado === 'verificada' ? 'asesor' : 'diego',
+    })
+    setRetomaNotifEnviada(retoma?.estado !== 'recibida' ? false : false)
     setLoading(false)
   }
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
-  const num = v => Number(String(v).replace(/\./g,'').replace(/,/g,'.').replace(/[^\d.]/g,'')) || 0
+
+  // Notificar a Diego inmediatamente cuando el asesor elige "Diego valora"
+  async function notificarValoracionRetoma() {
+    if (retomaNotifEnviada) return
+    const user = (await supabase.auth.getUser()).data.user
+    const refFinal = form.referencia_retoma === 'Otro'
+      ? (form.referencia_retoma_otro || 'pendiente')
+      : (form.referencia_retoma || 'pendiente')
+    await supabase.from('notificaciones').insert({
+      tipo:              'VALORACION_RETOMA',
+      mensaje:           `Nueva retoma para valorar — ${refFinal}`,
+      datos: {
+        venta_id:     id,
+        referencia:   refFinal,
+        imei:         form.imei_retoma || '',
+        gb:           form.retoma_gb || '',
+        color:        form.retoma_color || '',
+        bateria:      form.retoma_bateria || '',
+        valor_est:    num(form.valor_retoma),
+        asesor:       form.asesor_nombre,
+        cliente:      form.nombre_cliente,
+        producto_venta: form.producto,
+      },
+      creado_por:        user.id,
+      creado_por_nombre: form.asesor_nombre,
+      destinatario_rol:  'retomas',
+    })
+    setRetomaNotifEnviada(true)
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -119,6 +199,7 @@ export default function EditarVenta() {
       comision_compartida: form.comision_compartida,
       asesor_compartido:   form.comision_compartida ? form.asesor_compartido : null,
       es_domicilio:      form.es_domicilio,
+      tiene_retoma:      form.tiene_retoma,
       observaciones:     form.observaciones,
     }).eq('id', id)
 
@@ -133,6 +214,62 @@ export default function EditarVenta() {
     }
 
     const user = (await supabase.auth.getUser()).data.user
+
+    // Guardar/actualizar retoma
+    if (form.tiene_retoma) {
+      const refFinal = form.referencia_retoma === 'Otro'
+        ? (form.referencia_retoma_otro || 'pendiente')
+        : (form.referencia_retoma || 'pendiente')
+      const valoroAsesor = form.retoma_valorador === 'asesor'
+
+      await supabase.from('retomas').update({
+        imei_retoma:    form.imei_retoma || 'pendiente',
+        referencia:     refFinal,
+        capacidad_gb:   form.retoma_gb || null,
+        color:          form.retoma_color || null,
+        porcentaje_bateria: form.retoma_bateria ? Number(form.retoma_bateria) : null,
+        valor_retoma:   num(form.valor_retoma),
+        estado:         valoroAsesor ? 'verificada' : 'recibida',
+        observaciones:  valoroAsesor ? `Valorado por asesor ${form.asesor_nombre}` : 'Pendiente valoración de Diego',
+      }).eq('venta_id', id)
+
+      if (valoroAsesor) {
+        await supabase.from('notificaciones').insert({
+          tipo:              'RECOGIDA_RETOMA',
+          mensaje:           `Recoger retoma valorada por asesor — ${refFinal}`,
+          datos: {
+            venta_id:     id,
+            referencia:   refFinal,
+            imei:         form.imei_retoma || '',
+            valor_retoma: num(form.valor_retoma),
+            asesor:       form.asesor_nombre,
+            cliente:      form.nombre_cliente,
+            producto_venta: form.producto,
+          },
+          creado_por:        user.id,
+          creado_por_nombre: form.asesor_nombre,
+          destinatario_rol:  'retomas',
+        })
+      } else if (!retomaNotifEnviada) {
+        await supabase.from('notificaciones').insert({
+          tipo:              'VALORACION_RETOMA',
+          mensaje:           `Nueva retoma para valorar — ${refFinal}`,
+          datos: {
+            venta_id:     id,
+            referencia:   refFinal,
+            imei:         form.imei_retoma || '',
+            valor_est:    num(form.valor_retoma),
+            asesor:       form.asesor_nombre,
+            cliente:      form.nombre_cliente,
+            producto_venta: form.producto,
+          },
+          creado_por:        user.id,
+          creado_por_nombre: form.asesor_nombre,
+          destinatario_rol:  'retomas',
+        })
+      }
+    }
+
     await logActividad({
       usuario: perfil?.nombre || user?.email || '',
       accion: 'EDICION_VENTA',
@@ -152,7 +289,7 @@ export default function EditarVenta() {
   if (success) return (
     <div style={{ padding:'80px 36px', textAlign:'center', fontFamily:"'DM Sans', system-ui" }}>
       <div style={{ fontSize:48, marginBottom:16 }}>✅</div>
-      <h2 style={{ color:'#fff', margin:'0 0 8px' }}>Venta actualizada</h2>
+      <h2 style={{ color:'#0f172a', margin:'0 0 8px' }}>Venta actualizada</h2>
       <p style={{ color:'#4a6a8a', fontSize:14 }}>Redirigiendo...</p>
     </div>
   )
@@ -163,12 +300,116 @@ export default function EditarVenta() {
     <div style={{ padding:'32px 36px', maxWidth:900, fontFamily:"'DM Sans', system-ui, sans-serif" }}>
       <div style={{ marginBottom:28 }}>
         <button onClick={() => navigate('/ventas')} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:13, cursor:'pointer', padding:0, marginBottom:12 }}>← Volver a ventas</button>
-        <h1 style={{ color:'#fff', fontSize:20, fontWeight:600, margin:0 }}>Continuar venta</h1>
+        <h1 style={{ color:'#0f172a', fontSize:20, fontWeight:600, margin:0 }}>Continuar venta</h1>
         <p style={{ color:'#4a6a8a', fontSize:13, margin:'4px 0 0' }}>Completa o corrige la información de esta venta</p>
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:14, padding:'28px 32px' }}>
+
+        {/* ═══ PREPARACIÓN: Retoma y cotización de equipos ═══ */}
+        <div style={{ background:'#ffffff', border:'1px solid #e2e8f0', borderRadius:14, padding:'28px 32px', boxShadow:'0 1px 3px rgba(0,0,0,0.06)', marginBottom:20 }}>
+          <Section title="🎯 Preparación de la venta">
+            <Field label="¿El cliente quiere cotizar equipos de inventario?" span={2}>
+              <div style={{ background:'rgba(59,130,246,0.06)', border:'1px solid rgba(59,130,246,0.2)', borderRadius:8, padding:'12px 14px' }}>
+                <SolicitudEquiposPanel
+                  equiposSolicitados={equiposSolicitados}
+                  setEquiposSolicitados={setEquiposSolicitados}
+                  solicitudEnviada={solicitudEnviada}
+                  setSolicitudEnviada={setSolicitudEnviada}
+                  enviandoNotif={enviandoNotif}
+                  setEnviandoNotif={setEnviandoNotif}
+                  asesorNombre={form.asesor_nombre}
+                  clienteNombre={form.nombre_cliente}
+                  onSeleccionarParaVenta={(eq) => {
+                    setForm(f => ({
+                      ...f,
+                      imei: eq.imei || '',
+                      color: eq.color || '',
+                      costo_equipo: String(eq.costo || ''),
+                      proveedor: eq.proveedores?.nombre || f.proveedor,
+                    }))
+                  }}
+                />
+              </div>
+            </Field>
+
+            <Field label="¿Tiene retoma?">
+              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#0f172a', fontSize:13, cursor:'pointer' }}>
+                <input type="checkbox" checked={form.tiene_retoma || false} onChange={e => set('tiene_retoma', e.target.checked)} />
+                Sí, incluye retoma
+              </label>
+            </Field>
+            {form.tiene_retoma && <>
+              <Field label="Referencia del equipo" required>
+                <select style={sel} value={form.referencia_retoma || ''} onChange={e => set('referencia_retoma', e.target.value)}>
+                  <option value="">Seleccionar referencia...</option>
+                  {REFERENCIAS_RETOMA.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </Field>
+              {form.referencia_retoma === 'Otro' && (
+                <Field label="Especifica la referencia">
+                  <input style={inp} value={form.referencia_retoma_otro || ''} onChange={e => set('referencia_retoma_otro', e.target.value)} placeholder="ej: Motorola G82..." />
+                </Field>
+              )}
+              <Field label="IMEI retoma">
+                <input style={inp} value={form.imei_retoma || ''} onChange={e => set('imei_retoma', e.target.value)} />
+              </Field>
+              <Field label="Almacenamiento">
+                <select style={sel} value={form.retoma_gb || ''} onChange={e => set('retoma_gb', e.target.value)}>
+                  <option value="">Seleccionar...</option>
+                  {['32GB','64GB','128GB','256GB','512GB','1TB'].map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </Field>
+              <Field label="Color">
+                <input style={inp} value={form.retoma_color || ''} onChange={e => set('retoma_color', e.target.value)} placeholder="ej: Negro" />
+              </Field>
+              <Field label="Batería %">
+                <input style={inp} type="number" min="0" max="100" value={form.retoma_bateria || ''} onChange={e => set('retoma_bateria', e.target.value)} placeholder="ej: 87" />
+              </Field>
+
+              <Field label="¿Quién valora el equipo?" span={2}>
+                <div style={{ display:'flex', gap:10 }}>
+                  <button type="button" onClick={() => set('retoma_valorador','asesor')}
+                    style={{ flex:1, padding:'12px', border:`2px solid ${form.retoma_valorador==='asesor'?'#0066ff':'#cbd5e1'}`, borderRadius:8, cursor:'pointer',
+                      background: form.retoma_valorador==='asesor' ? 'rgba(0,102,255,0.08)' : '#ffffff', textAlign:'left' }}>
+                    <div style={{ color: form.retoma_valorador==='asesor'?'#0066ff':'#475569', fontWeight:700, fontSize:13 }}>👤 Yo valoro el equipo</div>
+                    <div style={{ color:'#64748b', fontSize:11, marginTop:2 }}>Ingreso el valor directamente — será parte del pago. Al cerrar la venta, Diego recogerá el equipo.</div>
+                  </button>
+                  <button type="button" onClick={() => { set('retoma_valorador','diego'); notificarValoracionRetoma() }}
+                    style={{ flex:1, padding:'12px', border:`2px solid ${form.retoma_valorador==='diego'?'#0066ff':'#cbd5e1'}`, borderRadius:8, cursor:'pointer',
+                      background: form.retoma_valorador==='diego' ? 'rgba(0,102,255,0.08)' : '#ffffff', textAlign:'left' }}>
+                    <div style={{ color: form.retoma_valorador==='diego'?'#0066ff':'#475569', fontWeight:700, fontSize:13 }}>🔬 Diego valora</div>
+                    <div style={{ color:'#64748b', fontSize:11, marginTop:2 }}>Se notifica a Diego para que venga a valorar antes de cerrar la venta.</div>
+                  </button>
+                </div>
+              </Field>
+
+              <Field label={form.retoma_valorador === 'asesor' ? 'Valor retoma $ (tu valoración — usado como pago)' : 'Valor estimado $ (referencia para Diego)'}>
+                <input style={inp} value={form.valor_retoma || ''} onChange={e => set('valor_retoma', e.target.value)} placeholder="0" />
+              </Field>
+
+              {form.retoma_valorador === 'diego' && (
+                <Field span={2}>
+                  <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:8, padding:'10px 14px', color:'#92400e', fontSize:12 }}>
+                    {retomaNotifEnviada
+                      ? '✅ Notificación enviada a Diego — está en camino para valorar el equipo.'
+                      : '🔬 Notificando a Diego...'}
+                  </div>
+                </Field>
+              )}
+              {form.retoma_valorador === 'asesor' && (
+                <Field span={2}>
+                  <div style={{ background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:8, padding:'10px 14px', color:'#065f46', fontSize:12 }}>
+                    ✓ Este valor se usará como parte del pago. Al guardar se notificará a Diego para recoger el equipo y registrarlo en retomas.
+                  </div>
+                </Field>
+              )}
+            </>}
+          </Section>
+        </div>
+
+        {/* ═══ FORMULARIO DE VENTA ═══ */}
+        <div style={{ background:'#ffffff', border:'1px solid #e2e8f0', borderRadius:14, padding:'28px 32px', boxShadow:'0 1px 3px rgba(0,0,0,0.06)' }}>
 
           <Section title="📅 Información general">
             <Field label="Fecha de venta" required>
@@ -208,7 +449,14 @@ export default function EditarVenta() {
               <input type="email" style={inp} value={form.email_cliente || ''} onChange={e => set('email_cliente', e.target.value)} />
             </Field>
             <Field label="Ciudad" required>
-              <input style={inp} value={form.ciudad_cliente || ''} onChange={e => set('ciudad_cliente', e.target.value)} required />
+              <select style={sel} value={CIUDADES_COLOMBIA.includes(form.ciudad_cliente)?form.ciudad_cliente:form.ciudad_cliente?'Otra ciudad':''}
+                onChange={e => set('ciudad_cliente', e.target.value === 'Otra ciudad' ? '' : e.target.value)} required>
+                <option value="">Seleccionar ciudad...</option>
+                {CIUDADES_COLOMBIA.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              {(form.ciudad_cliente && !CIUDADES_COLOMBIA.slice(0,-1).includes(form.ciudad_cliente)) && (
+                <input style={{ ...inp, marginTop:6 }} value={form.ciudad_cliente} onChange={e => set('ciudad_cliente', e.target.value)} placeholder="Escribe la ciudad..." />
+              )}
             </Field>
           </Section>
 
@@ -267,7 +515,7 @@ export default function EditarVenta() {
 
           <Section title="⚙️ Opciones">
             <Field label="¿Es domicilio?">
-              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#fff', fontSize:13, cursor:'pointer' }}>
+              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#0f172a', fontSize:13, cursor:'pointer' }}>
                 <input type="checkbox" checked={form.es_domicilio || false} onChange={e => set('es_domicilio', e.target.checked)} />
                 Sí, tiene despacho
               </label>
@@ -278,7 +526,7 @@ export default function EditarVenta() {
               </Field>
             )}
             <Field label="¿Comisión compartida?">
-              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#fff', fontSize:13, cursor:'pointer' }}>
+              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#0f172a', fontSize:13, cursor:'pointer' }}>
                 <input type="checkbox" checked={form.comision_compartida || false} onChange={e => set('comision_compartida', e.target.checked)} />
                 Sí, compartida
               </label>
