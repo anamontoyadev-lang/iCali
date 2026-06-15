@@ -583,6 +583,112 @@ export default function NuevaVenta() {
       </div>
 
       <form onSubmit={handleSubmit}>
+
+        {/* ═══ PREPARACIÓN: Retoma y cotización de equipos ═══ */}
+        <div style={{ background:'#ffffff', border:'1px solid #e2e8f0', borderRadius:14, padding:'clamp(16px, 4vw, 28px) clamp(14px, 4vw, 32px)', boxShadow:'0 1px 3px rgba(0,0,0,0.06)', marginBottom:20 }}>
+
+          <Section title="🎯 Preparación de la venta">
+            <Field label="¿El cliente quiere cotizar equipos de inventario?" span={2}>
+              <div style={{ background:'rgba(59,130,246,0.06)', border:'1px solid rgba(59,130,246,0.2)', borderRadius:8, padding:'12px 14px' }}>
+                <SolicitudEquiposPanel
+                  equiposSolicitados={equiposSolicitados}
+                  setEquiposSolicitados={setEquiposSolicitados}
+                  solicitudEnviada={solicitudEnviada}
+                  setSolicitudEnviada={setSolicitudEnviada}
+                  enviandoNotif={enviandoNotif}
+                  setEnviandoNotif={setEnviandoNotif}
+                  asesorNombre={form.asesor_nombre}
+                  clienteNombre={form.nombre_cliente}
+                  onSeleccionarParaVenta={(eq) => {
+                    setEquipoSeleccionado(eq)
+                    setForm(f => ({
+                      ...f,
+                      imei: eq.imei || '',
+                      color: eq.color || '',
+                      costo_equipo: String(eq.costo || ''),
+                      proveedor: eq.proveedores?.nombre || f.proveedor,
+                      _de_inventario: false,
+                    }))
+                    setCostoAutoInfo({ costo: eq.costo, fuente: `Equipo solicitado · IMEI ${eq.imei}` })
+                  }}
+                />
+              </div>
+            </Field>
+
+            <Field label="¿Tiene retoma?">
+              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#0f172a', fontSize:13, cursor:'pointer' }}>
+                <input type="checkbox" checked={form.tiene_retoma} onChange={e => set('tiene_retoma', e.target.checked)} />
+                Sí, incluye retoma
+              </label>
+            </Field>
+            {form.tiene_retoma && <>
+              <Field label="Referencia del equipo" required>
+                <select style={sel} value={form.referencia_retoma} onChange={e => set('referencia_retoma', e.target.value)}>
+                  <option value="">Seleccionar referencia...</option>
+                  {REFERENCIAS_RETOMA.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </Field>
+              {form.referencia_retoma === 'Otro' && (
+                <Field label="Especifica la referencia">
+                  <input style={inp} value={form.referencia_retoma_otro} onChange={e => set('referencia_retoma_otro', e.target.value)} placeholder="ej: Motorola G82..." />
+                </Field>
+              )}
+              <Field label="IMEI retoma">
+                <input style={inp} value={form.imei_retoma} onChange={e => set('imei_retoma', e.target.value)} />
+              </Field>
+              <Field label="Almacenamiento">
+                <select style={sel} value={form.retoma_gb} onChange={e => set('retoma_gb', e.target.value)}>
+                  <option value="">Seleccionar...</option>
+                  {['32GB','64GB','128GB','256GB','512GB','1TB'].map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </Field>
+              <Field label="Color">
+                <input style={inp} value={form.retoma_color} onChange={e => set('retoma_color', e.target.value)} placeholder="ej: Negro" />
+              </Field>
+              <Field label="Batería %">
+                <input style={inp} type="number" min="0" max="100" value={form.retoma_bateria} onChange={e => set('retoma_bateria', e.target.value)} placeholder="ej: 87" />
+              </Field>
+
+              <Field label="¿Quién valora el equipo?" span={2}>
+                <div style={{ display:'flex', gap:10 }}>
+                  <button type="button" onClick={() => set('retoma_valorador','asesor')}
+                    style={{ flex:1, padding:'12px', border:`2px solid ${form.retoma_valorador==='asesor'?'#0066ff':'#cbd5e1'}`, borderRadius:8, cursor:'pointer',
+                      background: form.retoma_valorador==='asesor' ? 'rgba(0,102,255,0.08)' : '#ffffff', textAlign:'left' }}>
+                    <div style={{ color: form.retoma_valorador==='asesor'?'#0066ff':'#475569', fontWeight:700, fontSize:13 }}>👤 Yo valoro el equipo</div>
+                    <div style={{ color:'#64748b', fontSize:11, marginTop:2 }}>Ingreso el valor directamente — será parte del pago. Al cerrar la venta, Diego recogerá el equipo.</div>
+                  </button>
+                  <button type="button" onClick={() => set('retoma_valorador','diego')}
+                    style={{ flex:1, padding:'12px', border:`2px solid ${form.retoma_valorador==='diego'?'#0066ff':'#cbd5e1'}`, borderRadius:8, cursor:'pointer',
+                      background: form.retoma_valorador==='diego' ? 'rgba(0,102,255,0.08)' : '#ffffff', textAlign:'left' }}>
+                    <div style={{ color: form.retoma_valorador==='diego'?'#0066ff':'#475569', fontWeight:700, fontSize:13 }}>🔬 Diego valora</div>
+                    <div style={{ color:'#64748b', fontSize:11, marginTop:2 }}>Se notifica a Diego para que venga a valorar antes de cerrar la venta. Puedes seguir llenando el formulario mientras tanto.</div>
+                  </button>
+                </div>
+              </Field>
+
+              <Field label={form.retoma_valorador === 'asesor' ? 'Valor retoma $ (tu valoración — usado como pago)' : 'Valor estimado $ (referencia para Diego)'}>
+                <input style={inp} value={form.valor_retoma} onChange={e => set('valor_retoma', e.target.value)} placeholder="0" />
+              </Field>
+
+              {form.retoma_valorador === 'diego' && (
+                <Field span={2}>
+                  <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:8, padding:'10px 14px', color:'#92400e', fontSize:12 }}>
+                    🔬 Al guardar se notificará a Diego para venir a valorar este equipo. Puedes continuar llenando el resto del formulario y guardar como borrador (⏸ Pausar venta) mientras esperas su confirmación.
+                  </div>
+                </Field>
+              )}
+              {form.retoma_valorador === 'asesor' && (
+                <Field span={2}>
+                  <div style={{ background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:8, padding:'10px 14px', color:'#065f46', fontSize:12 }}>
+                    ✓ Este valor se usará como parte del pago. Al cerrar la venta se notificará a Diego para recoger el equipo y registrarlo en retomas.
+                  </div>
+                </Field>
+              )}
+            </>}
+          </Section>
+        </div>
+
+        {/* ═══ FORMULARIO DE VENTA ═══ */}
         <div style={{ background:'#ffffff', border:'1px solid #e2e8f0', borderRadius:14, padding:'clamp(16px, 4vw, 28px) clamp(14px, 4vw, 32px)', boxShadow:'0 1px 3px rgba(0,0,0,0.06)' }}>
 
           <Section title="📅 Información general">
@@ -727,31 +833,6 @@ export default function NuevaVenta() {
               </div>
             )}
 
-            {/* Panel solicitud + resumen equipos con asesor */}
-            <div style={{ gridColumn:'span 2' }}>
-              <SolicitudEquiposPanel
-                equiposSolicitados={equiposSolicitados}
-                setEquiposSolicitados={setEquiposSolicitados}
-                solicitudEnviada={solicitudEnviada}
-                setSolicitudEnviada={setSolicitudEnviada}
-                enviandoNotif={enviandoNotif}
-                setEnviandoNotif={setEnviandoNotif}
-                asesorNombre={form.asesor_nombre}
-                clienteNombre={form.nombre_cliente}
-                onSeleccionarParaVenta={(eq) => {
-                  setEquipoSeleccionado(eq)
-                  setForm(f => ({
-                    ...f,
-                    imei: eq.imei || '',
-                    color: eq.color || '',
-                    costo_equipo: String(eq.costo || ''),
-                    proveedor: eq.proveedores?.nombre || f.proveedor,
-                    _de_inventario: false, // viene del asesor, no del stock directo
-                  }))
-                  setCostoAutoInfo({ costo: eq.costo, fuente: `Equipo solicitado · IMEI ${eq.imei}` })
-                }}
-              />
-            </div>
 
             <Field label="Color">
               {coloresDisponibles.length > 0 ? (
@@ -877,78 +958,6 @@ export default function NuevaVenta() {
             </Field>
           </Section>
 
-          <Section title="🔄 Retoma">
-            <Field label="¿Tiene retoma?">
-              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#0f172a', fontSize:13, cursor:'pointer' }}>
-                <input type="checkbox" checked={form.tiene_retoma} onChange={e => set('tiene_retoma', e.target.checked)} />
-                Sí, incluye retoma
-              </label>
-            </Field>
-            {form.tiene_retoma && <>
-              <Field label="Referencia del equipo" required>
-                <select style={sel} value={form.referencia_retoma} onChange={e => set('referencia_retoma', e.target.value)}>
-                  <option value="">Seleccionar referencia...</option>
-                  {REFERENCIAS_RETOMA.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </Field>
-              {form.referencia_retoma === 'Otro' && (
-                <Field label="Especifica la referencia">
-                  <input style={inp} value={form.referencia_retoma_otro} onChange={e => set('referencia_retoma_otro', e.target.value)} placeholder="ej: Motorola G82..." />
-                </Field>
-              )}
-              <Field label="IMEI retoma">
-                <input style={inp} value={form.imei_retoma} onChange={e => set('imei_retoma', e.target.value)} />
-              </Field>
-              <Field label="Almacenamiento">
-                <select style={sel} value={form.retoma_gb} onChange={e => set('retoma_gb', e.target.value)}>
-                  <option value="">Seleccionar...</option>
-                  {['32GB','64GB','128GB','256GB','512GB','1TB'].map(g => <option key={g} value={g}>{g}</option>)}
-                </select>
-              </Field>
-              <Field label="Color">
-                <input style={inp} value={form.retoma_color} onChange={e => set('retoma_color', e.target.value)} placeholder="ej: Negro" />
-              </Field>
-              <Field label="Batería %">
-                <input style={inp} type="number" min="0" max="100" value={form.retoma_bateria} onChange={e => set('retoma_bateria', e.target.value)} placeholder="ej: 87" />
-              </Field>
-
-              <Field label="¿Quién valora el equipo?" span={2}>
-                <div style={{ display:'flex', gap:10 }}>
-                  <button type="button" onClick={() => set('retoma_valorador','asesor')}
-                    style={{ flex:1, padding:'12px', border:`2px solid ${form.retoma_valorador==='asesor'?'#0066ff':'#cbd5e1'}`, borderRadius:8, cursor:'pointer',
-                      background: form.retoma_valorador==='asesor' ? 'rgba(0,102,255,0.08)' : '#ffffff', textAlign:'left' }}>
-                    <div style={{ color: form.retoma_valorador==='asesor'?'#0066ff':'#475569', fontWeight:700, fontSize:13 }}>👤 Yo valoro el equipo</div>
-                    <div style={{ color:'#64748b', fontSize:11, marginTop:2 }}>Ingreso el valor directamente. Al cerrar la venta, Diego recogerá el equipo.</div>
-                  </button>
-                  <button type="button" onClick={() => set('retoma_valorador','diego')}
-                    style={{ flex:1, padding:'12px', border:`2px solid ${form.retoma_valorador==='diego'?'#0066ff':'#cbd5e1'}`, borderRadius:8, cursor:'pointer',
-                      background: form.retoma_valorador==='diego' ? 'rgba(0,102,255,0.08)' : '#ffffff', textAlign:'left' }}>
-                    <div style={{ color: form.retoma_valorador==='diego'?'#0066ff':'#475569', fontWeight:700, fontSize:13 }}>🔬 Diego valora</div>
-                    <div style={{ color:'#64748b', fontSize:11, marginTop:2 }}>Se notifica a Diego para que venga a valorar el equipo antes de continuar.</div>
-                  </button>
-                </div>
-              </Field>
-
-              <Field label={form.retoma_valorador === 'asesor' ? 'Valor retoma $ (tu valoración)' : 'Valor estimado $ (referencia para Diego)'}>
-                <input style={inp} value={form.valor_retoma} onChange={e => set('valor_retoma', e.target.value)} placeholder="0" />
-              </Field>
-
-              {form.retoma_valorador === 'diego' && (
-                <Field span={2}>
-                  <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:8, padding:'10px 14px', color:'#92400e', fontSize:12 }}>
-                    🔬 Al guardar la venta se enviará una notificación a Diego para que valore este equipo. Podrás continuar con el resto del proceso mientras tanto.
-                  </div>
-                </Field>
-              )}
-              {form.retoma_valorador === 'asesor' && (
-                <Field span={2}>
-                  <div style={{ background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:8, padding:'10px 14px', color:'#065f46', fontSize:12 }}>
-                    ✓ Al cerrar la venta se notificará a Diego para recoger este equipo y registrarlo en retomas.
-                  </div>
-                </Field>
-              )}
-            </>}
-          </Section>
         </div>
 
         {error && (
