@@ -105,6 +105,7 @@ export default function EditarVenta() {
 
   // Retoma — notificación inmediata a Diego
   const [retomaNotifEnviada, setRetomaNotifEnviada] = useState(false)
+  const [retomaAceptada, setRetomaAceptada]           = useState(false)
 
   useEffect(() => {
     loadVenta()
@@ -324,10 +325,12 @@ export default function EditarVenta() {
                   onSeleccionarParaVenta={(eq) => {
                     setForm(f => ({
                       ...f,
-                      imei: eq.imei || '',
-                      color: eq.color || '',
-                      costo_equipo: String(eq.costo || ''),
-                      proveedor: eq.proveedores?.nombre || f.proveedor,
+                      producto:      eq.producto || f.producto,
+                      imei:          eq.imei || '',
+                      color:         eq.color || '',
+                      almacenamiento: eq.almacenamiento || '',
+                      costo_equipo:  String(eq.costo || ''),
+                      proveedor:     eq.proveedores?.nombre || f.proveedor,
                     }))
                   }}
                 />
@@ -409,9 +412,32 @@ export default function EditarVenta() {
               )}
               {form.retoma_valorador === 'asesor' && (
                 <Field span={2}>
-                  <div style={{ background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:8, padding:'10px 14px', color:'#065f46', fontSize:12 }}>
-                    ✓ Este valor se usará como parte del pago. Al guardar se notificará a Diego para recoger el equipo y registrarlo en retomas.
-                  </div>
+                  {!retomaAceptada ? (
+                    <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                      <div style={{ background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:8, padding:'10px 14px', color:'#065f46', fontSize:12 }}>
+                        ✓ Este valor se descontará del total de la venta como abono.
+                      </div>
+                      <button type="button"
+                        disabled={!num(form.valor_retoma||0)}
+                        onClick={() => { setRetomaAceptada(true) }}
+                        style={{ padding:'10px 20px', background: num(form.valor_retoma||0) ? 'linear-gradient(135deg,#10b981,#059669)' : '#e2e8f0', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:700, cursor: num(form.valor_retoma||0) ? 'pointer':'default', alignSelf:'flex-start' }}>
+                        ✓ Aceptar retoma — descontar {form.valor_retoma ? `$${Number(form.valor_retoma).toLocaleString('es-CO')}` : '$0'} del total
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ background:'rgba(16,185,129,0.12)', border:'2px solid #10b981', borderRadius:8, padding:'12px 16px' }}>
+                      <div style={{ color:'#059669', fontWeight:700, fontSize:13, marginBottom:4 }}>✅ Retoma aceptada — ${Number(form.valor_retoma).toLocaleString('es-CO')}</div>
+                      {num(form.valor_venta) > 0 && (
+                        <div style={{ color:'#065f46', fontSize:12, fontWeight:600 }}>
+                          Cliente paga: ${(num(form.valor_venta||0) - num(form.valor_retoma||0)).toLocaleString('es-CO')}
+                        </div>
+                      )}
+                      <button type="button" onClick={() => setRetomaAceptada(false)}
+                        style={{ marginTop:8, padding:'4px 10px', background:'transparent', border:'1px solid #10b981', borderRadius:6, color:'#10b981', fontSize:11, cursor:'pointer' }}>
+                        Modificar valor
+                      </button>
+                    </div>
+                  )}
                 </Field>
               )}
             </>}
@@ -507,6 +533,21 @@ export default function EditarVenta() {
           </Section>
 
           <Section title="💳 Método de pago">
+            {retomaAceptada && num(form.valor_retoma||0) > 0 && (
+              <Field span={2}>
+                <div style={{ background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:10, padding:'14px 16px' }}>
+                  <div style={{ color:'#059669', fontSize:12, fontWeight:700, marginBottom:8 }}>💱 Resumen de pago con retoma</div>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                    <div><div style={{ color:'#64748b', fontSize:11 }}>Valor total</div><div style={{ color:'#0f172a', fontSize:14, fontWeight:600 }}>${num(form.valor_venta||0).toLocaleString('es-CO')}</div></div>
+                    <div><div style={{ color:'#64748b', fontSize:11 }}>Abono por retoma</div><div style={{ color:'#10b981', fontSize:14, fontWeight:700 }}>- ${num(form.valor_retoma||0).toLocaleString('es-CO')}</div></div>
+                    <div style={{ gridColumn:'span 2', borderTop:'1px solid #cbd5e1', paddingTop:8 }}>
+                      <div style={{ color:'#64748b', fontSize:11 }}>Cliente paga</div>
+                      <div style={{ color:'#0f172a', fontSize:18, fontWeight:700 }}>${Math.max(0, num(form.valor_venta||0) - num(form.valor_retoma||0)).toLocaleString('es-CO')}</div>
+                    </div>
+                  </div>
+                </div>
+              </Field>
+            )}
             <Field label="Método" required>
               <select style={sel} value={form.metodo_pago || 'contado'} onChange={e => set('metodo_pago', e.target.value)}>
                 {METODOS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
