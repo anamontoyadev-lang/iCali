@@ -24,6 +24,7 @@ const TABS_ADMIN = [
   { key:'inventario',   label:'📦 Inventario' },
   { key:'inv_detalle',  label:'📦 Inv. Detalle' },
   { key:'solicitudes',  label:'🔔 Solicitudes' },
+  { key:'retomas_rep',  label:'🔄 Retomas' },
   { key:'despachos',    label:'🚚 Despachos' },
   { key:'retomas',      label:'🔄 Retomas' },
   { key:'proveedores',  label:'🏭 Proveedores' },
@@ -38,6 +39,10 @@ const TABS_INVENTARIO = [
 const TABS_ASESOR = [
   { key:'dashboard',    label:'📊 Mi Dashboard' },
   { key:'ventas',       label:'🛍 Mis Ventas' },
+]
+
+const TABS_RETOMAS = [
+  { key:'retomas_rep',  label:'🔄 Mis Retomas' },
 ]
 
 function downloadXLSX(data, filename, sheetName = 'Datos') {
@@ -61,7 +66,7 @@ const th = { color:'#4a6a8a', fontSize:11, fontWeight:600, textTransform:'upperc
 const td = { padding:'10px 14px', color:'#cbd5e1', fontSize:13, borderBottom:'1px solid #0f1e36' }
 
 export default function Reportes() {
-  const { esAsesor, esAsesorMostrador, esAsesorCall, esAdmin, esLiderAdmin, esLiderCom, esInventarioRol, perfil } = useAuth()
+  const { esAsesor, esAsesorMostrador, esAsesorCall, esAdmin, esLiderAdmin, esLiderCom, esInventarioRol, esRetomas, perfil } = useAuth()
   const tabDefault = (esInventarioRol && !esAdmin) ? 'inv_detalle' : 'dashboard'
   const [tab, setTab]         = useState(tabDefault)
   const [periodo, setPeriodo] = useState(new Date().toISOString().slice(0,7))
@@ -115,7 +120,7 @@ export default function Reportes() {
         supabase.from('retomas').select('*, ventas(nombre_cliente,asesor_nombre,fecha_venta)').order('created_at', { ascending:false }).limit(500),
         supabase.from('proveedores').select('*, abonos_proveedor(*)').eq('activo', true).order('nombre'),
         supabase.from('abonos_proveedor').select('*, proveedores(nombre)').order('created_at', { ascending:false }).limit(500),
-        supabase.from('notificaciones').select('*').in('tipo',['SOLICITUD_EQUIPO','DEVOLUCION_EQUIPO']).order('created_at',{ascending:false}).limit(500),
+        supabase.from('notificaciones').select('*').in('tipo',['SOLICITUD_EQUIPO','DEVOLUCION_EQUIPO','VALORACION_RETOMA','RECOGIDA_RETOMA','DIEGO_EN_CAMINO','VALOR_RETOMA_CONFIRMADO']).order('created_at',{ascending:false}).limit(500),
       ])
 
       const ventas = vData || []
@@ -327,7 +332,7 @@ export default function Reportes() {
 
       {/* Tabs */}
       <div style={{ display:'flex', gap:4, marginBottom:20, flexWrap:'wrap', borderBottom:'1px solid #1a2f52', paddingBottom:12 }}>
-        {(esAsesorPuro ? TABS_ASESOR : esInventarioRol && !esAdmin && !esLiderAdmin && !esLiderCom ? TABS_INVENTARIO : TABS_ADMIN).map(t => (
+        {(esAsesorPuro ? TABS_ASESOR : esRetomasPuro ? TABS_RETOMAS : esInventarioRol && !esAdmin && !esLiderAdmin && !esLiderCom ? TABS_INVENTARIO : TABS_ADMIN).map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{
             padding:'7px 14px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:600,
             background: tab === t.key ? 'linear-gradient(135deg,#0066ff,#0044bb)' : '#0d1a35',
@@ -522,6 +527,190 @@ export default function Reportes() {
               </TableWrap>
             </>
           )}
+
+          {/* ── RETOMAS REPORTE ── */}
+          {tab === 'retomas_rep' && (() => {
+            // Notificaciones de retoma para timeline
+            const notifRetomas = rawSolicitudes.filter(s =>
+              ['VALORACION_RETOMA','RECOGIDA_RETOMA','DIEGO_EN_CAMINO','VALOR_RETOMA_CONFIRMADO'].includes(s.tipo)
+            )
+
+            // KPIs
+            const valoracion  = notifRetomas.filter(s => s.tipo === 'VALORACION_RETOMA')
+            const enCamino    = notifRetomas.filter(s => s.tipo === 'DIEGO_EN_CAMINO')
+            const recogida    = notifRetomas.filter(s => s.tipo === 'RECOGIDA_RETOMA')
+            const confirmadas = notifRetomas.filter(s => s.tipo === 'VALOR_RETOMA_CONFIRMADO')
+
+            // Consolidar timeline por retoma (agrupar por venta_id o referencia)
+            const retomaPorVenta = {}
+            notifRetomas.forEach(n => {
+              const key = n.datos?.venta_id || n.datos?.referencia || n.id
+              if (!retomaPorVenta[key]) {
+                retomaPorVenta[key] = {
+                  key,
+                  referencia:  n.datos?.referencia || '—',
+                  imei:        n.datos?.imei || '—',
+                  asesor:      n.datos?.asesor || n.creado_por_nombre || '—',
+                  cliente:     n.datos?.cliente || '—',
+                  valor:       n.datos?.valor_retoma || n.datos?.valor_est || 0,
+                  movimientos: []
+                }
+              }
+              retomaPorVenta[key].movimientos.push({
+                tipo:           n.tipo,
+                fecha:          n.created_at,
+                respondida:     n.respondida,
+                respuesta:      n.respuesta,
+                respondido_por: n.respondido_por,
+                mensaje:        n.mensaje,
+                datos:          n.datos,
+              })
+            })
+            const retomasTimeline = Object.values(retomaPorVenta)
+              .sort((a,b) => new Date(b.movimientos[0]?.fecha||0) - new Date(a.movimientos[0]?.fecha||0))
+
+            // También combinar con rawRetomas para datos del equipo
+            function getRetomaData(key) {
+              return rawRetomas.find(r => r.venta_id === key) || null
+            }
+
+            function dlRetomas() {
+              const rows = notifRetomas.map(n => ({
+                'Fecha':       n.created_at?.slice(0,16)||'',
+                'Tipo':        n.tipo,
+                'Referencia':  n.datos?.referencia||'',
+                'IMEI':        n.datos?.imei||'',
+                'Asesor':      n.datos?.asesor||n.creado_por_nombre||'',
+                'Cliente':     n.datos?.cliente||'',
+                'Valor':       n.datos?.valor_retoma||n.datos?.valor_est||0,
+                'Estado':      n.respondida ? n.respuesta : 'pendiente',
+                'Respondido':  n.respondido_por||'',
+              }))
+              downloadXLSX(rows, `Retomas_Timeline_iCali_${periodo}.xlsx`, 'Retomas')
+            }
+
+            const TIPO_CONFIG = {
+              VALORACION_RETOMA:     { icon:'🔄', label:'Solicitud de valoración', color:'#8b5cf6', bg:'rgba(139,92,246,0.1)' },
+              DIEGO_EN_CAMINO:       { icon:'🚶', label:'Diego fue a valorar',     color:'#f59e0b', bg:'rgba(245,158,11,0.1)' },
+              VALOR_RETOMA_CONFIRMADO:{ icon:'💰', label:'Valor confirmado',        color:'#10b981', bg:'rgba(16,185,129,0.1)' },
+              RECOGIDA_RETOMA:       { icon:'📦', label:'Solicitud de recogida',   color:'#3b82f6', bg:'rgba(59,130,246,0.1)' },
+            }
+
+            return (
+              <>
+                {/* KPIs */}
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:12, marginBottom:20 }}>
+                  {[
+                    { label:'Solicitudes valoración', val:valoracion.length,  color:'#8b5cf6' },
+                    { label:'Diego fue a valorar',    val:enCamino.length,    color:'#f59e0b' },
+                    { label:'Valores confirmados',    val:confirmadas.length, color:'#10b981' },
+                    { label:'Recogidas solicitadas',  val:recogida.length,    color:'#3b82f6' },
+                    { label:'Total retomas',          val:rawRetomas.length,  color:'#0066ff' },
+                  ].map(k => (
+                    <div key={k.label} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:10, padding:'12px 16px' }}>
+                      <div style={{ color:'#5a7aaa', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:4 }}>{k.label}</div>
+                      <div style={{ color:k.color, fontSize:22, fontWeight:700 }}>{k.val}</div>
+                      <div style={{ height:3, background:k.color, borderRadius:2, marginTop:8, opacity:.5 }} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Timeline por retoma */}
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+                  <div style={{ color:'#8aabcc', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'.07em' }}>
+                    Trazabilidad de retomas ({retomasTimeline.length})
+                  </div>
+                  <button onClick={dlRetomas} style={{ padding:'7px 14px', background:'transparent', border:'1px solid #10b981', borderRadius:7, color:'#10b981', fontSize:11, fontWeight:600, cursor:'pointer' }}>📥 Excel</button>
+                </div>
+
+                <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                  {retomasTimeline.map(retoma => {
+                    const rd = getRetomaData(retoma.key)
+                    return (
+                      <div key={retoma.key} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:10, overflow:'hidden' }}>
+                        {/* Header */}
+                        <div style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'12px 16px', background:'#0a1628', borderBottom:'1px solid #0f1e36', flexWrap:'wrap' }}>
+                          <div style={{ flex:1 }}>
+                            <div style={{ color:'#e2e8f0', fontSize:13, fontWeight:600 }}>{retoma.referencia}</div>
+                            <div style={{ display:'flex', gap:10, marginTop:4, flexWrap:'wrap' }}>
+                              <span style={{ color:'#8aabcc', fontSize:11, fontFamily:'monospace' }}>IMEI: {retoma.imei}</span>
+                              {rd?.capacidad_gb && <span style={{ color:'#8aabcc', fontSize:11 }}>{rd.capacidad_gb}</span>}
+                              {rd?.color && <span style={{ color:'#8aabcc', fontSize:11 }}>{rd.color}</span>}
+                              {rd?.porcentaje_bateria != null && <span style={{ color: rd.porcentaje_bateria>=80?'#10b981':'#f59e0b', fontSize:11 }}>{rd.porcentaje_bateria}%</span>}
+                            </div>
+                          </div>
+                          <div style={{ textAlign:'right' }}>
+                            <div style={{ color:'#4a6a8a', fontSize:11 }}>👤 {retoma.asesor}</div>
+                            <div style={{ color:'#4a6a8a', fontSize:11 }}>🧑 {retoma.cliente}</div>
+                            {(rd?.valor_retoma || retoma.valor) ? (
+                              <div style={{ color:'#10b981', fontSize:13, fontWeight:700, marginTop:2 }}>${(rd?.valor_retoma || retoma.valor).toLocaleString('es-CO')}</div>
+                            ) : null}
+                          </div>
+                          {/* Estado actual del equipo */}
+                          {rd && (
+                            <div style={{ background: rd.estado==='verificada'?'rgba(16,185,129,0.15)':rd.estado==='recibida'?'rgba(245,158,11,0.15)':'rgba(107,114,128,0.15)',
+                              color: rd.estado==='verificada'?'#10b981':rd.estado==='recibida'?'#f59e0b':'#9ca3af',
+                              fontSize:11, padding:'4px 10px', borderRadius:6, fontWeight:600, alignSelf:'flex-start' }}>
+                              {rd.estado?.toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Timeline movimientos */}
+                        <div style={{ padding:'12px 16px' }}>
+                          {retoma.movimientos
+                            .sort((a,b) => new Date(a.fecha)-new Date(b.fecha))
+                            .map((m, i, arr) => {
+                              const cfg = TIPO_CONFIG[m.tipo] || { icon:'📌', label:m.tipo, color:'#9ca3af', bg:'rgba(156,163,175,0.1)' }
+                              return (
+                                <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom: i<arr.length-1?10:0 }}>
+                                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flexShrink:0 }}>
+                                    <div style={{ width:10, height:10, borderRadius:'50%', background:cfg.color, marginTop:3 }} />
+                                    {i < arr.length-1 && <div style={{ width:2, height:20, background:'#1a2f52', margin:'2px 0' }} />}
+                                  </div>
+                                  <div style={{ flex:1, background:cfg.bg, border:`1px solid ${cfg.color}33`, borderRadius:7, padding:'7px 10px' }}>
+                                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:4 }}>
+                                      <span style={{ color:cfg.color, fontSize:11, fontWeight:700 }}>{cfg.icon} {cfg.label}</span>
+                                      <span style={{ color:'#4a6a8a', fontSize:10 }}>
+                                        {new Date(m.fecha).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+                                      </span>
+                                    </div>
+                                    {m.tipo === 'VALORACION_RETOMA' && (
+                                      <div style={{ color:'#7c6fa0', fontSize:10, marginTop:2 }}>
+                                        Solicitado por: {m.datos?.asesor || m.mensaje}
+                                        {m.datos?.valor_est ? ` · Valor est: $${Number(m.datos.valor_est).toLocaleString('es-CO')}` : ''}
+                                      </div>
+                                    )}
+                                    {m.tipo === 'VALOR_RETOMA_CONFIRMADO' && (
+                                      <div style={{ color:'#059669', fontSize:11, marginTop:2, fontWeight:600 }}>
+                                        Valor confirmado: ${Number(m.datos?.valor_retoma||0).toLocaleString('es-CO')}
+                                      </div>
+                                    )}
+                                    {m.tipo === 'RECOGIDA_RETOMA' && (
+                                      <div style={{ color:'#3b82f6', fontSize:10, marginTop:2 }}>
+                                        {m.respondida ? `✓ Recogido por: ${m.respondido_por}` : '⏳ Pendiente de recogida'}
+                                      </div>
+                                    )}
+                                    {m.tipo === 'DIEGO_EN_CAMINO' && (
+                                      <div style={{ color:'#92400e', fontSize:10, marginTop:2 }}>
+                                        Diego fue a valorar el equipo donde el asesor
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {retomasTimeline.length === 0 && (
+                    <div style={{ color:'#4a6a8a', fontSize:13, textAlign:'center', padding:30 }}>Sin retomas registradas en el período</div>
+                  )}
+                </div>
+              </>
+            )
+          })()}
 
           {/* ── DESPACHOS ── */}
           {tab === 'despachos' && (
