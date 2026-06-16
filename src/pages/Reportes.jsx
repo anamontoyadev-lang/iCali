@@ -35,6 +35,11 @@ const TABS_INVENTARIO = [
   { key:'solicitudes',  label:'🔔 Solicitudes' },
 ]
 
+const TABS_ASESOR = [
+  { key:'dashboard',    label:'📊 Mi Dashboard' },
+  { key:'ventas',       label:'🛍 Mis Ventas' },
+]
+
 function downloadXLSX(data, filename, sheetName = 'Datos') {
   const ws = XLSX.utils.json_to_sheet(data)
   const wb = XLSX.utils.book_new()
@@ -56,7 +61,7 @@ const th = { color:'#4a6a8a', fontSize:11, fontWeight:600, textTransform:'upperc
 const td = { padding:'10px 14px', color:'#cbd5e1', fontSize:13, borderBottom:'1px solid #0f1e36' }
 
 export default function Reportes() {
-  const { esAsesor, esAdmin, esLiderAdmin, esLiderCom, esInventarioRol, perfil } = useAuth()
+  const { esAsesor, esAsesorMostrador, esAsesorCall, esAdmin, esLiderAdmin, esLiderCom, esInventarioRol, perfil } = useAuth()
   const tabDefault = (esInventarioRol && !esAdmin) ? 'inv_detalle' : 'dashboard'
   const [tab, setTab]         = useState(tabDefault)
   const [periodo, setPeriodo] = useState(new Date().toISOString().slice(0,7))
@@ -322,7 +327,7 @@ export default function Reportes() {
 
       {/* Tabs */}
       <div style={{ display:'flex', gap:4, marginBottom:20, flexWrap:'wrap', borderBottom:'1px solid #1a2f52', paddingBottom:12 }}>
-        {(esInventarioRol && !esAdmin && !esLiderAdmin && !esLiderCom ? TABS_INVENTARIO : TABS_ADMIN).map(t => (
+        {(esAsesorPuro ? TABS_ASESOR : esInventarioRol && !esAdmin && !esLiderAdmin && !esLiderCom ? TABS_INVENTARIO : TABS_ADMIN).map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{
             padding:'7px 14px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:600,
             background: tab === t.key ? 'linear-gradient(135deg,#0066ff,#0044bb)' : '#0d1a35',

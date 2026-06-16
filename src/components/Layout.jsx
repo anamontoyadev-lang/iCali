@@ -19,6 +19,7 @@ const ROLES_LABEL = {
 export default function Layout() {
   const { perfil, rol, esAdmin, esLiderAdmin, esLiderCom, esContadora,
           esInventarioRol, esRetomas, esGarantias,
+          esAsesor, esAsesorMostrador, esAsesorCall,
           puedeVerFinancieras, puedeVerDespachos } = useAuth()
   const navigate  = useNavigate()
   const location  = useLocation()
@@ -43,7 +44,7 @@ export default function Layout() {
     { to:'/despachos',    label:'Despachos',   icon: <IconDesp />,      show: puedeVerDespachos || esAdmin || esLiderAdmin || esLiderCom },
     { to:'/laboratorio',  label:'Laboratorio', icon: <IconLab />,       show: true }, // todos ven lab
     { to:'/proveedores',  label:'Proveedores', icon: <IconProv />,      show: esAdmin || esLiderAdmin || esLiderCom || esInventarioRol },
-    { to:'/inventario',   label:'Inventario',  icon: <IconInv />,       show: esAdmin || esLiderAdmin || esLiderCom || esInventarioRol },
+    { to:'/inventario',   label:'Inventario',  icon: <IconInv />,       show: esAdmin || esLiderAdmin || esLiderCom || esInventarioRol || esAsesor || esAsesorMostrador || esAsesorCall },
     { to:'/financieras',  label:'Financieras', icon: <IconFin />,       show: puedeVerFinancieras },
     { to:'/extractos',    label:'Extractos',   icon: <IconDoc />,       show: puedeVerFinancieras },
     { to:'/reportes',     label:'Reportes',    icon: <IconReport />,    show: esAdmin || esLiderAdmin || esLiderCom || esContadora || esInventarioRol },

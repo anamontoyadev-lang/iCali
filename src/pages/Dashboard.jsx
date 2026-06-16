@@ -304,7 +304,13 @@ export default function Dashboard() {
                       {n.tipo === 'DEVOLUCION_EQUIPO' && (esAdmin || esLiderAdmin || esInventarioRol) && (
                         <button onClick={() => confirmarRecogidaDashboard(n)} style={{ padding:'5px 10px', background:'#10b981', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>✓ Confirmé recogida</button>
                       )}
-                      {!['SOLICITUD_EQUIPO','EQUIPO_LISTO_LABORATORIO','DEVOLUCION_EQUIPO','VALORACION_RETOMA','RECOGIDA_RETOMA'].includes(n.tipo) && (
+                      {n.tipo === 'VALOR_RETOMA_CONFIRMADO' && (
+                        <div style={{ background:'rgba(139,92,246,0.1)', border:'1px solid rgba(139,92,246,0.3)', borderRadius:6, padding:'6px 10px', fontSize:11, color:'#a78bfa' }}>
+                          ✅ Diego confirmó el valor. Ve a la venta pausada y acepta la retoma para continuar.
+                          <button onClick={() => responderNotif(n.id,'leida')} style={{ marginLeft:8, padding:'3px 8px', background:'#8b5cf6', border:'none', borderRadius:4, color:'#fff', fontSize:10, cursor:'pointer' }}>✓ Entendido</button>
+                        </div>
+                      )}
+                      {!['SOLICITUD_EQUIPO','EQUIPO_LISTO_LABORATORIO','DEVOLUCION_EQUIPO','VALORACION_RETOMA','RECOGIDA_RETOMA','VALOR_RETOMA_CONFIRMADO'].includes(n.tipo) && (
                         <button onClick={() => responderNotif(n.id,'leida')} style={{ padding:'5px 10px', background:'#1a2f52', border:'none', borderRadius:6, color:'#8aabcc', fontSize:11, cursor:'pointer' }}>✓ Leída</button>
                       )}
                     </div>

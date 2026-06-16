@@ -231,6 +231,28 @@ export default function Laboratorio() {
         }
       }
     }
+    // Si Diego marcó "notificar asesor" — enviar notificación con el valor
+    if (editFormR.notificar_asesor && editFormR.valor_retoma) {
+      const user = (await supabase.auth.getUser()).data.user
+      const retoma = retomas.find(r => r.id === editandoR)
+      const asesorId = retoma?.ventas?.asesor_id || retoma?.registrado_por
+      await supabase.from('notificaciones').insert({
+        tipo:              'VALOR_RETOMA_CONFIRMADO',
+        mensaje:           `✅ Diego valoró la retoma — ${editFormR.referencia}: $${Number(editFormR.valor_retoma).toLocaleString('es-CO')}`,
+        datos: {
+          retoma_id:    editandoR,
+          referencia:   editFormR.referencia,
+          imei:         editFormR.imei_retoma,
+          valor_retoma: Number(editFormR.valor_retoma),
+          valorado_por: user?.email || 'Diego',
+          asesor:       retoma?.ventas?.asesor_nombre || '',
+        },
+        creado_por:        user.id,
+        creado_por_nombre: 'Diego (Retomas)',
+        destinatario_rol:  null,
+        destinatario_id:   asesorId,
+      })
+    }
     setEditandoR(null); loadRetomas(); loadGarantias()
   }
 
@@ -432,7 +454,7 @@ export default function Laboratorio() {
                       <td style={td}><div style={{ fontSize:12 }}>{r.ventas?.nombre_cliente||'—'}</div><div style={{ color:'#4a6a8a', fontSize:11 }}>{r.ventas?.asesor_nombre}</div></td>
                       <td style={{ ...td, fontSize:12, whiteSpace:'nowrap' }}>{r.fecha_recepcion?new Date(r.fecha_recepcion+'T12:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}):'—'}</td>
                       {(esAdmin||esLiderAdmin||esLiderCom||esRetomas) && (
-                        <td style={td}><button onClick={() => { setEditandoR(r.id); setEditFormR({ imei_retoma:r.imei_retoma||'', referencia:r.referencia||'', capacidad_gb:r.capacidad_gb||'', color:r.color||'', porcentaje_bateria:r.porcentaje_bateria||'', valor_retoma:r.valor_retoma||'', costo_estimado:r.costo_estimado||'', quien_tiene:r.quien_tiene||'', punto_tienda:r.punto_tienda||'', estado:r.estado, observaciones:r.observaciones||'' }) }} style={{ background:'#1a2f52', border:'none', borderRadius:6, color:'#8aabcc', fontSize:12, padding:'5px 10px', cursor:'pointer' }}>Editar</button></td>
+                        <td style={td}><button onClick={() => { setEditandoR(r.id); setEditFormR({ imei_retoma:r.imei_retoma||'', referencia:r.referencia||'', capacidad_gb:r.capacidad_gb||'', color:r.color||'', porcentaje_bateria:r.porcentaje_bateria||'', valor_retoma:r.valor_retoma||'', costo_estimado:r.costo_estimado||'', quien_tiene:r.quien_tiene||'', punto_tienda:r.punto_tienda||'', estado:r.estado, observaciones:r.observaciones||'', notificar_asesor: false }) }} style={{ background:'#1a2f52', border:'none', borderRadius:6, color:'#8aabcc', fontSize:12, padding:'5px 10px', cursor:'pointer' }}>Editar</button></td>
                       )}
                     </tr>
                   ))}
@@ -539,7 +561,20 @@ export default function Laboratorio() {
               </div>
               <div style={{ gridColumn:'span 2' }}><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Observaciones</label><textarea style={{ ...inp, resize:'vertical', minHeight:60 }} value={editFormR.observaciones} onChange={e => setEditFormR(f=>({...f,observaciones:e.target.value}))} /></div>
             </div>
-            <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
+            {/* Notificar asesor con el valor de Diego */}
+            {(esRetomas || esAdmin || esLiderAdmin) && (
+              <div style={{ marginTop:16, padding:'12px 14px', background:'rgba(139,92,246,0.08)', border:'1px solid rgba(139,92,246,0.25)', borderRadius:8 }}>
+                <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
+                  <input type="checkbox" checked={editFormR.notificar_asesor || false}
+                    onChange={e => setEditFormR(f => ({...f, notificar_asesor: e.target.checked}))} />
+                  <div>
+                    <div style={{ color:'#a78bfa', fontSize:12, fontWeight:600 }}>📢 Notificar valor al asesor</div>
+                    <div style={{ color:'#7c6fa0', fontSize:11, marginTop:1 }}>El asesor recibirá una notificación con el valor ${Number(editFormR.valor_retoma||0).toLocaleString('es-CO')} para que confirme la retoma en la venta.</div>
+                  </div>
+                </label>
+              </div>
+            )}
+            <div style={{ display:'flex', gap:10, marginTop:16, justifyContent:'flex-end' }}>
               <button onClick={() => setEditandoR(null)} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>Cancelar</button>
               <button onClick={guardarRetoma} style={{ padding:'9px 24px', background:'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>Guardar</button>
             </div>
