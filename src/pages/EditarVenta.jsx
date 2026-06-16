@@ -224,7 +224,8 @@ export default function EditarVenta() {
         : (form.referencia_retoma || 'pendiente')
       const valoroAsesor = form.retoma_valorador === 'asesor'
 
-      await supabase.from('retomas').update({
+      await supabase.from('retomas').upsert({
+        venta_id:       id,
         imei_retoma:    form.imei_retoma || 'pendiente',
         referencia:     refFinal,
         capacidad_gb:   form.retoma_gb || null,
@@ -233,7 +234,7 @@ export default function EditarVenta() {
         valor_retoma:   num(form.valor_retoma),
         estado:         valoroAsesor ? 'verificada' : 'recibida',
         observaciones:  valoroAsesor ? `Valorado por asesor ${form.asesor_nombre}` : 'Pendiente valoración de Diego',
-      }).eq('venta_id', id)
+      }, { onConflict: 'venta_id', ignoreDuplicates: false })
 
       if (valoroAsesor) {
         await supabase.from('notificaciones').insert({

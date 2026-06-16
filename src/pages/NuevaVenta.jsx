@@ -523,7 +523,8 @@ export default function NuevaVenta() {
         : (form.referencia_retoma || 'pendiente')
       const valoroAsesor = form.retoma_valorador === 'asesor'
 
-      await supabase.from('retomas').update({
+      await supabase.from('retomas').upsert({
+        venta_id:       venta.id,
         imei_retoma:    form.imei_retoma || 'pendiente',
         referencia:     refFinal,
         capacidad_gb:   form.retoma_gb || null,
@@ -532,7 +533,7 @@ export default function NuevaVenta() {
         valor_retoma:   num(form.valor_retoma),
         estado:         valoroAsesor ? 'verificada' : 'recibida',
         observaciones:  valoroAsesor ? `Valorado por asesor ${form.asesor_nombre}` : 'Pendiente valoración de Diego',
-      }).eq('venta_id', venta.id)
+      }, { onConflict: 'venta_id', ignoreDuplicates: false })
 
       if (!valoroAsesor && !retomaNotifEnviada) {
         // Fallback Diego: si no se notificó al elegir "Diego valora"
