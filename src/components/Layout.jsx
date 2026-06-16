@@ -124,7 +124,7 @@ export default function Layout() {
 
         {/* Topbar */}
         <div style={{
-          background:'#f5f3ff', borderBottom:'1px solid #1a2f52',
+          background:'#0a1628', borderBottom:'1px solid #1a2f52',
           padding:'0 16px', height:52,
           display:'flex', alignItems:'center', justifyContent:'space-between',
           position:'sticky', top:0, zIndex:100
@@ -145,7 +145,7 @@ export default function Layout() {
             <div onClick={() => setMenuOpen(false)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.65)' }} />
             <div style={{
               position:'relative', zIndex:1, width:260,
-              background:'#f5f3ff', borderRight:'1px solid #1a2f52',
+              background:'#0a1628', borderRight:'1px solid #1a2f52',
               display:'flex', flexDirection:'column', height:'100vh',
               overflowY:'auto', animation:'slideIn 0.2s ease'
             }}>

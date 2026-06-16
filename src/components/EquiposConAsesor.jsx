@@ -63,7 +63,7 @@ export default function EquiposConAsesor() {
       </div>
       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
         {equipos.map(eq => (
-          <div key={eq.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, background:'#0a1628', borderRadius:8, padding:'10px 14px', flexWrap:'wrap' }}>
+          <div key={eq.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, background:'#ffffff', borderRadius:8, padding:'10px 14px', flexWrap:'wrap' }}>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ color:'#e2e8f0', fontSize:13, fontWeight:500 }}>{eq.producto}</div>
               <div style={{ display:'flex', gap:10, marginTop:3, flexWrap:'wrap' }}>

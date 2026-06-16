@@ -339,7 +339,7 @@ export default function EditarVenta() {
             </Field>
 
             <Field label="¿Tiene retoma?">
-              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#0f172a', fontSize:13, cursor:'pointer' }}>
+              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#111827', fontSize:13, cursor:'pointer' }}>
                 <input type="checkbox" checked={form.tiene_retoma || false} onChange={e => set('tiene_retoma', e.target.checked)} />
                 Sí, incluye retoma
               </label>
@@ -387,13 +387,13 @@ export default function EditarVenta() {
                     style={{ flex:1, padding:'12px', border:`2px solid ${form.retoma_valorador==='asesor'?'#0066ff':'#cbd5e1'}`, borderRadius:8, cursor:'pointer',
                       background: form.retoma_valorador==='asesor' ? 'rgba(0,102,255,0.08)' : '#ffffff', textAlign:'left' }}>
                     <div style={{ color: form.retoma_valorador==='asesor'?'#0066ff':'#475569', fontWeight:700, fontSize:13 }}>👤 Yo valoro el equipo</div>
-                    <div style={{ color:'#64748b', fontSize:11, marginTop:2 }}>Ingreso el valor directamente — será parte del pago. Al cerrar la venta, Diego recogerá el equipo.</div>
+                    <div style={{ color:'#6b7280', fontSize:11, marginTop:2 }}>Ingreso el valor directamente — será parte del pago. Al cerrar la venta, Diego recogerá el equipo.</div>
                   </button>
                   <button type="button" onClick={() => { set('retoma_valorador','diego'); notificarValoracionRetoma() }}
                     style={{ flex:1, padding:'12px', border:`2px solid ${form.retoma_valorador==='diego'?'#0066ff':'#cbd5e1'}`, borderRadius:8, cursor:'pointer',
                       background: form.retoma_valorador==='diego' ? 'rgba(0,102,255,0.08)' : '#ffffff', textAlign:'left' }}>
                     <div style={{ color: form.retoma_valorador==='diego'?'#0066ff':'#475569', fontWeight:700, fontSize:13 }}>🔬 Diego valora</div>
-                    <div style={{ color:'#64748b', fontSize:11, marginTop:2 }}>Se notifica a Diego para que venga a valorar antes de cerrar la venta.</div>
+                    <div style={{ color:'#6b7280', fontSize:11, marginTop:2 }}>Se notifica a Diego para que venga a valorar antes de cerrar la venta.</div>
                   </button>
                 </div>
               </Field>
@@ -539,10 +539,10 @@ export default function EditarVenta() {
                 <div style={{ background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:10, padding:'14px 16px' }}>
                   <div style={{ color:'#059669', fontSize:12, fontWeight:700, marginBottom:8 }}>💱 Resumen de pago con retoma</div>
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
-                    <div><div style={{ color:'#64748b', fontSize:11 }}>Valor total</div><div style={{ color:'#0f172a', fontSize:14, fontWeight:600 }}>${num(form.valor_venta||0).toLocaleString('es-CO')}</div></div>
-                    <div><div style={{ color:'#64748b', fontSize:11 }}>Abono por retoma</div><div style={{ color:'#10b981', fontSize:14, fontWeight:700 }}>- ${num(form.valor_retoma||0).toLocaleString('es-CO')}</div></div>
+                    <div><div style={{ color:'#6b7280', fontSize:11 }}>Valor total</div><div style={{ color:'#0f172a', fontSize:14, fontWeight:600 }}>${num(form.valor_venta||0).toLocaleString('es-CO')}</div></div>
+                    <div><div style={{ color:'#6b7280', fontSize:11 }}>Abono por retoma</div><div style={{ color:'#10b981', fontSize:14, fontWeight:700 }}>- ${num(form.valor_retoma||0).toLocaleString('es-CO')}</div></div>
                     <div style={{ gridColumn:'span 2', borderTop:'1px solid #cbd5e1', paddingTop:8 }}>
-                      <div style={{ color:'#64748b', fontSize:11 }}>Cliente paga</div>
+                      <div style={{ color:'#6b7280', fontSize:11 }}>Cliente paga</div>
                       <div style={{ color:'#0f172a', fontSize:18, fontWeight:700 }}>${Math.max(0, num(form.valor_venta||0) - num(form.valor_retoma||0)).toLocaleString('es-CO')}</div>
                     </div>
                   </div>
@@ -567,7 +567,7 @@ export default function EditarVenta() {
 
           <Section title="⚙️ Opciones">
             <Field label="¿Es domicilio?">
-              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#0f172a', fontSize:13, cursor:'pointer' }}>
+              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#111827', fontSize:13, cursor:'pointer' }}>
                 <input type="checkbox" checked={form.es_domicilio || false} onChange={e => set('es_domicilio', e.target.checked)} />
                 Sí, tiene despacho
               </label>
@@ -578,7 +578,7 @@ export default function EditarVenta() {
               </Field>
             )}
             <Field label="¿Comisión compartida?">
-              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#0f172a', fontSize:13, cursor:'pointer' }}>
+              <label style={{ display:'flex', alignItems:'center', gap:8, color:'#111827', fontSize:13, cursor:'pointer' }}>
                 <input type="checkbox" checked={form.comision_compartida || false} onChange={e => set('comision_compartida', e.target.checked)} />
                 Sí, compartida
               </label>

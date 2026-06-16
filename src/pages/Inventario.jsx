@@ -53,8 +53,8 @@ const STICKERS = [
 ]
 
 const inp = {
-  background:'#f5f3ff', border:'1px solid #c7d2fe', borderRadius:8,
-  padding:'9px 12px', color:'#1e1b4b', fontSize:13,
+  background:'#ffffff', border:'1px solid #d1d5db', borderRadius:8,
+  padding:'9px 12px', color:'#0f172a', fontSize:13,
   width:'100%', boxSizing:'border-box', outline:'none'
 }
 const sel = { ...inp, cursor:'pointer' }
@@ -542,7 +542,7 @@ export default function Inventario() {
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.78)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
           <div style={{ background:'#1a1740', border:'1px solid #10b981', borderRadius:14, padding:28, width:'100%', maxWidth:420, fontFamily:"'DM Sans', system-ui" }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-              <h3 style={{ color:'#1e1b4b', margin:0, fontSize:16 }}>📦 Configurar lote de ingreso</h3>
+              <h3 style={{ color:'#0f172a', margin:0, fontSize:16 }}>📦 Configurar lote de ingreso</h3>
               <button onClick={() => setModoLote(false)} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:20, cursor:'pointer' }}>×</button>
             </div>
             <p style={{ color:'#8aabcc', fontSize:13, margin:'0 0 16px' }}>
@@ -550,19 +550,19 @@ export default function Inventario() {
             </p>
             <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
               <div>
-                <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Proveedor *</label>
+                <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Proveedor *</label>
                 <select style={sel} value={lote.proveedor_id} onChange={e => setLote(l=>({...l, proveedor_id:e.target.value}))}>
                   <option value="">Seleccionar...</option>
                   {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
                 </select>
               </div>
               <div>
-                <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>N° Factura</label>
+                <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>N° Factura</label>
                 <input style={inp} value={lote.no_factura} onChange={e => setLote(l=>({...l, no_factura:e.target.value}))} placeholder="ej: FAC-2024-001 o 12345" />
               </div>
             </div>
             <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
-              <button onClick={() => setModoLote(false)} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #c7d2fe', borderRadius:8, color:'#6366f1', fontSize:13, cursor:'pointer' }}>Cancelar</button>
+              <button onClick={() => setModoLote(false)} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>Cancelar</button>
               <button
                 disabled={!lote.proveedor_id}
                 onClick={() => {
@@ -593,7 +593,7 @@ export default function Inventario() {
           <div style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:14, padding:28, width:'100%', maxWidth:580, fontFamily:"'DM Sans', system-ui", maxHeight:'92vh', overflow:'auto' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
               <div>
-                <h3 style={{ color:'#1e1b4b', margin:'0 0 4px', fontSize:16 }}>Ingresar equipo al inventario</h3>
+                <h3 style={{ color:'#0f172a', margin:'0 0 4px', fontSize:16 }}>Ingresar equipo al inventario</h3>
                 {modoLote && (
                   <div style={{ display:'flex', gap:8, alignItems:'center' }}>
                     <span style={{ background:'rgba(16,185,129,0.15)', color:'#10b981', fontSize:11, padding:'2px 8px', borderRadius:4 }}>
@@ -610,7 +610,7 @@ export default function Inventario() {
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px 14px' }}>
 
                 <div>
-                  <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Proveedor *</label>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Proveedor *</label>
                   <select required style={sel} value={form.proveedor_id} onChange={e => setForm(f=>({...f, proveedor_id:e.target.value}))}>
                     <option value="">Seleccionar...</option>
                     {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
@@ -618,12 +618,12 @@ export default function Inventario() {
                 </div>
 
                 <div>
-                  <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>N° Factura</label>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>N° Factura</label>
                   <input style={inp} value={form.no_factura} onChange={e => setForm(f=>({...f, no_factura:e.target.value}))} placeholder="ej: FAC-2024-001" />
                 </div>
 
                 <div style={{ gridColumn:'span 2' }}>
-                  <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Producto *</label>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Producto *</label>
                   <select required style={sel} value={form.producto} onChange={e => setForm(f=>({...f, producto:e.target.value}))}>
                     <option value="">Seleccionar...</option>
                     {PRODUCTOS.map(p => <option key={p} value={p}>{p}</option>)}
@@ -631,29 +631,29 @@ export default function Inventario() {
                 </div>
 
                 <div>
-                  <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI 1</label>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI 1</label>
                   <input style={inp} value={form.imei} onChange={e => setForm(f=>({...f, imei:e.target.value}))} placeholder="15 dígitos" />
                 </div>
 
                 <div>
-                  <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI 2</label>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI 2</label>
                   <input style={inp} value={form.imei2} onChange={e => setForm(f=>({...f, imei2:e.target.value}))} placeholder="Opcional" />
                 </div>
 
                 <div>
-                  <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Serial de caja</label>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Serial de caja</label>
                   <input style={inp} value={form.serial_caja} onChange={e => setForm(f=>({...f, serial_caja:e.target.value}))} placeholder="Opcional" />
                 </div>
 
                 <div>
-                  <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Almacenamiento</label>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Almacenamiento</label>
                   <select style={sel} value={form.almacenamiento} onChange={e => setForm(f=>({...f, almacenamiento:e.target.value}))}>
                     {ALMACENAMIENTOS.map(a => <option key={a} value={a}>{a}</option>)}
                   </select>
                 </div>
 
                 <div>
-                  <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Color</label>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Color</label>
                   <select style={sel} value={form.color === '' || COLORES_IPHONE.includes(form.color) ? form.color : '__otro__'}
                     onChange={e => {
                       if (e.target.value === '__otro__') setForm(f=>({...f, color:'__custom__'}))
@@ -673,7 +673,7 @@ export default function Inventario() {
 
                 {/* BATERÍA */}
                 <div>
-                  <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Batería %</label>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Batería %</label>
                   <input
                     style={inp}
                     type="number" min="0" max="100"
@@ -684,17 +684,17 @@ export default function Inventario() {
                 </div>
 
                 <div>
-                  <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Precio de compra $</label>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Precio de compra $</label>
                   <input style={inp} value={form.costo} onChange={e => setForm(f=>({...f, costo:e.target.value}))} placeholder="0" />
                 </div>
 
                 <div>
-                  <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Precio estimado de venta $</label>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Precio estimado de venta $</label>
                   <input style={inp} value={form.precio_venta_est} onChange={e => setForm(f=>({...f, precio_venta_est:e.target.value}))} placeholder="0" />
                 </div>
 
                 <div>
-                  <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Condición del equipo</label>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Condición del equipo</label>
                   <select style={sel} value={form.estado_equipo} onChange={e => setForm(f=>({...f, estado_equipo:e.target.value}))}>
                     {ESTADOS_EQUIPO.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
                   </select>
@@ -720,12 +720,12 @@ export default function Inventario() {
                 </div>
 
                 <div>
-                  <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Fecha de compra</label>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Fecha de compra</label>
                   <input type="date" style={inp} value={form.fecha_compra} onChange={e => setForm(f=>({...f, fecha_compra:e.target.value}))} />
                 </div>
 
                 <div style={{ gridColumn:'span 2' }}>
-                  <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Notas</label>
+                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Notas</label>
                   <textarea style={{ ...inp, resize:'vertical', minHeight:60 }} value={form.observaciones} onChange={e => setForm(f=>({...f, observaciones:e.target.value}))} />
                 </div>
 
@@ -751,7 +751,7 @@ export default function Inventario() {
               {msgErr && <div style={{ marginTop:10, padding:'10px 14px', background:'rgba(244,63,94,0.1)', border:'1px solid rgba(244,63,94,0.3)', borderRadius:8, color:'#f87171', fontSize:13 }}>⚠ {msgErr}</div>}
 
               <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
-                <button type="button" onClick={() => { setShowForm(false); setFotos([]); setFotoPreviews([]) }} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #c7d2fe', borderRadius:8, color:'#6366f1', fontSize:13, cursor:'pointer' }}>Cancelar</button>
+                <button type="button" onClick={() => { setShowForm(false); setFotos([]); setFotoPreviews([]) }} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>Cancelar</button>
                 {modoLote && (
                   <button type="submit" name="otro" disabled={saving} style={{ padding:'9px 20px', background: saving?'#1e3058':'#0d2a1a', border:'1px solid #10b981', borderRadius:8, color:'#10b981', fontSize:13, fontWeight:600, cursor:'pointer' }}>
                     {saving ? '...' : modoLote ? '✓ Guardar y escanear siguiente' : '✓ Guardar y agregar otro'}
@@ -772,7 +772,7 @@ export default function Inventario() {
           <div style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:14, padding:28, width:'100%', maxWidth:860, fontFamily:"'DM Sans', system-ui", maxHeight:'90vh', overflow:'auto' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
               <div>
-                <h3 style={{ color:'#1e1b4b', margin:'0 0 4px', fontSize:16 }}>Carga masiva — {excelFileName}</h3>
+                <h3 style={{ color:'#0f172a', margin:'0 0 4px', fontSize:16 }}>Carga masiva — {excelFileName}</h3>
                 <p style={{ color:'#4a6a8a', fontSize:13, margin:0 }}>{excelRows.filter(r=>r._ok).length} listos · {excelRows.filter(r=>!r._ok).length} con problemas</p>
               </div>
               <button onClick={() => { setShowExcel(false); setExcelRows([]); setImportResult(null) }} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:20, cursor:'pointer' }}>×</button>
@@ -833,7 +833,7 @@ export default function Inventario() {
             </div>
 
             <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
-              <button onClick={() => { setShowExcel(false); setExcelRows([]); setImportResult(null) }} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #c7d2fe', borderRadius:8, color:'#6366f1', fontSize:13, cursor:'pointer' }}>Cerrar</button>
+              <button onClick={() => { setShowExcel(false); setExcelRows([]); setImportResult(null) }} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>Cerrar</button>
               {!importResult && (
                 <button onClick={importarExcel} disabled={importando || !excelRows.filter(r=>r._ok).length} style={{ padding:'9px 24px', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', background: importando ? '#1e3058' : 'linear-gradient(135deg,#0066ff,#0044bb)' }}>
                   {importando ? '⏳ Importando...' : `✓ Importar ${excelRows.filter(r=>r._ok).length} equipos`}
@@ -849,24 +849,24 @@ export default function Inventario() {
           <div style={{ background:'#1a1740', border:'1px solid #ef4444', borderRadius:14, padding:28, width:'100%', maxWidth:420, fontFamily:"'DM Sans', system-ui" }}>
             <div style={{ fontSize:28, textAlign:'center', marginBottom:12 }}>↩</div>
             <h3 style={{ color:'#fff', textAlign:'center', margin:'0 0 6px', fontSize:16 }}>Devolver equipo al proveedor</h3>
-            <div style={{ background:'#f5f3ff', borderRadius:8, padding:'10px 14px', marginBottom:16 }}>
+            <div style={{ background:'#ffffff', borderRadius:8, padding:'10px 14px', marginBottom:16 }}>
               <div style={{ color:'#e2e8f0', fontSize:13, fontWeight:500 }}>{confirmDev.producto}</div>
               <div style={{ color:'#8aabcc', fontSize:11, fontFamily:'monospace', marginTop:2 }}>IMEI: {confirmDev.imei}</div>
               <div style={{ color:'#4a6a8a', fontSize:11, marginTop:2 }}>Proveedor: {confirmDev.proveedores?.nombre || '—'}</div>
             </div>
             <div style={{ marginBottom:16 }}>
-              <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'.06em', display:'block', marginBottom:6 }}>Motivo de devolución *</label>
+              <label style={{ color:'#8aabcc', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'.06em', display:'block', marginBottom:6 }}>Motivo de devolución *</label>
               <textarea
                 value={motivoDev}
                 onChange={e => setMotivoDev(e.target.value)}
                 placeholder="ej: Pantalla con falla, batería hinchada, daño físico..."
-                style={{ background:'#f5f3ff', border:'1px solid #c7d2fe', borderRadius:8, padding:'9px 12px', color:'#1e1b4b', fontSize:13, width:'100%', boxSizing:'border-box', outline:'none', resize:'vertical', minHeight:80 }}
+                style={{ background:'#ffffff', border:'1px solid #1a2f52', borderRadius:8, padding:'9px 12px', color:'#0f172a', fontSize:13, width:'100%', boxSizing:'border-box', outline:'none', resize:'vertical', minHeight:80 }}
                 autoFocus
               />
             </div>
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={() => { setConfirmDev(null); setMotivoDev('') }}
-                style={{ flex:1, padding:'10px 0', background:'transparent', border:'1px solid #c7d2fe', borderRadius:8, color:'#6366f1', fontSize:13, cursor:'pointer' }}>
+                style={{ flex:1, padding:'10px 0', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>
                 Cancelar
               </button>
               <button onClick={devolverAProveedor} disabled={!motivoDev.trim() || guardandoDev}

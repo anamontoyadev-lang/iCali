@@ -34,17 +34,11 @@ export default function Despachos() {
   useEffect(() => { loadDespachos() }, [])
 
   async function loadDespachos() {
-    // Cargar TODOS los despachos (sin filtro de estado)
     const { data } = await supabase
       .from('despachos')
-      .select(`
-        *,
-        ventas(nombre_cliente, producto, imei, asesor_nombre,
-               fecha_venta, telefono_cliente, canal, no_factura)
-      `)
+      .select('*, ventas(nombre_cliente, producto, imei, asesor_nombre, fecha_venta, telefono_cliente, canal, no_factura)')
       .order('created_at', { ascending: false })
       .limit(500)
-
     const mapped = (data || []).map(d => ({
       ...d,
       nombre_cliente:   d.ventas?.nombre_cliente,
@@ -60,41 +54,35 @@ export default function Despachos() {
     setLoading(false)
   }
 
- async function guardarEdicion() {
-  await supabase.from('despachos').update({
-    estado:              editForm.estado,
-    mensajero:           editForm.mensajero,
-    transportadora:      editForm.transportadora,
-    numero_guia:         editForm.numero_guia,
-    valor_flete:         Number(editForm.valor_flete) || 0,
-    quien_paga_flete:    editForm.quien_paga_flete,
-    fecha_despacho:      editForm.fecha_despacho || null,
-    fecha_entrega_real:  editForm.fecha_entrega_real || null,
-    novedad_descripcion: editForm.novedad_descripcion,
-    observaciones:       editForm.observaciones
-  }).eq('id', editando)
+  async function guardarEdicion() {
+    await supabase.from('despachos').update({
+      estado:              editForm.estado,
+      mensajero:           editForm.mensajero,
+      transportadora:      editForm.transportadora,
+      numero_guia:         editForm.numero_guia,
+      valor_flete:         Number(editForm.valor_flete) || 0,
+      quien_paga_flete:    editForm.quien_paga_flete,
+      fecha_despacho:      editForm.fecha_despacho || null,
+      fecha_entrega_real:  editForm.fecha_entrega_real || null,
+      novedad_descripcion: editForm.novedad_descripcion,
+      observaciones:       editForm.observaciones
+    }).eq('id', editando)
+    logDespacho({ usuario:'admin', accion:'ACTUALIZAR_DESPACHO',
+      cliente: despachos.find(d=>d.id===editando)?.nombre_cliente||'—',
+      producto: despachos.find(d=>d.id===editando)?.producto||'—',
+      estado: editForm.estado,
+      ciudad: despachos.find(d=>d.id===editando)?.ciudad_destino||'—'
+    }).catch(()=>{})
+    setEditando(null)
+    loadDespachos()
+  }
 
-  logDespacho({
-    usuario: 'admin',
-    accion: 'ACTUALIZAR_DESPACHO',
-    cliente: despachos.find(d => d.id === editando)?.nombre_cliente || '—',
-    producto: despachos.find(d => d.id === editando)?.producto || '—',
-    estado: editForm.estado,
-    ciudad: despachos.find(d => d.id === editando)?.ciudad_destino || '—'
-  }).catch(() => {})
-
-  setEditando(null)
-  loadDespachos()
-}
-
-  // Filtros
   const filtrados = despachos.filter(d => {
     if (filtroEstado && d.estado !== filtroEstado) return false
     if (filtroTipo   && d.tipo_envio !== filtroTipo)  return false
     if (buscar) {
       const s = buscar.toLowerCase()
-      if (!`${d.nombre_cliente} ${d.imei} ${d.numero_guia} ${d.no_factura}`.toLowerCase().includes(s))
-        return false
+      if (!`${d.nombre_cliente} ${d.imei} ${d.numero_guia} ${d.no_factura}`.toLowerCase().includes(s)) return false
     }
     return true
   })
@@ -103,98 +91,64 @@ export default function Despachos() {
   const entregados  = despachos.filter(d => d.estado === 'entregado').length
   const novedades   = despachos.filter(d => d.estado === 'novedad').length
 
-  const th = {
-    color:'#4a6a8a', fontSize:11, fontWeight:600,
-    textTransform:'uppercase', letterSpacing:'0.06em',
-    padding:'10px 14px', textAlign:'left',
-    borderBottom:'1px solid #1a2f52', whiteSpace:'nowrap'
-  }
-  const td = { padding:'10px 14px', color:'#cbd5e1', fontSize:13, borderBottom:'1px solid #0f1e36' }
-  const inp = {
-    background:'#0a1628', border:'1px solid #1a2f52', borderRadius:6,
-    padding:'7px 10px', color:'#fff', fontSize:13, width:'100%', boxSizing:'border-box'
-  }
+  const th = { color:'#a5b4fc', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', padding:'10px 14px', textAlign:'left', borderBottom:'1px solid #2d2a6e', whiteSpace:'nowrap' }
+  const td = { padding:'10px 14px', color:'#e0e7ff', fontSize:13, borderBottom:'1px solid #231f5a' }
+  const inp = { background:'#ffffff', border:'1px solid #d1d5db', borderRadius:6, padding:'7px 10px', color:'#0f172a', fontSize:13, width:'100%', boxSizing:'border-box' }
 
   return (
     <div style={{ padding:'32px 36px', fontFamily:"'DM Sans', system-ui" }}>
-      {/* Header */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
         <div>
-          <h1 style={{ color:'#fff', fontSize:20, fontWeight:600, margin:'0 0 4px' }}>
-            Logística y despachos
-          </h1>
-          <p style={{ color:'#4a6a8a', fontSize:13, margin:0 }}>
+          <h1 style={{ color:'#e0e7ff', fontSize:20, fontWeight:600, margin:'0 0 4px' }}>Logística y despachos</h1>
+          <p style={{ color:'#a5b4fc', fontSize:13, margin:0 }}>
             {filtrados.length} despachos {filtroEstado || filtroTipo || buscar ? '(filtrados)' : 'en total'}
           </p>
         </div>
       </div>
 
-      {/* Resumen */}
       <div style={{ display:'flex', gap:10, marginBottom:20, flexWrap:'wrap' }}>
         {[
-          { label:'Activos', val: pendientes, color:'#f59e0b' },
-          { label:'Entregados', val: entregados, color:'#10b981' },
-          { label:'Con novedad', val: novedades, color:'#ef4444' },
-          { label:'Total', val: despachos.length, color:'#8b5cf6' },
+          { label:'Activos',     val: pendientes, color:'#f59e0b' },
+          { label:'Entregados',  val: entregados, color:'#10b981' },
+          { label:'Con novedad', val: novedades,  color:'#ef4444' },
+          { label:'Total',       val: despachos.length, color:'#8b5cf6' },
         ].map(k => (
-          <div key={k.label} style={{
-            background:'#0d1a35', border:'1px solid #1a2f52',
-            borderRadius:8, padding:'10px 16px',
-            display:'flex', alignItems:'center', gap:10
-          }}>
+          <div key={k.label} style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:8, padding:'10px 16px', display:'flex', alignItems:'center', gap:10 }}>
             <div style={{ width:8, height:8, borderRadius:'50%', background:k.color }} />
-            <span style={{ color:'#8aabcc', fontSize:12 }}>{k.label}</span>
-            <span style={{ color:'#fff', fontSize:16, fontWeight:600 }}>{k.val}</span>
+            <span style={{ color:'#c4b5fd', fontSize:12 }}>{k.label}</span>
+            <span style={{ color:'#e0e7ff', fontSize:16, fontWeight:600 }}>{k.val}</span>
           </div>
         ))}
       </div>
 
-      {/* Filtros */}
       <div style={{ display:'flex', gap:10, marginBottom:16, flexWrap:'wrap' }}>
-        <input
-          placeholder="Buscar cliente, IMEI, guía, factura..."
+        <input placeholder="Buscar cliente, IMEI, guía, factura..."
           value={buscar} onChange={e => setBuscar(e.target.value)}
-          style={{
-            background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8,
-            padding:'8px 12px', color:'#fff', fontSize:13, outline:'none',
-            flex:1, minWidth:200
-          }}
-        />
-        <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)} style={{
-          background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8,
-          padding:'8px 12px', color: filtroEstado ? '#fff' : '#4a6a8a', fontSize:13, cursor:'pointer'
-        }}>
+          style={{ background:'#ffffff', border:'1px solid #d1d5db', borderRadius:8, padding:'8px 12px', color:'#0f172a', fontSize:13, outline:'none', flex:1, minWidth:200 }} />
+        <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}
+          style={{ background:'#ffffff', border:'1px solid #d1d5db', borderRadius:8, padding:'8px 12px', color:'#0f172a', fontSize:13, cursor:'pointer' }}>
           <option value="">Todos los estados</option>
-          {Object.entries(ESTADOS_DESPACHO).map(([k,v]) => (
-            <option key={k} value={k}>{v.label}</option>
-          ))}
+          {Object.entries(ESTADOS_DESPACHO).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
         </select>
-        <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} style={{
-          background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8,
-          padding:'8px 12px', color: filtroTipo ? '#fff' : '#4a6a8a', fontSize:13, cursor:'pointer'
-        }}>
+        <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}
+          style={{ background:'#ffffff', border:'1px solid #d1d5db', borderRadius:8, padding:'8px 12px', color:'#0f172a', fontSize:13, cursor:'pointer' }}>
           <option value="">Todos los tipos</option>
           <option value="domicilio_cali">Domicilio Cali</option>
           <option value="nacional">Nacional</option>
         </select>
         {(filtroEstado || filtroTipo || buscar) && (
-          <button onClick={() => { setFiltroEstado(''); setFiltroTipo(''); setBuscar('') }} style={{
-            background:'transparent', border:'1px solid #1a2f52', borderRadius:8,
-            color:'#8aabcc', fontSize:12, padding:'8px 12px', cursor:'pointer'
-          }}>Limpiar filtros</button>
+          <button onClick={() => { setFiltroEstado(''); setFiltroTipo(''); setBuscar('') }}
+            style={{ background:'transparent', border:'1px solid #d1d5db', borderRadius:8, color:'#6366f1', fontSize:12, padding:'8px 12px', cursor:'pointer' }}>
+            Limpiar filtros
+          </button>
         )}
       </div>
 
-      {/* Tabla */}
-      <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:12, overflow:'auto' }}>
+      <div style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:12, overflow:'auto' }}>
         {loading ? (
-          <div style={{ padding:40, color:'#4a6a8a', textAlign:'center', fontSize:13 }}>
-            Cargando despachos...
-          </div>
+          <div style={{ padding:40, color:'#a5b4fc', textAlign:'center', fontSize:13 }}>Cargando despachos...</div>
         ) : filtrados.length === 0 ? (
-          <div style={{ padding:40, color:'#4a6a8a', textAlign:'center', fontSize:13 }}>
-            No hay despachos con los filtros aplicados
-          </div>
+          <div style={{ padding:40, color:'#a5b4fc', textAlign:'center', fontSize:13 }}>No hay despachos con los filtros aplicados</div>
         ) : (
           <table style={{ width:'100%', borderCollapse:'collapse', minWidth:900 }}>
             <thead>
@@ -215,76 +169,46 @@ export default function Despachos() {
               {filtrados.map(d => (
                 <tr key={d.id}>
                   <td style={td}>
-                    <span style={{
-                      background: (ESTADOS_DESPACHO[d.estado]?.color || '#94a3b8') + '22',
-                      color: ESTADOS_DESPACHO[d.estado]?.color || '#94a3b8',
-                      fontSize:11, padding:'3px 8px', borderRadius:4, fontWeight:500
-                    }}>
+                    <span style={{ background:(ESTADOS_DESPACHO[d.estado]?.color||'#94a3b8')+'22', color:ESTADOS_DESPACHO[d.estado]?.color||'#94a3b8', fontSize:11, padding:'3px 8px', borderRadius:4, fontWeight:500 }}>
                       {ESTADOS_DESPACHO[d.estado]?.label || d.estado}
                     </span>
                   </td>
                   <td style={td}>
-                    <div style={{ fontWeight:500, color:'#e2e8f0' }}>{d.nombre_cliente}</div>
-                    <div style={{ color:'#4a6a8a', fontSize:11 }}>{d.telefono_cliente}</div>
+                    <div style={{ fontWeight:500, color:'#e0e7ff' }}>{d.nombre_cliente}</div>
+                    <div style={{ color:'#a5b4fc', fontSize:11 }}>{d.telefono_cliente}</div>
                   </td>
                   <td style={{ ...td, maxWidth:160 }}>
-                    <div style={{ fontSize:12, color:'#e2e8f0' }}>{d.producto}</div>
-                    <div style={{ color:'#4a6a8a', fontSize:11 }}>{d.imei}</div>
+                    <div style={{ fontSize:12, color:'#e0e7ff' }}>{d.producto}</div>
+                    <div style={{ color:'#a5b4fc', fontSize:11 }}>{d.imei}</div>
                   </td>
                   <td style={td}>
-                    <span style={{
-                      background: d.tipo_envio === 'domicilio_cali' ? '#1e3a5f' : '#2d1e5f',
-                      color: d.tipo_envio === 'domicilio_cali' ? '#60a5fa' : '#a78bfa',
-                      fontSize:11, padding:'2px 8px', borderRadius:4
-                    }}>
+                    <span style={{ background:d.tipo_envio==='domicilio_cali'?'#1e3a5f':'#2d1e5f', color:d.tipo_envio==='domicilio_cali'?'#60a5fa':'#a78bfa', fontSize:11, padding:'2px 8px', borderRadius:4 }}>
                       {d.tipo_envio === 'domicilio_cali' ? 'Cali' : 'Nacional'}
                     </span>
                   </td>
                   <td style={td}>{d.ciudad_destino}</td>
                   <td style={td}>
-                    {d.tipo_envio === 'domicilio_cali'
-                      ? <span style={{ color:'#8aabcc', fontSize:12 }}>{d.mensajero || '—'}</span>
+                    {d.tipo_envio==='domicilio_cali'
+                      ? <span style={{ color:'#c4b5fd', fontSize:12 }}>{d.mensajero||'—'}</span>
                       : <div>
-                          <div style={{ fontSize:12 }}>{d.transportadora || '—'}</div>
-                          {d.numero_guia && (
-                            <div style={{ color:'#4a6a8a', fontSize:11 }}>Guía: {d.numero_guia}</div>
-                          )}
+                          <div style={{ fontSize:12, color:'#e0e7ff' }}>{d.transportadora||'—'}</div>
+                          {d.numero_guia && <div style={{ color:'#a5b4fc', fontSize:11 }}>Guía: {d.numero_guia}</div>}
                         </div>
                     }
                   </td>
-                  <td style={{ ...td, whiteSpace:'nowrap' }}>
-                    {d.valor_flete ? fmt(d.valor_flete) : '—'}
-                  </td>
+                  <td style={{ ...td, whiteSpace:'nowrap' }}>{d.valor_flete ? fmt(d.valor_flete) : '—'}</td>
                   <td style={{ ...td, fontSize:12, whiteSpace:'nowrap' }}>
                     {d.fecha_entrega_real
                       ? new Date(d.fecha_entrega_real).toLocaleDateString('es-CO',{day:'2-digit',month:'short'})
-                      : <span style={{ color:'#4a6a8a' }}>—</span>
-                    }
+                      : <span style={{ color:'#a5b4fc' }}>—</span>}
                   </td>
                   <td style={{ ...td, fontSize:12 }}>{d.asesor_nombre}</td>
                   {(esAdmin || esLiderAdmin) && (
                     <td style={td}>
-                      <button
-                        onClick={() => {
-                          setEditando(d.id)
-                          setEditForm({
-                            estado:              d.estado,
-                            mensajero:           d.mensajero || '',
-                            transportadora:      d.transportadora || '',
-                            numero_guia:         d.numero_guia || '',
-                            valor_flete:         d.valor_flete || '',
-                            quien_paga_flete:    d.quien_paga_flete || '',
-                            fecha_despacho:      d.fecha_despacho?.slice(0,10) || '',
-                            fecha_entrega_real:  d.fecha_entrega_real?.slice(0,10) || '',
-                            novedad_descripcion: d.novedad_descripcion || '',
-                            observaciones:       d.observaciones || ''
-                          })
-                        }}
-                        style={{
-                          background:'#1a2f52', border:'none', borderRadius:6,
-                          color:'#8aabcc', fontSize:12, padding:'5px 10px', cursor:'pointer'
-                        }}
-                      >Editar</button>
+                      <button onClick={() => { setEditando(d.id); setEditForm({ estado:d.estado, mensajero:d.mensajero||'', transportadora:d.transportadora||'', numero_guia:d.numero_guia||'', valor_flete:d.valor_flete||'', quien_paga_flete:d.quien_paga_flete||'', fecha_despacho:d.fecha_despacho?.slice(0,10)||'', fecha_entrega_real:d.fecha_entrega_real?.slice(0,10)||'', novedad_descripcion:d.novedad_descripcion||'', observaciones:d.observaciones||'' }) }}
+                        style={{ background:'#312e81', border:'none', borderRadius:6, color:'#a5b4fc', fontSize:12, padding:'5px 10px', cursor:'pointer' }}>
+                        Editar
+                      </button>
                     </td>
                   )}
                 </tr>
@@ -294,108 +218,66 @@ export default function Despachos() {
         )}
       </div>
 
-      {/* Modal edición */}
       {editando && (
-        <div style={{
-          position:'fixed', inset:0, background:'rgba(0,0,0,0.7)',
-          display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000
-        }}>
-          <div style={{
-            background:'#0d1a35', border:'1px solid #1a2f52',
-            borderRadius:14, padding:28, width:'100%', maxWidth:480,
-            fontFamily:"'DM Sans', system-ui", maxHeight:'90vh', overflow:'auto'
-          }}>
-            <h3 style={{ color:'#fff', margin:'0 0 20px', fontSize:16 }}>Actualizar despacho</h3>
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
+          <div style={{ background:'#ffffff', border:'1px solid #e5e7eb', borderRadius:14, padding:28, width:'100%', maxWidth:480, fontFamily:"'DM Sans', system-ui", maxHeight:'90vh', overflow:'auto', boxShadow:'0 8px 32px rgba(67,56,202,0.15)' }}>
+            <h3 style={{ color:'#0f172a', margin:'0 0 20px', fontSize:16 }}>Actualizar despacho</h3>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px 14px' }}>
               <div style={{ gridColumn:'span 2' }}>
-                <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500,
-                  textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Estado</label>
-                <select style={{ ...inp, cursor:'pointer' }} value={editForm.estado}
-                  onChange={e => setEditForm(f => ({ ...f, estado: e.target.value }))}>
-                  {Object.entries(ESTADOS_DESPACHO).map(([k,v]) => (
-                    <option key={k} value={k}>{v.label}</option>
-                  ))}
+                <label style={{ color:'#374151', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Estado</label>
+                <select style={{ ...inp, cursor:'pointer' }} value={editForm.estado} onChange={e => setEditForm(f=>({...f,estado:e.target.value}))}>
+                  {Object.entries(ESTADOS_DESPACHO).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
                 </select>
               </div>
               <div>
-                <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500,
-                  textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Mensajero (Cali)</label>
-                <input style={inp} value={editForm.mensajero}
-                  onChange={e => setEditForm(f => ({ ...f, mensajero: e.target.value }))}
-                  placeholder="Julián, Luis..." />
+                <label style={{ color:'#374151', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Mensajero (Cali)</label>
+                <input style={inp} value={editForm.mensajero} onChange={e => setEditForm(f=>({...f,mensajero:e.target.value}))} placeholder="Julián, Luis..." />
               </div>
               <div>
-                <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500,
-                  textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Transportadora</label>
-                <select style={{ ...inp, cursor:'pointer' }} value={editForm.transportadora}
-                  onChange={e => setEditForm(f => ({ ...f, transportadora: e.target.value }))}>
+                <label style={{ color:'#374151', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Transportadora</label>
+                <select style={{ ...inp, cursor:'pointer' }} value={editForm.transportadora} onChange={e => setEditForm(f=>({...f,transportadora:e.target.value}))}>
                   <option value="">Ninguna</option>
                   {TRANSPORTADORAS.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
               <div>
-                <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500,
-                  textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}># Guía</label>
-                <input style={inp} value={editForm.numero_guia}
-                  onChange={e => setEditForm(f => ({ ...f, numero_guia: e.target.value }))} />
+                <label style={{ color:'#374151', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}># Guía</label>
+                <input style={inp} value={editForm.numero_guia} onChange={e => setEditForm(f=>({...f,numero_guia:e.target.value}))} />
               </div>
               <div>
-                <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500,
-                  textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Flete $</label>
-                <input style={inp} value={editForm.valor_flete}
-                  onChange={e => setEditForm(f => ({ ...f, valor_flete: e.target.value }))} />
+                <label style={{ color:'#374151', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Flete $</label>
+                <input style={inp} value={editForm.valor_flete} onChange={e => setEditForm(f=>({...f,valor_flete:e.target.value}))} />
               </div>
               <div>
-                <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500,
-                  textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>¿Quién paga flete?</label>
-                <select style={{ ...inp, cursor:'pointer' }} value={editForm.quien_paga_flete}
-                  onChange={e => setEditForm(f => ({ ...f, quien_paga_flete: e.target.value }))}>
+                <label style={{ color:'#374151', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>¿Quién paga flete?</label>
+                <select style={{ ...inp, cursor:'pointer' }} value={editForm.quien_paga_flete} onChange={e => setEditForm(f=>({...f,quien_paga_flete:e.target.value}))}>
                   <option value="">—</option>
                   <option value="cliente">Cliente</option>
                   <option value="icali">iCali</option>
                 </select>
               </div>
               <div>
-                <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500,
-                  textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Fecha despacho</label>
-                <input type="date" style={inp} value={editForm.fecha_despacho}
-                  onChange={e => setEditForm(f => ({ ...f, fecha_despacho: e.target.value }))} />
+                <label style={{ color:'#374151', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Fecha despacho</label>
+                <input type="date" style={inp} value={editForm.fecha_despacho} onChange={e => setEditForm(f=>({...f,fecha_despacho:e.target.value}))} />
               </div>
               <div>
-                <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500,
-                  textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Fecha entrega real</label>
-                <input type="date" style={inp} value={editForm.fecha_entrega_real}
-                  onChange={e => setEditForm(f => ({ ...f, fecha_entrega_real: e.target.value }))} />
+                <label style={{ color:'#374151', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Fecha entrega real</label>
+                <input type="date" style={inp} value={editForm.fecha_entrega_real} onChange={e => setEditForm(f=>({...f,fecha_entrega_real:e.target.value}))} />
               </div>
               {editForm.estado === 'novedad' && (
                 <div style={{ gridColumn:'span 2' }}>
-                  <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500,
-                    textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Descripción novedad</label>
-                  <textarea style={{ ...inp, resize:'vertical', minHeight:60 }}
-                    value={editForm.novedad_descripcion}
-                    onChange={e => setEditForm(f => ({ ...f, novedad_descripcion: e.target.value }))} />
+                  <label style={{ color:'#374151', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Descripción novedad</label>
+                  <textarea style={{ ...inp, resize:'vertical', minHeight:60 }} value={editForm.novedad_descripcion} onChange={e => setEditForm(f=>({...f,novedad_descripcion:e.target.value}))} />
                 </div>
               )}
               <div style={{ gridColumn:'span 2' }}>
-                <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500,
-                  textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Observaciones</label>
-                <textarea style={{ ...inp, resize:'vertical', minHeight:60 }}
-                  value={editForm.observaciones}
-                  onChange={e => setEditForm(f => ({ ...f, observaciones: e.target.value }))} />
+                <label style={{ color:'#374151', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Observaciones</label>
+                <textarea style={{ ...inp, resize:'vertical', minHeight:60 }} value={editForm.observaciones} onChange={e => setEditForm(f=>({...f,observaciones:e.target.value}))} />
               </div>
             </div>
             <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
-              <button onClick={() => setEditando(null)} style={{
-                padding:'9px 20px', background:'transparent',
-                border:'1px solid #1a2f52', borderRadius:8,
-                color:'#6b8ab0', fontSize:13, cursor:'pointer'
-              }}>Cancelar</button>
-              <button onClick={guardarEdicion} style={{
-                padding:'9px 24px',
-                background:'linear-gradient(135deg,#0066ff,#0044bb)',
-                border:'none', borderRadius:8,
-                color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer'
-              }}>Guardar</button>
+              <button onClick={() => setEditando(null)} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #d1d5db', borderRadius:8, color:'#6366f1', fontSize:13, cursor:'pointer' }}>Cancelar</button>
+              <button onClick={guardarEdicion} style={{ padding:'9px 24px', background:'linear-gradient(135deg,#4f46e5,#3730a3)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>Guardar</button>
             </div>
           </div>
         </div>

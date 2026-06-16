@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
 const inp = {
-  background:'#f5f3ff', border:'1px solid #c7d2fe', borderRadius:6,
+  background:'#ffffff', border:'1px solid #1a2f52', borderRadius:6,
   padding:'7px 10px', color:'#fff', fontSize:12,
   width:'100%', boxSizing:'border-box', outline:'none'
 }
@@ -163,7 +163,7 @@ export default function SolicitudEquiposPanel({
             {equiposConAsesor.map(eq => (
               <div key={eq.id} style={{
                 display:'flex', alignItems:'center', justifyContent:'space-between',
-                background:'#f5f3ff', borderRadius:8, padding:'8px 12px', gap:8, flexWrap:'wrap'
+                background:'#ffffff', borderRadius:8, padding:'8px 12px', gap:8, flexWrap:'wrap'
               }}>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ color:'#e2e8f0', fontSize:12, fontWeight:500 }}>{eq.producto}</div>
@@ -198,7 +198,7 @@ export default function SolicitudEquiposPanel({
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
             {equiposSolicitados.map((e,i) => (
-              <div key={e.id} style={{ display:'flex', alignItems:'center', gap:8, background:'#f5f3ff', borderRadius:6, padding:'5px 10px' }}>
+              <div key={e.id} style={{ display:'flex', alignItems:'center', gap:8, background:'#ffffff', borderRadius:6, padding:'5px 10px' }}>
                 <span style={{ color:'#8aabcc', fontSize:10, width:14 }}>{i+1}.</span>
                 <span style={{ color:'#e2e8f0', fontSize:11 }}>{e.producto}</span>
                 <span style={{ color:'#8aabcc', fontSize:10, fontFamily:'monospace' }}>· {e.imei}</span>
@@ -237,7 +237,7 @@ export default function SolicitudEquiposPanel({
                 <div style={{ marginBottom:10 }}>
                   <div style={{ color:'#8aabcc', fontSize:10, fontWeight:600, marginBottom:6 }}>En solicitud ({equiposSolicitados.length}/5):</div>
                   {equiposSolicitados.map((e,i) => (
-                    <div key={e.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#f5f3ff', borderRadius:6, padding:'6px 10px', marginBottom:4 }}>
+                    <div key={e.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#ffffff', borderRadius:6, padding:'6px 10px', marginBottom:4 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                         <span style={{ color:'#3b82f6', fontSize:10, fontWeight:700 }}>{i+1}</span>
                         <div>

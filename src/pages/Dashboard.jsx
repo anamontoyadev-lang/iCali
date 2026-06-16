@@ -153,7 +153,7 @@ export default function Dashboard() {
 
   // Módulos según rol
   const modulos = [
-    { key:'ventas',      label:'Ventas',              icon:'🛍️', path:'/ventas',       badge: contadores.ventasHoy, badgeLabel:'hoy', color:'#0066ff',  show: true },
+    { key:'ventas',      label:'Ventas',              icon:'🛍️', path:'/ventas',       badge: contadores.ventasHoy, badgeLabel:'hoy', color:'#4f46e5',  show: true },
     { key:'despachos',   label:'Despachos',            icon:'🚚', path:'/despachos',    badge: contadores.despachosPend, badgeLabel:'activos', color:'#f59e0b', show: puedeVerDespachos || esAdmin || esLiderCom || esLiderAdmin },
     { key:'laboratorio', label:'Laboratorio',          icon:'🔬', path:'/laboratorio',  badge: contadores.lab, badgeLabel:'en proceso', color:'#8b5cf6', show: true },
     { key:'retomas',     label:'Retomas',              icon:'🔄', path:'/laboratorio',  badge: contadores.retomas, badgeLabel:'activas', color:'#a78bfa', show: esRetomas },
@@ -168,10 +168,10 @@ export default function Dashboard() {
   // Resumen según rol
   const kpis = [
     esAdmin || esLiderCom || esLiderAdmin || esAsesor || esAsesorCall || esAsesorMostrador
-      ? { label:'Ventas hoy',     val: contadores.ventasHoy,          color:'#0066ff', big:true }
+      ? { label:'Ventas hoy',     val: contadores.ventasHoy,          color:'#4f46e5', big:true }
       : null,
     esAdmin || esLiderCom || esLiderAdmin || esAsesor || esAsesorCall || esAsesorMostrador
-      ? { label:'Ventas del mes', val: contadores.ventasMes,          color:'#00aaff', big:true }
+      ? { label:'Ventas del mes', val: contadores.ventasMes,          color:'#0ea5e9', big:true }
       : null,
     esAdmin || esLiderCom || esLiderAdmin
       ? { label:'Valor del mes',  val: fmtK(contadores.valorMes),     color:'#10b981' }
@@ -194,7 +194,7 @@ export default function Dashboard() {
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:28 }}>
         <div>
           <h1 style={{ color:'var(--color-text-primary)', fontSize:20, fontWeight:500, margin:'0 0 4px', letterSpacing:'-0.2px' }}>
-            Hola, {nombre} 👋
+            Hola{nombre ? `, ${nombre}` : ''} 👋
           </h1>
           <p style={{ color:'var(--color-text-secondary)', fontSize:13, margin:0, textTransform:'capitalize' }}>{fecha}</p>
         </div>
