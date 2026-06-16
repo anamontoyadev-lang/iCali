@@ -48,7 +48,7 @@ async function adminFetch(path, method, body) {
 }
 
 const inp = {
-  background:'#0a1628', border:'1px solid #1a2f52', borderRadius:8,
+  background:'#f5f3ff', border:'1px solid #c7d2fe', borderRadius:8,
   padding:'9px 12px', color:'#fff', fontSize:13,
   width:'100%', boxSizing:'border-box', outline:'none'
 }
@@ -165,7 +165,7 @@ export default function Usuarios() {
           <h1 style={{ color:'#fff', fontSize:20, fontWeight:600, margin:'0 0 4px' }}>Gestión de usuarios</h1>
           <p style={{ color:'#4a6a8a', fontSize:13, margin:0 }}>{usuarios.length} usuarios · {filtrados.length} mostrados</p>
         </div>
-        <button onClick={() => { setModalCrear(true); setMsgError('') }} style={{ padding:'10px 20px', background:'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>+ Crear usuario</button>
+        <button onClick={() => { setModalCrear(true); setMsgError('') }} style={{ padding:'10px 20px', background:'linear-gradient(135deg,#4f46e5,#3730a3)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>+ Crear usuario</button>
       </div>
 
       {msgExito && <div style={{ marginBottom:16, padding:'10px 16px', background:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:8, color:'#10b981', fontSize:13 }}>✓ {msgExito}</div>}
@@ -173,9 +173,9 @@ export default function Usuarios() {
 
       <div style={{ display:'flex', gap:10, marginBottom:20, flexWrap:'wrap' }}>
         <input placeholder="Buscar por nombre o correo..." value={buscar} onChange={e => setBuscar(e.target.value)}
-          style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 12px', color:'#fff', fontSize:13, outline:'none', flex:1, minWidth:200 }} />
+          style={{ background:'#ffffff', border:'1px solid #e0e7ff', borderRadius:8, padding:'8px 12px', color:'#fff', fontSize:13, outline:'none', flex:1, minWidth:200 }} />
         <select value={filtroRol} onChange={e => setFiltroRol(e.target.value)}
-          style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 12px', color: filtroRol?'#fff':'#4a6a8a', fontSize:13, cursor:'pointer' }}>
+          style={{ background:'#ffffff', border:'1px solid #e0e7ff', borderRadius:8, padding:'8px 12px', color: filtroRol?'#fff':'#4a6a8a', fontSize:13, cursor:'pointer' }}>
           <option value="">Todos los roles</option>
           {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
         </select>
@@ -187,13 +187,13 @@ export default function Usuarios() {
         <div key={grupo.value} style={{ marginBottom:24 }}>
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
             <div style={{ width:8, height:8, borderRadius:'50%', background:grupo.color }} />
-            <span style={{ color:'#8aabcc', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em' }}>
+            <span style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em' }}>
               {grupo.label} ({grupo.usuarios.length})
             </span>
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
             {grupo.usuarios.map(u => (
-              <div key={u.id} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:10, padding:'14px 18px', display:'flex', alignItems:'center', gap:14 }}>
+              <div key={u.id} style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:10, padding:'14px 18px', display:'flex', alignItems:'center', gap:14 }}>
                 <div style={{ width:38, height:38, borderRadius:'50%', background:grupo.color+'33', display:'flex', alignItems:'center', justifyContent:'center', color:grupo.color, fontWeight:600, fontSize:14, flexShrink:0 }}>
                   {(u.nombre?.[0]||'?').toUpperCase()}{(u.apellido?.[0]||'').toUpperCase()}
                 </div>
@@ -288,9 +288,9 @@ export default function Usuarios() {
 function Modal({ titulo, onClose, children }) {
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
-      <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:14, padding:28, width:'100%', maxWidth:480, fontFamily:"'DM Sans', system-ui", maxHeight:'90vh', overflow:'auto' }}>
+      <div style={{ background:'#ffffff', border:'1px solid #e0e7ff', borderRadius:14, padding:28, width:'100%', maxWidth:480, fontFamily:"'DM Sans', system-ui", maxHeight:'90vh', overflow:'auto' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-          <h3 style={{ color:'#fff', margin:0, fontSize:16 }}>{titulo}</h3>
+          <h3 style={{ color:'#1e1b4b', margin:0, fontSize:16 }}>{titulo}</h3>
           <button onClick={onClose} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:20, cursor:'pointer', lineHeight:1 }}>×</button>
         </div>
         {children}
@@ -315,7 +315,7 @@ function ErrMsg({ msg }) {
 function BotonesModal({ onCancel, saving, labelOk }) {
   return (
     <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
-      <button type="button" onClick={onCancel} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>Cancelar</button>
+      <button type="button" onClick={onCancel} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #c7d2fe', borderRadius:8, color:'#6366f1', fontSize:13, cursor:'pointer' }}>Cancelar</button>
       <button type="submit" disabled={saving} style={{ padding:'9px 24px', background: saving?'#1e3058':'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>{saving ? 'Guardando...' : labelOk}</button>
     </div>
   )

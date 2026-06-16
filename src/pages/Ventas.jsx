@@ -147,15 +147,15 @@ export default function Ventas() {
 
       <div style={{ display:'flex', gap:10, marginBottom:20, flexWrap:'wrap' }}>
         <input placeholder="Buscar cliente, IMEI, producto..."
-          style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 12px', color:'#fff', fontSize:13, outline:'none', flex:1, minWidth:200 }}
+          style={{ background:'#ffffff', border:'1px solid #e0e7ff', borderRadius:8, padding:'8px 12px', color:'#fff', fontSize:13, outline:'none', flex:1, minWidth:200 }}
           value={filtro.buscar} onChange={e => setFiltro(f => ({ ...f, buscar: e.target.value }))} />
-        <select style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 12px', color: filtro.canal?'#fff':'#4a6a8a', fontSize:13, cursor:'pointer' }}
+        <select style={{ background:'#ffffff', border:'1px solid #e0e7ff', borderRadius:8, padding:'8px 12px', color: filtro.canal?'#fff':'#4a6a8a', fontSize:13, cursor:'pointer' }}
           value={filtro.canal} onChange={e => setFiltro(f => ({ ...f, canal: e.target.value }))}>
           <option value="">Todos los canales</option>
           <option value="mostrador">Mostrador</option>
           <option value="call_center">Call Center</option>
         </select>
-        <select style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 12px', color: filtro.estado?'#fff':'#4a6a8a', fontSize:13, cursor:'pointer' }}
+        <select style={{ background:'#ffffff', border:'1px solid #e0e7ff', borderRadius:8, padding:'8px 12px', color: filtro.estado?'#fff':'#4a6a8a', fontSize:13, cursor:'pointer' }}
           value={filtro.estado} onChange={e => setFiltro(f => ({ ...f, estado: e.target.value }))}>
           <option value="">Todos los estados</option>
           {Object.entries(ESTADOS).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
@@ -219,7 +219,7 @@ export default function Ventas() {
                       <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
                         {puedeGestionarEstado(v) && !['anulada','desistida'].includes(v.estado) && (
                           <select value={v.estado} onChange={e => cambiarEstado(v, e.target.value)}
-                            style={{ background:'#0a1628', border:'1px solid #1a2f52', borderRadius:6, padding:'4px 8px', color:'#fff', fontSize:11, cursor:'pointer' }}>
+                            style={{ background:'#f5f3ff', border:'1px solid #c7d2fe', borderRadius:6, padding:'4px 8px', color:'#fff', fontSize:11, cursor:'pointer' }}>
                             {estadosDisponibles(v).map(([k, est]) => (
                               <option key={k} value={k}>{est.label}</option>
                             ))}
@@ -256,7 +256,7 @@ export default function Ventas() {
               La venta de <strong style={{ color:'#fff' }}>{confirmDesistir.nombre_cliente}</strong> — {confirmDesistir.producto} quedará como desistida y el equipo volverá al inventario.
             </p>
             <div style={{ display:'flex', gap:10 }}>
-              <button onClick={() => setConfirmDesistir(null)} style={{ flex:1, padding:'10px 0', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>Cancelar</button>
+              <button onClick={() => setConfirmDesistir(null)} style={{ flex:1, padding:'10px 0', background:'transparent', border:'1px solid #c7d2fe', borderRadius:8, color:'#6366f1', fontSize:13, cursor:'pointer' }}>Cancelar</button>
               <button onClick={() => desistirVenta(confirmDesistir)} style={{ flex:1, padding:'10px 0', background:'linear-gradient(135deg,#ef4444,#dc2626)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>Sí, desistir</button>
             </div>
           </div>

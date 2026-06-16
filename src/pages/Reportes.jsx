@@ -62,8 +62,8 @@ function BtnExcel({ onClick, label = '📥 Descargar Excel' }) {
   )
 }
 
-const th = { color:'#4a6a8a', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', padding:'10px 14px', textAlign:'left', borderBottom:'1px solid #1a2f52', whiteSpace:'nowrap' }
-const td = { padding:'10px 14px', color:'#cbd5e1', fontSize:13, borderBottom:'1px solid #0f1e36' }
+const th = { color:'#a5b4fc', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', padding:'10px 14px', textAlign:'left', borderBottom:'1px solid #2d2a6e', whiteSpace:'nowrap' }
+const td = { padding:'10px 14px', color:'#cbd5e1', fontSize:13, borderBottom:'1px solid #231f5a' }
 
 export default function Reportes() {
   const { esAsesor, esAsesorMostrador, esAsesorCall, esAdmin, esLiderAdmin, esLiderCom, esInventarioRol, esRetomas, perfil } = useAuth()
@@ -305,16 +305,16 @@ export default function Reportes() {
   }
 
   const mesLabel = () => { const [y,m] = periodo.split('-'); return `${MESES[Number(m)-1]} ${y}` }
-  const tooltipStyle = { contentStyle:{ background:'#0a1628', border:'1px solid #1a2f52', borderRadius:8 }, labelStyle:{ color:'#fff', fontSize:12 }, itemStyle:{ color:'#8aabcc', fontSize:12 } }
+  const tooltipStyle = { contentStyle:{ background:'#f5f3ff', border:'1px solid #c7d2fe', borderRadius:8 }, labelStyle:{ color:'#fff', fontSize:12 }, itemStyle:{ color:'#8aabcc', fontSize:12 } }
   const chartCard = (titulo, children) => (
-    <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:12, padding:'18px 20px' }}>
-      <div style={{ color:'#8aabcc', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14 }}>{titulo}</div>
+    <div style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:12, padding:'18px 20px' }}>
+      <div style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14 }}>{titulo}</div>
       {children}
     </div>
   )
 
   const TableWrap = ({ children }) => (
-    <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:12, overflow:'auto' }}>
+    <div style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:12, overflow:'auto' }}>
       <table style={{ width:'100%', borderCollapse:'collapse', minWidth:800 }}>{children}</table>
     </div>
   )
@@ -329,7 +329,7 @@ export default function Reportes() {
           <p style={{ color:'#4a6a8a', fontSize:13, margin:0 }}>{mesLabel()}</p>
         </div>
         <input type="month" value={periodo} onChange={e => setPeriodo(e.target.value)}
-          style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 12px', color:'#fff', fontSize:13, cursor:'pointer' }} />
+          style={{ background:'#ffffff', border:'1px solid #e0e7ff', borderRadius:8, padding:'8px 12px', color:'#fff', fontSize:13, cursor:'pointer' }} />
       </div>
 
       {/* Tabs */}
@@ -360,7 +360,7 @@ export default function Reportes() {
                   { label:'Con domicilio',  val: totales.domicilios,     sub:'despachos',             color:'#8b5cf6' },
                   { label:'Con retoma',     val: totales.retomas,        sub:'equipos',               color:'#f59e0b' },
                 ].map(k => (
-                  <div key={k.label} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:12, padding:'16px 20px' }}>
+                  <div key={k.label} style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:12, padding:'16px 20px' }}>
                     <div style={{ color:'#5a7aaa', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>{k.label}</div>
                     <div style={{ color:'#fff', fontSize:24, fontWeight:700 }}>{k.val}</div>
                     <div style={{ color:'#4a6a8a', fontSize:11, marginTop:3 }}>{k.sub}</div>
@@ -369,7 +369,7 @@ export default function Reportes() {
                 ))}
               </div>
               {totales.ventas === 0 ? (
-                <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:12, padding:40, textAlign:'center' }}>
+                <div style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:12, padding:40, textAlign:'center' }}>
                   <div style={{ fontSize:32, marginBottom:12 }}>📊</div>
                   <div style={{ color:'#fff', fontSize:15, fontWeight:500, marginBottom:6 }}>Sin ventas en {mesLabel()}</div>
                   <div style={{ color:'#4a6a8a', fontSize:13 }}>Registra ventas para ver los reportes aquí</div>
@@ -434,8 +434,8 @@ export default function Reportes() {
                       </BarChart>
                     </ResponsiveContainer>
                   ))}
-                  <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:12, overflow:'auto', marginTop:14 }}>
-                    <div style={{ padding:'14px 20px', borderBottom:'1px solid #1a2f52', color:'#8aabcc', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                  <div style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:12, overflow:'auto', marginTop:14 }}>
+                    <div style={{ padding:'14px 20px', borderBottom:'1px solid #1a2f52', color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>
                       Ranking asesores — {mesLabel()}
                     </div>
                     <table style={{ width:'100%', borderCollapse:'collapse' }}>
@@ -609,7 +609,7 @@ export default function Reportes() {
                     { label:'Recogidas solicitadas',  val:recogida.length,    color:'#3b82f6' },
                     { label:'Total retomas',          val:rawRetomas.length,  color:'#0066ff' },
                   ].map(k => (
-                    <div key={k.label} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:10, padding:'12px 16px' }}>
+                    <div key={k.label} style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:10, padding:'12px 16px' }}>
                       <div style={{ color:'#5a7aaa', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:4 }}>{k.label}</div>
                       <div style={{ color:k.color, fontSize:22, fontWeight:700 }}>{k.val}</div>
                       <div style={{ height:3, background:k.color, borderRadius:2, marginTop:8, opacity:.5 }} />
@@ -629,9 +629,9 @@ export default function Reportes() {
                   {retomasTimeline.map(retoma => {
                     const rd = getRetomaData(retoma.key)
                     return (
-                      <div key={retoma.key} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:10, overflow:'hidden' }}>
+                      <div key={retoma.key} style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:10, overflow:'hidden' }}>
                         {/* Header */}
-                        <div style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'12px 16px', background:'#0a1628', borderBottom:'1px solid #0f1e36', flexWrap:'wrap' }}>
+                        <div style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'12px 16px', background:'#f5f3ff', borderBottom:'1px solid #231f5a', flexWrap:'wrap' }}>
                           <div style={{ flex:1 }}>
                             <div style={{ color:'#e2e8f0', fontSize:13, fontWeight:600 }}>{retoma.referencia}</div>
                             <div style={{ display:'flex', gap:10, marginTop:4, flexWrap:'wrap' }}>
@@ -801,7 +801,7 @@ export default function Reportes() {
 
               {rawAbonos.length > 0 && (
                 <div style={{ marginTop:20 }}>
-                  <div style={{ color:'#8aabcc', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>Historial de abonos</div>
+                  <div style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>Historial de abonos</div>
                   <TableWrap>
                     <thead><tr>{['Proveedor','Fecha','Valor','Medio pago','Concepto'].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
                     <tbody>
@@ -895,7 +895,7 @@ export default function Reportes() {
                     { label:'Devueltos prov.', val:devueltos.length,    color:'#ef4444' },
                     { label:'Valor stock',     val:fmtK(valorStock),    color:'#0066ff', small:true },
                   ].map(k => (
-                    <div key={k.label} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:10, padding:'12px 16px' }}>
+                    <div key={k.label} style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:10, padding:'12px 16px' }}>
                       <div style={{ color:'#5a7aaa', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:4 }}>{k.label}</div>
                       <div style={{ color:k.color, fontSize:k.small?16:22, fontWeight:700 }}>{k.val}</div>
                       <div style={{ height:3, background:k.color, borderRadius:2, marginTop:8, opacity:.5 }} />
@@ -1017,7 +1017,7 @@ export default function Reportes() {
                     { label:'Pendiente recoger',      val:pendienteRecoger.length,   color:'#f97316' },
                     { label:'Recogidos inventario',   val:recogidos.length,          color:'#3b82f6' },
                   ].map(k => (
-                    <div key={k.label} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:10, padding:'12px 16px' }}>
+                    <div key={k.label} style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:10, padding:'12px 16px' }}>
                       <div style={{ color:'#5a7aaa', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:4 }}>{k.label}</div>
                       <div style={{ color:k.color, fontSize:22, fontWeight:700 }}>{k.val}</div>
                       <div style={{ height:3, background:k.color, borderRadius:2, marginTop:8, opacity:.5 }} />
@@ -1065,9 +1065,9 @@ export default function Reportes() {
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                   {equiposConMovimientos.map(eq => (
-                    <div key={eq.imei} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:10, overflow:'hidden' }}>
+                    <div key={eq.imei} style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:10, overflow:'hidden' }}>
                       {/* Header equipo */}
-                      <div style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', borderBottom:'1px solid #0f1e36', background:'#0a1628' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', borderBottom:'1px solid #231f5a', background:'#f5f3ff' }}>
                         <div style={{ flex:1 }}>
                           <div style={{ color:'#e2e8f0', fontSize:13, fontWeight:500 }}>{eq.producto || '—'}</div>
                           <div style={{ color:'#8aabcc', fontSize:11, fontFamily:'monospace', marginTop:2 }}>IMEI: {eq.imei}</div>
@@ -1137,7 +1137,7 @@ export default function Reportes() {
                   { label:'Proveedores', n: rawProveedores.length, fn: dlProveedores },
                   { label:'Abonos',      n: rawAbonos.length,      fn: dlAbonos },
                 ].map(item => (
-                  <div key={item.label} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:10, padding:'12px', textAlign:'center' }}>
+                  <div key={item.label} style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:10, padding:'12px', textAlign:'center' }}>
                     <div style={{ color:'#fff', fontSize:18, fontWeight:700 }}>{item.n}</div>
                     <div style={{ color:'#4a6a8a', fontSize:11, marginBottom:8 }}>{item.label}</div>
                     <button onClick={item.fn} style={{ padding:'4px 10px', background:'transparent', border:'1px solid #1a2f52', borderRadius:6, color:'#8aabcc', fontSize:11, cursor:'pointer' }}>↓</button>
@@ -1145,7 +1145,7 @@ export default function Reportes() {
                 ))}
               </div>
               <button onClick={dlTodo} style={{
-                padding:'14px 40px', background:'linear-gradient(135deg,#0066ff,#0044bb)',
+                padding:'14px 40px', background:'linear-gradient(135deg,#4f46e5,#3730a3)',
                 border:'none', borderRadius:10, color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer',
                 marginTop:10
               }}>

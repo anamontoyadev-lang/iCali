@@ -39,7 +39,7 @@ const REPUESTOS_CATALOGO = [
 ]
 
 const inp = {
-  background:'#0a1628', border:'1px solid #1a2f52', borderRadius:6,
+  background:'#f5f3ff', border:'1px solid #c7d2fe', borderRadius:6,
   padding:'7px 10px', color:'#fff', fontSize:13,
   width:'100%', boxSizing:'border-box', outline:'none'
 }
@@ -63,7 +63,7 @@ const REPUESTOS_CAT_EXTERNAL = [
 ]
 
 const inpStyle = {
-  background:'#0a1628', border:'1px solid #1a2f52', borderRadius:6,
+  background:'#f5f3ff', border:'1px solid #c7d2fe', borderRadius:6,
   padding:'7px 10px', color:'#fff', fontSize:13,
   width:'100%', boxSizing:'border-box', outline:'none'
 }
@@ -92,7 +92,7 @@ function RepuestosWidget({ reps, onQuitar, onAgregar }) {
       {reps.length > 0 && (
         <div style={{ marginBottom:8, display:'flex', flexDirection:'column', gap:4 }}>
           {reps.map((r, i) => (
-            <div key={i} style={{ background:'#0a1628', border:'1px solid #1a2f52', borderRadius:6, padding:'6px 10px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            <div key={i} style={{ background:'#f5f3ff', border:'1px solid #c7d2fe', borderRadius:6, padding:'6px 10px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
               <div style={{ display:'flex', gap:10, alignItems:'center' }}>
                 <span style={{ color:'#e2e8f0', fontSize:12 }}>{r.nombre}</span>
                 {r.cantidad > 1 && <span style={{ color:'#8aabcc', fontSize:11 }}>x{r.cantidad}</span>}
@@ -369,7 +369,7 @@ export default function Laboratorio() {
     return `${g.imei} ${g.producto} ${g.cliente}`.toLowerCase().includes(s)
   })
 
-  const th = { color:'#4a6a8a', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', padding:'10px 14px', textAlign:'left', borderBottom:'1px solid #1a2f52', whiteSpace:'nowrap' }
+  const th = { color:'#a5b4fc', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', padding:'10px 14px', textAlign:'left', borderBottom:'1px solid #2d2a6e', whiteSpace:'nowrap' }
   const td = { padding:'10px 14px', color:'#cbd5e1', fontSize:13, borderBottom:'1px solid #231f5a' }
 
 
@@ -413,7 +413,7 @@ export default function Laboratorio() {
               const n = retomas.filter(r => r.estado === k).length
               if (!n) return null
               return (
-                <div key={k} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 14px', display:'flex', alignItems:'center', gap:8 }}>
+                <div key={k} style={{ background:'#ffffff', border:'1px solid #e0e7ff', borderRadius:8, padding:'8px 14px', display:'flex', alignItems:'center', gap:8 }}>
                   <div style={{ width:8, height:8, borderRadius:'50%', background:v.color }} />
                   <span style={{ color:'#8aabcc', fontSize:12 }}>{v.label}</span>
                   <span style={{ color:'#fff', fontSize:14, fontWeight:600 }}>{n}</span>
@@ -422,7 +422,7 @@ export default function Laboratorio() {
             })}
           </div>
           <input placeholder="Buscar por IMEI, referencia o cliente..." value={filtroR} onChange={e => setFiltroR(e.target.value)}
-            style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 14px', color:'#fff', fontSize:13, outline:'none', width:340, boxSizing:'border-box', marginBottom:12 }} />
+            style={{ background:'#ffffff', border:'1px solid #e0e7ff', borderRadius:8, padding:'8px 14px', color:'#fff', fontSize:13, outline:'none', width:340, boxSizing:'border-box', marginBottom:12 }} />
           <div style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:12, overflow:'auto' }}>
             {loadingR ? <div style={{ padding:40, color:'#4a6a8a', textAlign:'center' }}>Cargando...</div>
             : filtradas_r.length === 0 ? <div style={{ padding:40, color:'#4a6a8a', textAlign:'center' }}>No hay retomas</div>
@@ -475,7 +475,7 @@ export default function Laboratorio() {
               { label:'Reparaciones', n:garantias.filter(g=>g.tipo==='reparacion').length, color:'#8b5cf6' },
               ...Object.entries(ESTADOS_GAR).map(([k,v]) => ({ label:v.label, n:garantias.filter(g=>g.estado===k).length, color:v.color })).filter(k=>k.n>0),
             ].filter(k=>k.n>0).map(k => (
-              <div key={k.label} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 14px', display:'flex', alignItems:'center', gap:8 }}>
+              <div key={k.label} style={{ background:'#ffffff', border:'1px solid #e0e7ff', borderRadius:8, padding:'8px 14px', display:'flex', alignItems:'center', gap:8 }}>
                 <div style={{ width:8, height:8, borderRadius:'50%', background:k.color }} />
                 <span style={{ color:'#8aabcc', fontSize:12 }}>{k.label}</span>
                 <span style={{ color:'#fff', fontSize:14, fontWeight:600 }}>{k.n}</span>
@@ -483,7 +483,7 @@ export default function Laboratorio() {
             ))}
           </div>
           <input placeholder="Buscar por IMEI, producto o cliente..." value={filtroG} onChange={e => setFiltroG(e.target.value)}
-            style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 14px', color:'#fff', fontSize:13, outline:'none', width:340, boxSizing:'border-box', marginBottom:12 }} />
+            style={{ background:'#ffffff', border:'1px solid #e0e7ff', borderRadius:8, padding:'8px 14px', color:'#fff', fontSize:13, outline:'none', width:340, boxSizing:'border-box', marginBottom:12 }} />
           <div style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:12, overflow:'auto' }}>
             {loadingG ? <div style={{ padding:40, color:'#4a6a8a', textAlign:'center' }}>Cargando...</div>
             : filtradas_g.length === 0 ? (
@@ -544,22 +544,22 @@ export default function Laboratorio() {
             <h3 style={{ color:'#1e1b4b', margin:'0 0 20px', fontSize:16 }}>Editar retoma</h3>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px 14px' }}>
               {[['imei_retoma','IMEI'],['referencia','Referencia'],['capacidad_gb','GB'],['color','Color'],['porcentaje_bateria','Batería %'],['valor_retoma','Valor retoma $'],['costo_estimado','Costo estimado $'],['punto_tienda','Punto de tienda']].map(([k,label]) => (
-                <div key={k}><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>{label}</label><input style={inp} value={editFormR[k]} onChange={e => setEditFormR(f=>({...f,[k]:e.target.value}))} /></div>
+                <div key={k}><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>{label}</label><input style={inp} value={editFormR[k]} onChange={e => setEditFormR(f=>({...f,[k]:e.target.value}))} /></div>
               ))}
               <div>
-                <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>¿Quién tiene?</label>
+                <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>¿Quién tiene?</label>
                 <select style={{ ...inp, cursor:'pointer' }} value={editFormR.quien_tiene} onChange={e => setEditFormR(f=>({...f, quien_tiene:e.target.value}))}>
                   <option value="">Seleccionar...</option>
                   <option value="Laboratorio iCali">🔬 Laboratorio iCali</option>
                   {proveedores.map(p => <option key={p.nombre} value={p.nombre}>{p.nombre}</option>)}
                 </select>
               </div>
-              <div><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Estado</label>
+              <div><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Estado</label>
                 <select style={{ ...inp, cursor:'pointer' }} value={editFormR.estado} onChange={e => setEditFormR(f=>({...f,estado:e.target.value}))}>
                   {Object.entries(ESTADOS_RETOMA).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
                 </select>
               </div>
-              <div style={{ gridColumn:'span 2' }}><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Observaciones</label><textarea style={{ ...inp, resize:'vertical', minHeight:60 }} value={editFormR.observaciones} onChange={e => setEditFormR(f=>({...f,observaciones:e.target.value}))} /></div>
+              <div style={{ gridColumn:'span 2' }}><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Observaciones</label><textarea style={{ ...inp, resize:'vertical', minHeight:60 }} value={editFormR.observaciones} onChange={e => setEditFormR(f=>({...f,observaciones:e.target.value}))} /></div>
             </div>
             {/* Notificar asesor con el valor de Diego */}
             {(esRetomas || esAdmin || esLiderAdmin) && (
@@ -575,7 +575,7 @@ export default function Laboratorio() {
               </div>
             )}
             <div style={{ display:'flex', gap:10, marginTop:16, justifyContent:'flex-end' }}>
-              <button onClick={() => setEditandoR(null)} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>Cancelar</button>
+              <button onClick={() => setEditandoR(null)} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #c7d2fe', borderRadius:8, color:'#6366f1', fontSize:13, cursor:'pointer' }}>Cancelar</button>
               <button onClick={guardarRetoma} style={{ padding:'9px 24px', background:'linear-gradient(135deg,#4f46e5,#3730a3)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>Guardar</button>
             </div>
           </div>
@@ -585,9 +585,9 @@ export default function Laboratorio() {
       {/* MODAL NUEVA GARANTÍA */}
       {showFormG && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
-          <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:14, padding:28, width:'100%', maxWidth:620, fontFamily:"'DM Sans',system-ui", maxHeight:'93vh', overflow:'auto' }}>
+          <div style={{ background:'#ffffff', border:'1px solid #e0e7ff', borderRadius:14, padding:28, width:'100%', maxWidth:620, fontFamily:"'DM Sans',system-ui", maxHeight:'93vh', overflow:'auto' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-              <h3 style={{ color:'#fff', margin:0, fontSize:16 }}>Nuevo ingreso al laboratorio</h3>
+              <h3 style={{ color:'#1e1b4b', margin:0, fontSize:16 }}>Nuevo ingreso al laboratorio</h3>
               <button onClick={() => setShowFormG(false)} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:20, cursor:'pointer' }}>×</button>
             </div>
             <form onSubmit={guardarNuevaGarantia}>
@@ -603,21 +603,21 @@ export default function Laboratorio() {
                   </div>
                 </div>
 
-                <div><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI del equipo</label><input style={inp} value={formG.imei} onChange={e=>setFormG(f=>({...f,imei:e.target.value}))} placeholder="15 dígitos" /></div>
-                <div><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Producto / Referencia</label><input style={inp} value={formG.producto} onChange={e=>setFormG(f=>({...f,producto:e.target.value}))} placeholder="iPhone 15 Pro..." /></div>
-                <div><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Cliente</label><input style={inp} value={formG.cliente} onChange={e=>setFormG(f=>({...f,cliente:e.target.value}))} /></div>
-                <div><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Teléfono</label><input style={inp} value={formG.telefono} onChange={e=>setFormG(f=>({...f,telefono:e.target.value}))} /></div>
-                <div><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Asesor responsable</label><input style={inp} value={formG.asesor} onChange={e=>setFormG(f=>({...f,asesor:e.target.value}))} /></div>
-                <div><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Estado inicial</label>
+                <div><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>IMEI del equipo</label><input style={inp} value={formG.imei} onChange={e=>setFormG(f=>({...f,imei:e.target.value}))} placeholder="15 dígitos" /></div>
+                <div><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Producto / Referencia</label><input style={inp} value={formG.producto} onChange={e=>setFormG(f=>({...f,producto:e.target.value}))} placeholder="iPhone 15 Pro..." /></div>
+                <div><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Cliente</label><input style={inp} value={formG.cliente} onChange={e=>setFormG(f=>({...f,cliente:e.target.value}))} /></div>
+                <div><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Teléfono</label><input style={inp} value={formG.telefono} onChange={e=>setFormG(f=>({...f,telefono:e.target.value}))} /></div>
+                <div><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Asesor responsable</label><input style={inp} value={formG.asesor} onChange={e=>setFormG(f=>({...f,asesor:e.target.value}))} /></div>
+                <div><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Estado inicial</label>
                   <select style={{ ...inp, cursor:'pointer' }} value={formG.estado} onChange={e=>setFormG(f=>({...f,estado:e.target.value}))}>
                     {Object.entries(ESTADOS_GAR).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
                   </select>
                 </div>
-                <div><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Fecha de ingreso</label><input type="date" style={inp} value={formG.fecha_recepcion} onChange={e=>setFormG(f=>({...f,fecha_recepcion:e.target.value}))} /></div>
-                <div><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Entrega estimada</label><input type="date" style={inp} value={formG.fecha_entrega_estimada} onChange={e=>setFormG(f=>({...f,fecha_entrega_estimada:e.target.value}))} /></div>
+                <div><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Fecha de ingreso</label><input type="date" style={inp} value={formG.fecha_recepcion} onChange={e=>setFormG(f=>({...f,fecha_recepcion:e.target.value}))} /></div>
+                <div><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Entrega estimada</label><input type="date" style={inp} value={formG.fecha_entrega_estimada} onChange={e=>setFormG(f=>({...f,fecha_entrega_estimada:e.target.value}))} /></div>
 
-                <div style={{ gridColumn:'span 2' }}><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Descripción de la falla *</label><textarea required style={{ ...inp, resize:'vertical', minHeight:56 }} value={formG.descripcion_falla} onChange={e=>setFormG(f=>({...f,descripcion_falla:e.target.value}))} placeholder="¿Qué problema reporta el cliente?" /></div>
-                <div style={{ gridColumn:'span 2' }}><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Diagnóstico técnico</label><textarea style={{ ...inp, resize:'vertical', minHeight:56 }} value={formG.diagnostico} onChange={e=>setFormG(f=>({...f,diagnostico:e.target.value}))} placeholder="Diagnóstico del técnico..." /></div>
+                <div style={{ gridColumn:'span 2' }}><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Descripción de la falla *</label><textarea required style={{ ...inp, resize:'vertical', minHeight:56 }} value={formG.descripcion_falla} onChange={e=>setFormG(f=>({...f,descripcion_falla:e.target.value}))} placeholder="¿Qué problema reporta el cliente?" /></div>
+                <div style={{ gridColumn:'span 2' }}><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Diagnóstico técnico</label><textarea style={{ ...inp, resize:'vertical', minHeight:56 }} value={formG.diagnostico} onChange={e=>setFormG(f=>({...f,diagnostico:e.target.value}))} placeholder="Diagnóstico del técnico..." /></div>
 
                 {/* Repuestos */}
                 <div style={{ gridColumn:'span 2' }}>
@@ -628,7 +628,7 @@ export default function Laboratorio() {
                   />
                 </div>
 
-                <div><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Costo mano de obra $</label><input style={inp} value={formG.costo_mano_obra} onChange={e=>setFormG(f=>({...f,costo_mano_obra:e.target.value}))} placeholder="0" /></div>
+                <div><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Costo mano de obra $</label><input style={inp} value={formG.costo_mano_obra} onChange={e=>setFormG(f=>({...f,costo_mano_obra:e.target.value}))} placeholder="0" /></div>
                 <div style={{ display:'flex', alignItems:'flex-end' }}>
                   <div style={{ background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.25)', borderRadius:8, padding:'8px 14px', width:'100%' }}>
                     <div style={{ color:'#5a7aaa', fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>Total estimado</div>
@@ -638,11 +638,11 @@ export default function Laboratorio() {
                   </div>
                 </div>
 
-                <div style={{ gridColumn:'span 2' }}><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Observaciones</label><textarea style={{ ...inp, resize:'vertical', minHeight:48 }} value={formG.observaciones} onChange={e=>setFormG(f=>({...f,observaciones:e.target.value}))} /></div>
+                <div style={{ gridColumn:'span 2' }}><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Observaciones</label><textarea style={{ ...inp, resize:'vertical', minHeight:48 }} value={formG.observaciones} onChange={e=>setFormG(f=>({...f,observaciones:e.target.value}))} /></div>
               </div>
 
               <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
-                <button type="button" onClick={() => setShowFormG(false)} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>Cancelar</button>
+                <button type="button" onClick={() => setShowFormG(false)} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #c7d2fe', borderRadius:8, color:'#6366f1', fontSize:13, cursor:'pointer' }}>Cancelar</button>
                 <button type="submit" disabled={savingG} style={{ padding:'9px 24px', background:savingG?'#1e3058':'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>
                   {savingG?'Guardando...':'Registrar ingreso'}
                 </button>
@@ -655,24 +655,24 @@ export default function Laboratorio() {
       {/* MODAL EDITAR GARANTÍA */}
       {editandoG && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
-          <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:14, padding:28, width:'100%', maxWidth:580, fontFamily:"'DM Sans',system-ui", maxHeight:'92vh', overflow:'auto' }}>
+          <div style={{ background:'#ffffff', border:'1px solid #e0e7ff', borderRadius:14, padding:28, width:'100%', maxWidth:580, fontFamily:"'DM Sans',system-ui", maxHeight:'92vh', overflow:'auto' }}>
             <h3 style={{ color:'#1e1b4b', margin:'0 0 20px', fontSize:16 }}>Actualizar — Garantía / Reparación</h3>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px 14px' }}>
               <div style={{ gridColumn:'span 2' }}>
-                <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Tipo</label>
+                <label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Tipo</label>
                 <select style={{ ...inp, cursor:'pointer' }} value={editFormG.tipo} onChange={e=>setEditFormG(f=>({...f,tipo:e.target.value}))}>
                   {Object.entries(TIPO_GAR).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
                 </select>
               </div>
-              <div><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Estado</label>
+              <div><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Estado</label>
                 <select style={{ ...inp, cursor:'pointer' }} value={editFormG.estado} onChange={e=>setEditFormG(f=>({...f,estado:e.target.value}))}>
                   {Object.entries(ESTADOS_GAR).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
                 </select>
               </div>
-              <div><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Entrega estimada</label><input type="date" style={inp} value={editFormG.fecha_entrega_estimada} onChange={e=>setEditFormG(f=>({...f,fecha_entrega_estimada:e.target.value}))} /></div>
-              <div><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Entrega real</label><input type="date" style={inp} value={editFormG.fecha_entrega_real} onChange={e=>setEditFormG(f=>({...f,fecha_entrega_real:e.target.value}))} /></div>
-              <div style={{ gridColumn:'span 2' }}><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Diagnóstico técnico</label><textarea style={{ ...inp, resize:'vertical', minHeight:56 }} value={editFormG.diagnostico} onChange={e=>setEditFormG(f=>({...f,diagnostico:e.target.value}))} /></div>
-              <div style={{ gridColumn:'span 2' }}><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Solución aplicada</label><textarea style={{ ...inp, resize:'vertical', minHeight:56 }} value={editFormG.solucion} onChange={e=>setEditFormG(f=>({...f,solucion:e.target.value}))} /></div>
+              <div><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Entrega estimada</label><input type="date" style={inp} value={editFormG.fecha_entrega_estimada} onChange={e=>setEditFormG(f=>({...f,fecha_entrega_estimada:e.target.value}))} /></div>
+              <div><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Entrega real</label><input type="date" style={inp} value={editFormG.fecha_entrega_real} onChange={e=>setEditFormG(f=>({...f,fecha_entrega_real:e.target.value}))} /></div>
+              <div style={{ gridColumn:'span 2' }}><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Diagnóstico técnico</label><textarea style={{ ...inp, resize:'vertical', minHeight:56 }} value={editFormG.diagnostico} onChange={e=>setEditFormG(f=>({...f,diagnostico:e.target.value}))} /></div>
+              <div style={{ gridColumn:'span 2' }}><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Solución aplicada</label><textarea style={{ ...inp, resize:'vertical', minHeight:56 }} value={editFormG.solucion} onChange={e=>setEditFormG(f=>({...f,solucion:e.target.value}))} /></div>
 
               {/* Repuestos edición */}
               <div style={{ gridColumn:'span 2' }}>
@@ -683,7 +683,7 @@ export default function Laboratorio() {
                 />
               </div>
 
-              <div><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Costo mano de obra $</label><input style={inp} value={editFormG.costo_mano_obra} onChange={e=>setEditFormG(f=>({...f,costo_mano_obra:e.target.value}))} /></div>
+              <div><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Costo mano de obra $</label><input style={inp} value={editFormG.costo_mano_obra} onChange={e=>setEditFormG(f=>({...f,costo_mano_obra:e.target.value}))} /></div>
               <div style={{ display:'flex', alignItems:'flex-end' }}>
                 <div style={{ background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.25)', borderRadius:8, padding:'8px 14px', width:'100%' }}>
                   <div style={{ color:'#5a7aaa', fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>Total</div>
@@ -691,10 +691,10 @@ export default function Laboratorio() {
                 </div>
               </div>
 
-              <div style={{ gridColumn:'span 2' }}><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Observaciones</label><textarea style={{ ...inp, resize:'vertical', minHeight:48 }} value={editFormG.observaciones} onChange={e=>setEditFormG(f=>({...f,observaciones:e.target.value}))} /></div>
+              <div style={{ gridColumn:'span 2' }}><label style={{ color:'#4338ca', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Observaciones</label><textarea style={{ ...inp, resize:'vertical', minHeight:48 }} value={editFormG.observaciones} onChange={e=>setEditFormG(f=>({...f,observaciones:e.target.value}))} /></div>
             </div>
             <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
-              <button onClick={() => setEditandoG(null)} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>Cancelar</button>
+              <button onClick={() => setEditandoG(null)} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #c7d2fe', borderRadius:8, color:'#6366f1', fontSize:13, cursor:'pointer' }}>Cancelar</button>
               <button onClick={actualizarGarantia} style={{ padding:'9px 24px', background:'linear-gradient(135deg,#4f46e5,#3730a3)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>Guardar</button>
             </div>
           </div>

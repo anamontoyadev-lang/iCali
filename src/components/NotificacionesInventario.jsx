@@ -14,7 +14,7 @@ const STICKERS = ['Very Good','Good','Mid']
 const ALMACENAMIENTOS = ['64GB','128GB','256GB','512GB','1TB']
 
 const inpS = {
-  background:'#0a1628', border:'1px solid #1a2f52', borderRadius:6,
+  background:'#f5f3ff', border:'1px solid #c7d2fe', borderRadius:6,
   padding:'7px 10px', color:'#fff', fontSize:12,
   width:'100%', boxSizing:'border-box', outline:'none'
 }
@@ -209,7 +209,7 @@ export default function NotificacionesInventario() {
         }}>
           {/* Header con contador y botón minimizar */}
           {notifs.length > 0 && (
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:10, padding:'8px 12px' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:10, padding:'8px 12px' }}>
               <span style={{ color:'#fff', fontSize:12, fontWeight:600 }}>
                 🔔 {notifs.filter(n=>!n.respondida).length} notificación{notifs.filter(n=>!n.respondida).length!==1?'es':''} pendiente{notifs.filter(n=>!n.respondida).length!==1?'s':''}
               </span>
@@ -236,7 +236,7 @@ export default function NotificacionesInventario() {
                       <div style={{ color:'#f59e0b', fontSize:11 }}>de {n.creado_por_nombre} · {n.datos?.cliente}</div>
                     </div>
                   </div>
-                  <div style={{ background:'#0a1628', borderRadius:8, padding:'8px 12px', marginBottom:10 }}>
+                  <div style={{ background:'#f5f3ff', borderRadius:8, padding:'8px 12px', marginBottom:10 }}>
                     {/* Solicitud múltiple */}
                     {Array.isArray(n.datos?.equipos) ? (
                       <div>
@@ -305,7 +305,7 @@ export default function NotificacionesInventario() {
                       <div style={{ color:'#10b981', fontSize:11 }}>Ve a recoger el equipo</div>
                     </div>
                   </div>
-                  <div style={{ background:'#0a1628', borderRadius:8, padding:'8px 12px', marginBottom:10 }}>
+                  <div style={{ background:'#f5f3ff', borderRadius:8, padding:'8px 12px', marginBottom:10 }}>
                     <div style={{ color:'#e2e8f0', fontSize:12, fontWeight:500, marginBottom:4 }}>{n.datos?.producto || '—'}</div>
                     {n.datos?.imei && <div style={{ color:'#8aabcc', fontFamily:'monospace', fontSize:11 }}>IMEI: {n.datos.imei}</div>}
                     {n.datos?.solucion && <div style={{ color:'#10b981', fontSize:11, marginTop:4 }}>✓ {n.datos.solucion}</div>}
@@ -338,11 +338,11 @@ export default function NotificacionesInventario() {
                       <div style={{ color:'#f59e0b', fontSize:11 }}>{n.creado_por_nombre} quiere devolver un equipo</div>
                     </div>
                   </div>
-                  <div style={{ background:'#0a1628', borderRadius:8, padding:'8px 12px', marginBottom:10 }}>
+                  <div style={{ background:'#f5f3ff', borderRadius:8, padding:'8px 12px', marginBottom:10 }}>
                     <div style={{ color:'#e2e8f0', fontSize:12 }}>{n.datos?.producto}</div>
                     {n.datos?.imei && <div style={{ color:'#8aabcc', fontFamily:'monospace', fontSize:11, marginTop:2 }}>IMEI: {n.datos.imei}</div>}
                   </div>
-                  <button onClick={() => confirmarRecogida(n)} style={{ width:'100%', padding:'9px 0', background:'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:7, color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                  <button onClick={() => confirmarRecogida(n)} style={{ width:'100%', padding:'9px 0', background:'linear-gradient(135deg,#4f46e5,#3730a3)', border:'none', borderRadius:7, color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}>
                     ✓ Confirmé la recogida — devolver a inventario
                   </button>
                 </>
@@ -430,7 +430,7 @@ export default function NotificacionesInventario() {
               </div>
 
               <div style={{ display:'flex', gap:10, marginTop:18, justifyContent:'flex-end' }}>
-                <button type="button" onClick={() => setFormIngreso(null)} style={{ padding:'9px 18px', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>Cancelar</button>
+                <button type="button" onClick={() => setFormIngreso(null)} style={{ padding:'9px 18px', background:'transparent', border:'1px solid #c7d2fe', borderRadius:8, color:'#6366f1', fontSize:13, cursor:'pointer' }}>Cancelar</button>
                 <button type="submit" disabled={guardando} style={{ padding:'9px 24px', background: guardando?'#1e3058':'linear-gradient(135deg,#10b981,#059669)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>
                   {guardando ? '⏳ Guardando...' : '✓ Confirmar ingreso'}
                 </button>

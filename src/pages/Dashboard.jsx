@@ -200,7 +200,7 @@ export default function Dashboard() {
 
       {/* MÓDULOS */}
       <div style={{ marginBottom:28 }}>
-        <div style={{ color:'#3a5a7a', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:12 }}>Módulos</div>
+        <div style={{ color:'#4338ca', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:12 }}>Módulos</div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(120px, 1fr))', gap:10 }}>
           {modulos.map(m => (
             <button key={m.key} onClick={() => navigate(m.path)} style={{
@@ -234,7 +234,7 @@ export default function Dashboard() {
       {notifs.length > 0 && (
         <div style={{ marginBottom:28 }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-            <div style={{ color:'#3a5a7a', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em' }}>
+            <div style={{ color:'#4338ca', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em' }}>
               Notificaciones
               {notifs.filter(n=>!n.respondida).length > 0 && (
                 <span style={{ marginLeft:8, background:'#ef4444', color:'#fff', fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:10 }}>
@@ -253,11 +253,12 @@ export default function Dashboard() {
                 : '#1a2f52'
               return (
                 <div key={n.id} style={{
-                  background: pendiente ? '#0d1a35' : '#080f20',
-                  border: `1px solid ${borderColor}`,
+                  background: pendiente ? '#ffffff' : '#f8f7ff',
+                  border: `1px solid ${pendiente ? borderColor : '#e0e7ff'}`,
                   borderRadius:10, padding:'10px 12px',
                   display:'flex', flexDirection:'column', gap:8,
-                  opacity: pendiente ? 1 : 0.6,
+                  opacity: pendiente ? 1 : 0.75,
+                  boxShadow: pendiente ? '0 2px 8px rgba(67,56,202,0.08)' : 'none',
                 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:0 }}>
                     <span style={{ fontSize:16, flexShrink:0 }}>{icono}</span>
@@ -333,7 +334,7 @@ export default function Dashboard() {
           {/* RESUMEN DE GESTIÓN */}
           {kpis.length > 0 && (
             <div style={{ marginBottom:28 }}>
-              <div style={{ color:'#3a5a7a', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:12 }}>
+              <div style={{ color:'#4338ca', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:12 }}>
                 Tu resumen — {new Date().toLocaleDateString('es-CO',{month:'long', year:'numeric'})}
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))', gap:10, marginBottom:20 }}>
@@ -353,7 +354,7 @@ export default function Dashboard() {
           {resumen.ventasRecientes?.length > 0 && (
             <div>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-                <div style={{ color:'#3a5a7a', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em' }}>Ventas recientes</div>
+                <div style={{ color:'#4338ca', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em' }}>Ventas recientes</div>
                 <button onClick={() => navigate('/ventas')} style={{ background:'transparent', border:'none', color:'#0066ff', fontSize:12, cursor:'pointer' }}>Ver todas →</button>
               </div>
               <div style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:12, overflow:'hidden' }}>
