@@ -237,7 +237,7 @@ export default function Dashboard() {
               onMouseEnter={e => e.currentTarget.style.borderColor = m.color}
               onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--color-border-tertiary)'}
             >
-              <div style={{ width:36, height:36, borderRadius:8, background:m.color+'18', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, marginBottom:10 }}>{m.icon}</div>
+              <div style={{ width:36, height:36, borderRadius:8, background:m.color+'22', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, marginBottom:10 }}>{m.icon}</div>
               <div style={{ color:'var(--color-text-primary)', fontSize:13, fontWeight:500, marginBottom:4 }}>{m.label}</div>
               {m.badge != null && m.badge > 0 ? (
                 <div style={{ display:'flex', alignItems:'center', gap:5 }}>
