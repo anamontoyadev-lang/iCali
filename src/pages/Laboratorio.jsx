@@ -370,7 +370,7 @@ export default function Laboratorio() {
   })
 
   const th = { color:'#4a6a8a', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', padding:'10px 14px', textAlign:'left', borderBottom:'1px solid #1a2f52', whiteSpace:'nowrap' }
-  const td = { padding:'10px 14px', color:'#cbd5e1', fontSize:13, borderBottom:'1px solid #0f1e36' }
+  const td = { padding:'10px 14px', color:'#cbd5e1', fontSize:13, borderBottom:'1px solid #231f5a' }
 
 
   const totalCostoG = (g) => (Number(g.costo_repuestos)||0) + (Number(g.costo_mano_obra)||0)
@@ -385,7 +385,7 @@ export default function Laboratorio() {
           <p style={{ color:'#4a6a8a', fontSize:13, margin:0 }}>Retomas · Garantías y Reparaciones</p>
         </div>
         {tab === 'garantias' && (esAdmin || esLiderAdmin || esLiderCom || esGarantias) && (
-          <button onClick={() => setShowFormG(true)} style={{ padding:'10px 20px', background:'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+          <button onClick={() => setShowFormG(true)} style={{ padding:'10px 20px', background:'linear-gradient(135deg,#4f46e5,#3730a3)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>
             + Nuevo ingreso
           </button>
         )}
@@ -423,7 +423,7 @@ export default function Laboratorio() {
           </div>
           <input placeholder="Buscar por IMEI, referencia o cliente..." value={filtroR} onChange={e => setFiltroR(e.target.value)}
             style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 14px', color:'#fff', fontSize:13, outline:'none', width:340, boxSizing:'border-box', marginBottom:12 }} />
-          <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:12, overflow:'auto' }}>
+          <div style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:12, overflow:'auto' }}>
             {loadingR ? <div style={{ padding:40, color:'#4a6a8a', textAlign:'center' }}>Cargando...</div>
             : filtradas_r.length === 0 ? <div style={{ padding:40, color:'#4a6a8a', textAlign:'center' }}>No hay retomas</div>
             : (
@@ -484,7 +484,7 @@ export default function Laboratorio() {
           </div>
           <input placeholder="Buscar por IMEI, producto o cliente..." value={filtroG} onChange={e => setFiltroG(e.target.value)}
             style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 14px', color:'#fff', fontSize:13, outline:'none', width:340, boxSizing:'border-box', marginBottom:12 }} />
-          <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:12, overflow:'auto' }}>
+          <div style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:12, overflow:'auto' }}>
             {loadingG ? <div style={{ padding:40, color:'#4a6a8a', textAlign:'center' }}>Cargando...</div>
             : filtradas_g.length === 0 ? (
               <div style={{ padding:60, color:'#4a6a8a', textAlign:'center' }}>
@@ -540,8 +540,8 @@ export default function Laboratorio() {
       {/* MODAL EDITAR RETOMA */}
       {editandoR && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
-          <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:14, padding:28, width:'100%', maxWidth:500, fontFamily:"'DM Sans',system-ui", maxHeight:'90vh', overflow:'auto' }}>
-            <h3 style={{ color:'#fff', margin:'0 0 20px', fontSize:16 }}>Editar retoma</h3>
+          <div style={{ background:'#ffffff', border:'1px solid #e0e7ff', borderRadius:14, padding:28, width:'100%', maxWidth:500, fontFamily:"'DM Sans',system-ui", maxHeight:'90vh', overflow:'auto', boxShadow:'0 8px 32px rgba(67,56,202,0.15)' }}>
+            <h3 style={{ color:'#1e1b4b', margin:'0 0 20px', fontSize:16 }}>Editar retoma</h3>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px 14px' }}>
               {[['imei_retoma','IMEI'],['referencia','Referencia'],['capacidad_gb','GB'],['color','Color'],['porcentaje_bateria','Batería %'],['valor_retoma','Valor retoma $'],['costo_estimado','Costo estimado $'],['punto_tienda','Punto de tienda']].map(([k,label]) => (
                 <div key={k}><label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>{label}</label><input style={inp} value={editFormR[k]} onChange={e => setEditFormR(f=>({...f,[k]:e.target.value}))} /></div>
@@ -576,7 +576,7 @@ export default function Laboratorio() {
             )}
             <div style={{ display:'flex', gap:10, marginTop:16, justifyContent:'flex-end' }}>
               <button onClick={() => setEditandoR(null)} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>Cancelar</button>
-              <button onClick={guardarRetoma} style={{ padding:'9px 24px', background:'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>Guardar</button>
+              <button onClick={guardarRetoma} style={{ padding:'9px 24px', background:'linear-gradient(135deg,#4f46e5,#3730a3)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>Guardar</button>
             </div>
           </div>
         </div>
@@ -656,7 +656,7 @@ export default function Laboratorio() {
       {editandoG && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
           <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:14, padding:28, width:'100%', maxWidth:580, fontFamily:"'DM Sans',system-ui", maxHeight:'92vh', overflow:'auto' }}>
-            <h3 style={{ color:'#fff', margin:'0 0 20px', fontSize:16 }}>Actualizar — Garantía / Reparación</h3>
+            <h3 style={{ color:'#1e1b4b', margin:'0 0 20px', fontSize:16 }}>Actualizar — Garantía / Reparación</h3>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px 14px' }}>
               <div style={{ gridColumn:'span 2' }}>
                 <label style={{ color:'#8aabcc', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Tipo</label>
@@ -695,7 +695,7 @@ export default function Laboratorio() {
             </div>
             <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
               <button onClick={() => setEditandoG(null)} style={{ padding:'9px 20px', background:'transparent', border:'1px solid #1a2f52', borderRadius:8, color:'#6b8ab0', fontSize:13, cursor:'pointer' }}>Cancelar</button>
-              <button onClick={actualizarGarantia} style={{ padding:'9px 24px', background:'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>Guardar</button>
+              <button onClick={actualizarGarantia} style={{ padding:'9px 24px', background:'linear-gradient(135deg,#4f46e5,#3730a3)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>Guardar</button>
             </div>
           </div>
         </div>

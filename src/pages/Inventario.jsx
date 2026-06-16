@@ -53,8 +53,8 @@ const STICKERS = [
 ]
 
 const inp = {
-  background:'#0a1628', border:'1px solid #1a2f52', borderRadius:8,
-  padding:'9px 12px', color:'#fff', fontSize:13,
+  background:'#f5f3ff', border:'1px solid #c7d2fe', borderRadius:8,
+  padding:'9px 12px', color:'#1e1b4b', fontSize:13,
   width:'100%', boxSizing:'border-box', outline:'none'
 }
 const sel = { ...inp, cursor:'pointer' }
@@ -345,8 +345,8 @@ export default function Inventario() {
   const valorStock = compras.filter(c => c.estado === 'disponible').reduce((a,c) => a + Number(c.costo||0), 0)
   const puedeEditar = puedeEditarInventario || esAdmin || esLiderAdmin
 
-  const th = { color:'#4a6a8a', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', padding:'10px 14px', textAlign:'left', borderBottom:'1px solid #1a2f52', whiteSpace:'nowrap' }
-  const td = { padding:'10px 14px', color:'#cbd5e1', fontSize:13, borderBottom:'1px solid #0f1e36' }
+  const th = { color:'#a5b4fc', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', padding:'10px 14px', textAlign:'left', borderBottom:'1px solid #2d2a6e', whiteSpace:'nowrap' }
+  const td = { padding:'10px 14px', color:'#cbd5e1', fontSize:13, borderBottom:'1px solid #231f5a' }
 
   return (
     <div style={{ padding:'32px 36px', fontFamily:"'DM Sans', system-ui" }}>
@@ -360,10 +360,10 @@ export default function Inventario() {
         </div>
         {puedeEditar && (
           <div style={{ display:'flex', gap:8 }}>
-            <button onClick={abrirEscaner} style={{ padding:'9px 16px', background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, color:'#8aabcc', fontSize:13, cursor:'pointer' }}>📷 Escanear</button>
-            <button onClick={() => fileExcelRef.current?.click()} style={{ padding:'9px 16px', background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, color:'#8aabcc', fontSize:13, cursor:'pointer' }}>📊 Carga masiva</button>
-            <button onClick={() => { setModoLote(true) }} style={{ padding:'9px 16px', background:'#0d1a35', border:'1px solid #10b981', borderRadius:8, color:'#10b981', fontSize:13, fontWeight:600, cursor:'pointer' }}>📦 Ingreso por lote</button>
-            <button onClick={() => { setShowForm(true); setModoLote(false); setForm(INIT_FORM); setFotos([]); setFotoPreviews([]) }} style={{ padding:'9px 18px', background:'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>+ Ingresar equipo</button>
+            <button onClick={abrirEscaner} style={{ padding:'9px 16px', background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:8, color:'#8aabcc', fontSize:13, cursor:'pointer' }}>📷 Escanear</button>
+            <button onClick={() => fileExcelRef.current?.click()} style={{ padding:'9px 16px', background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:8, color:'#8aabcc', fontSize:13, cursor:'pointer' }}>📊 Carga masiva</button>
+            <button onClick={() => { setModoLote(true) }} style={{ padding:'9px 16px', background:'#1a1740', border:'1px solid #10b981', borderRadius:8, color:'#10b981', fontSize:13, fontWeight:600, cursor:'pointer' }}>📦 Ingreso por lote</button>
+            <button onClick={() => { setShowForm(true); setModoLote(false); setForm(INIT_FORM); setFotos([]); setFotoPreviews([]) }} style={{ padding:'9px 18px', background:'linear-gradient(135deg,#4f46e5,#3730a3)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>+ Ingresar equipo</button>
             <input ref={fileExcelRef} type="file" accept=".xlsx,.xls,.csv" style={{ display:'none' }} onChange={leerExcel} />
           </div>
         )}
@@ -377,7 +377,7 @@ export default function Inventario() {
           { label:'Total', val:compras.length, color:'#3b82f6' },
           { label:'Valor stock', val:fmt(valorStock), color:'#f59e0b', small:true },
         ].map(k => (
-          <div key={k.label} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:10, padding:'12px 16px' }}>
+          <div key={k.label} style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:10, padding:'12px 16px' }}>
             <div style={{ color:'#5a7aaa', fontSize:10, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:4 }}>{k.label}</div>
             <div style={{ color:k.color, fontSize:k.small ? 16 : 24, fontWeight:600 }}>{k.val}</div>
           </div>
@@ -389,24 +389,24 @@ export default function Inventario() {
 
       <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap' }}>
         <input placeholder="Buscar IMEI, serial, producto, color..." value={buscar} onChange={e => setBuscar(e.target.value)}
-          style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 12px', color:'#fff', fontSize:13, outline:'none', flex:1, minWidth:200 }} />
-        <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 12px', color: filtroEstado ? '#fff' : '#4a6a8a', fontSize:13, cursor:'pointer' }}>
+          style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:8, padding:'8px 12px', color:'#fff', fontSize:13, outline:'none', flex:1, minWidth:200 }} />
+        <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)} style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:8, padding:'8px 12px', color: filtroEstado ? '#fff' : '#4a6a8a', fontSize:13, cursor:'pointer' }}>
           <option value="">Todos los estados</option>
           <option value="disponible">Disponible</option>
           <option value="vendido">Vendido</option>
           <option value="devuelto">Devuelto al proveedor</option>
         </select>
-        <select value={filtroEstadoEq} onChange={e => setFiltroEstadoEq(e.target.value)} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 12px', color: filtroEstadoEq ? '#fff' : '#4a6a8a', fontSize:13, cursor:'pointer' }}>
+        <select value={filtroEstadoEq} onChange={e => setFiltroEstadoEq(e.target.value)} style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:8, padding:'8px 12px', color: filtroEstadoEq ? '#fff' : '#4a6a8a', fontSize:13, cursor:'pointer' }}>
           <option value="">Condición del equipo</option>
           {ESTADOS_EQUIPO.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
         </select>
-        <select value={filtroProv} onChange={e => setFiltroProv(e.target.value)} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:8, padding:'8px 12px', color: filtroProv ? '#fff' : '#4a6a8a', fontSize:13, cursor:'pointer' }}>
+        <select value={filtroProv} onChange={e => setFiltroProv(e.target.value)} style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:8, padding:'8px 12px', color: filtroProv ? '#fff' : '#4a6a8a', fontSize:13, cursor:'pointer' }}>
           <option value="">Todos los proveedores</option>
           {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
         </select>
       </div>
 
-      <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:12, overflow:'auto' }}>
+      <div style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:12, overflow:'auto' }}>
         {loading ? (
           <div style={{ padding:40, textAlign:'center', color:'#4a6a8a', fontSize:13 }}>Cargando...</div>
         ) : filtrados.length === 0 ? (
@@ -540,9 +540,9 @@ export default function Inventario() {
       {/* MODAL CONFIGURAR LOTE */}
       {modoLote && !showForm && !escaner && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.78)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
-          <div style={{ background:'#0d1a35', border:'1px solid #10b981', borderRadius:14, padding:28, width:'100%', maxWidth:420, fontFamily:"'DM Sans', system-ui" }}>
+          <div style={{ background:'#1a1740', border:'1px solid #10b981', borderRadius:14, padding:28, width:'100%', maxWidth:420, fontFamily:"'DM Sans', system-ui" }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-              <h3 style={{ color:'#fff', margin:0, fontSize:16 }}>📦 Configurar lote de ingreso</h3>
+              <h3 style={{ color:'#1e1b4b', margin:0, fontSize:16 }}>📦 Configurar lote de ingreso</h3>
               <button onClick={() => setModoLote(false)} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:20, cursor:'pointer' }}>×</button>
             </div>
             <p style={{ color:'#8aabcc', fontSize:13, margin:'0 0 16px' }}>
@@ -590,10 +590,10 @@ export default function Inventario() {
       {/* MODAL INGRESAR EQUIPO */}
       {showForm && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.78)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
-          <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:14, padding:28, width:'100%', maxWidth:580, fontFamily:"'DM Sans', system-ui", maxHeight:'92vh', overflow:'auto' }}>
+          <div style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:14, padding:28, width:'100%', maxWidth:580, fontFamily:"'DM Sans', system-ui", maxHeight:'92vh', overflow:'auto' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
               <div>
-                <h3 style={{ color:'#fff', margin:'0 0 4px', fontSize:16 }}>Ingresar equipo al inventario</h3>
+                <h3 style={{ color:'#1e1b4b', margin:'0 0 4px', fontSize:16 }}>Ingresar equipo al inventario</h3>
                 {modoLote && (
                   <div style={{ display:'flex', gap:8, alignItems:'center' }}>
                     <span style={{ background:'rgba(16,185,129,0.15)', color:'#10b981', fontSize:11, padding:'2px 8px', borderRadius:4 }}>
@@ -769,10 +769,10 @@ export default function Inventario() {
       {/* MODAL EXCEL */}
       {showExcel && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.82)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
-          <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:14, padding:28, width:'100%', maxWidth:860, fontFamily:"'DM Sans', system-ui", maxHeight:'90vh', overflow:'auto' }}>
+          <div style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:14, padding:28, width:'100%', maxWidth:860, fontFamily:"'DM Sans', system-ui", maxHeight:'90vh', overflow:'auto' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
               <div>
-                <h3 style={{ color:'#fff', margin:'0 0 4px', fontSize:16 }}>Carga masiva — {excelFileName}</h3>
+                <h3 style={{ color:'#1e1b4b', margin:'0 0 4px', fontSize:16 }}>Carga masiva — {excelFileName}</h3>
                 <p style={{ color:'#4a6a8a', fontSize:13, margin:0 }}>{excelRows.filter(r=>r._ok).length} listos · {excelRows.filter(r=>!r._ok).length} con problemas</p>
               </div>
               <button onClick={() => { setShowExcel(false); setExcelRows([]); setImportResult(null) }} style={{ background:'transparent', border:'none', color:'#4a6a8a', fontSize:20, cursor:'pointer' }}>×</button>
@@ -813,19 +813,19 @@ export default function Inventario() {
                 <tbody>
                   {excelRows.map((r,i) => (
                     <tr key={i} style={{ background: r._ok ? 'transparent' : 'rgba(239,68,68,0.05)' }}>
-                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36' }}>
+                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #231f5a' }}>
                         {r._ok ? <span style={{ color:'#10b981' }}>✓</span> : <span style={{ color:'#ef4444', fontSize:11 }}>⚠ {r._msg}</span>}
                       </td>
-                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:11, color:'#60a5fa' }}>{r.no_factura || '—'}</td>
-                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:11, fontFamily:'monospace', color:'#8aabcc' }}>{r.imei || '—'}</td>
-                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:11, fontFamily:'monospace', color:'#6a8aaa' }}>{r.imei2 || '—'}</td>
-                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:12, color:'#e2e8f0' }}>{r.producto || '—'}</td>
-                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:12 }}>{r.almacenamiento || '—'}</td>
-                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:12 }}>{r.color || '—'}</td>
-                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:12, color:'#10b981' }}>{r.bateria ? `${r.bateria}%` : '—'}</td>
-                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:12, color:'#fff', whiteSpace:'nowrap' }}>{r.costo ? fmt(r.costo) : '—'}</td>
-                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:12, color:'#10b981', whiteSpace:'nowrap' }}>{r.precio_venta_est ? fmt(r.precio_venta_est) : '—'}</td>
-                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #0f1e36', fontSize:12 }}>{r.estado_equipo || '—'}</td>
+                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #231f5a', fontSize:11, color:'#60a5fa' }}>{r.no_factura || '—'}</td>
+                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #231f5a', fontSize:11, fontFamily:'monospace', color:'#8aabcc' }}>{r.imei || '—'}</td>
+                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #231f5a', fontSize:11, fontFamily:'monospace', color:'#6a8aaa' }}>{r.imei2 || '—'}</td>
+                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #231f5a', fontSize:12, color:'#e2e8f0' }}>{r.producto || '—'}</td>
+                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #231f5a', fontSize:12 }}>{r.almacenamiento || '—'}</td>
+                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #231f5a', fontSize:12 }}>{r.color || '—'}</td>
+                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #231f5a', fontSize:12, color:'#10b981' }}>{r.bateria ? `${r.bateria}%` : '—'}</td>
+                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #231f5a', fontSize:12, color:'#fff', whiteSpace:'nowrap' }}>{r.costo ? fmt(r.costo) : '—'}</td>
+                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #231f5a', fontSize:12, color:'#10b981', whiteSpace:'nowrap' }}>{r.precio_venta_est ? fmt(r.precio_venta_est) : '—'}</td>
+                      <td style={{ padding:'7px 10px', borderBottom:'1px solid #231f5a', fontSize:12 }}>{r.estado_equipo || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -846,7 +846,7 @@ export default function Inventario() {
       {/* MODAL DEVOLVER A PROVEEDOR */}
       {confirmDev && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.82)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1001 }}>
-          <div style={{ background:'#0d1a35', border:'1px solid #ef4444', borderRadius:14, padding:28, width:'100%', maxWidth:420, fontFamily:"'DM Sans', system-ui" }}>
+          <div style={{ background:'#1a1740', border:'1px solid #ef4444', borderRadius:14, padding:28, width:'100%', maxWidth:420, fontFamily:"'DM Sans', system-ui" }}>
             <div style={{ fontSize:28, textAlign:'center', marginBottom:12 }}>↩</div>
             <h3 style={{ color:'#fff', textAlign:'center', margin:'0 0 6px', fontSize:16 }}>Devolver equipo al proveedor</h3>
             <div style={{ background:'#0a1628', borderRadius:8, padding:'10px 14px', marginBottom:16 }}>

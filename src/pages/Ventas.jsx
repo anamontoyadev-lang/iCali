@@ -127,8 +127,8 @@ export default function Ventas() {
     return true
   })
 
-  const th = { color:'#4a6a8a', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', padding:'10px 14px', textAlign:'left', borderBottom:'1px solid #1a2f52', whiteSpace:'nowrap' }
-  const td = { padding:'11px 14px', color:'#cbd5e1', fontSize:13, borderBottom:'1px solid #0f1e36' }
+  const th = { color:'#a5b4fc', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', padding:'10px 14px', textAlign:'left', borderBottom:'1px solid #2d2a6e', whiteSpace:'nowrap' }
+  const td = { padding:'11px 14px', color:'#cbd5e1', fontSize:13, borderBottom:'1px solid #231f5a' }
 
   return (
     <div style={{ padding:'32px 36px', fontFamily:"'DM Sans', system-ui" }}>
@@ -136,10 +136,10 @@ export default function Ventas() {
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24 }}>
         <div>
           <h1 style={{ color:'#fff', fontSize:20, fontWeight:600, margin:'0 0 4px' }}>Ventas</h1>
-          <p style={{ color:'#4a6a8a', fontSize:13, margin:0 }}>{filtradas.length} registros</p>
+          <p style={{ color:'#a5b4fc', fontSize:13, margin:0 }}>{filtradas.length} registros</p>
         </div>
         {!soloVer && (
-          <button onClick={() => navigate('/ventas/nueva')} style={{ padding:'10px 20px', background:'linear-gradient(135deg,#0066ff,#0044bb)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+          <button onClick={() => navigate('/ventas/nueva')} style={{ padding:'10px 20px', background:'linear-gradient(135deg,#4f46e5,#3730a3)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>
             + Nueva venta
           </button>
         )}
@@ -162,11 +162,11 @@ export default function Ventas() {
         </select>
       </div>
 
-      <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:12, overflow:'auto' }}>
+      <div style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:12, overflow:'auto' }}>
         {loading ? (
-          <div style={{ padding:40, color:'#4a6a8a', textAlign:'center', fontSize:13 }}>Cargando ventas...</div>
+          <div style={{ padding:40, color:'#a5b4fc', textAlign:'center', fontSize:13 }}>Cargando ventas...</div>
         ) : filtradas.length === 0 ? (
-          <div style={{ padding:40, color:'#4a6a8a', textAlign:'center', fontSize:13 }}>No hay ventas con los filtros aplicados</div>
+          <div style={{ padding:40, color:'#a5b4fc', textAlign:'center', fontSize:13 }}>No hay ventas con los filtros aplicados</div>
         ) : (
           <table style={{ width:'100%', borderCollapse:'collapse' }}>
             <thead>
@@ -249,10 +249,10 @@ export default function Ventas() {
 
       {confirmDesistir && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.82)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
-          <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:14, padding:28, width:'100%', maxWidth:420, fontFamily:"'DM Sans', system-ui" }}>
+          <div style={{ background:'#ffffff', border:'1px solid #e0e7ff', borderRadius:14, padding:28, width:'100%', maxWidth:420, boxShadow:'0 8px 32px rgba(67,56,202,0.15)', fontFamily:"'DM Sans', system-ui" }}>
             <div style={{ fontSize:32, textAlign:'center', marginBottom:12 }}>⚠️</div>
-            <h3 style={{ color:'#fff', textAlign:'center', margin:'0 0 8px', fontSize:16 }}>¿Confirmar desistimiento?</h3>
-            <p style={{ color:'#8aabcc', textAlign:'center', fontSize:13, margin:'0 0 20px' }}>
+            <h3 style={{ color:'#1e1b4b', textAlign:'center', margin:'0 0 8px', fontSize:16 }}>¿Confirmar desistimiento?</h3>
+            <p style={{ color:'#6366f1', textAlign:'center', fontSize:13, margin:'0 0 20px' }}>
               La venta de <strong style={{ color:'#fff' }}>{confirmDesistir.nombre_cliente}</strong> — {confirmDesistir.producto} quedará como desistida y el equipo volverá al inventario.
             </p>
             <div style={{ display:'flex', gap:10 }}>

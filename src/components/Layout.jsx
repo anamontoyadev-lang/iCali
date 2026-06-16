@@ -108,7 +108,7 @@ export default function Layout() {
 
   const UserFooter = () => (
     <div style={{ padding:'14px 16px', borderTop:'1px solid #1a2f52' }}>
-      <div style={{ color:'#fff', fontSize:13, fontWeight:500, marginBottom:2 }}>{perfil?.nombre || 'Usuario'}</div>
+      <div style={{ color:'#e0e7ff', fontSize:13, fontWeight:500, marginBottom:2 }}>{perfil?.nombre || 'Usuario'}</div>
       <div style={{ color:'#4a6a8a', fontSize:11, marginBottom:10 }}>{ROLES_LABEL[rol] || rol}</div>
       <button onClick={logout} style={{ width:'100%', padding:'7px', background:'transparent', border:'1px solid #1e3058', borderRadius:6, color:'#6b8ab0', fontSize:12, cursor:'pointer' }}>
         Cerrar sesión
@@ -120,7 +120,7 @@ export default function Layout() {
   if (isMobile) {
     const isActive = (path) => path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
     return (
-      <div style={{ display:'flex', flexDirection:'column', minHeight:'100vh', background:'#060d1f', fontFamily:"'DM Sans', system-ui" }}>
+      <div style={{ display:'flex', flexDirection:'column', minHeight:'100vh', background:'#0d0b2a', fontFamily:"'DM Sans', system-ui" }}>
 
         {/* Topbar */}
         <div style={{
@@ -172,7 +172,7 @@ export default function Layout() {
         {/* Bottom Navigation */}
         <div style={{
           position:'fixed', bottom:0, left:0, right:0,
-          background:'#0a1628', borderTop:'1px solid #1a2f52',
+          background:'#141236', borderTop:'1px solid #2d2a6e',
           display:'flex', height:58, zIndex:100,
           paddingBottom:'env(safe-area-inset-bottom)',
         }}>
@@ -200,8 +200,8 @@ export default function Layout() {
 
   // ── DESKTOP ──
   return (
-    <div style={{ display:'flex', minHeight:'100vh', background:'#060d1f', fontFamily:"'DM Sans', system-ui" }}>
-      <aside style={{ width:220, flexShrink:0, background:'#0a1628', borderRight:'1px solid #1a2f52', display:'flex', flexDirection:'column', position:'sticky', top:0, height:'100vh', overflowY:'auto' }}>
+    <div style={{ display:'flex', minHeight:'100vh', background:'#0d0b2a', fontFamily:"'DM Sans', system-ui" }}>
+      <aside style={{ width:220, flexShrink:0, background:'#141236', borderRight:'1px solid #2d2a6e', display:'flex', flexDirection:'column', position:'sticky', top:0, height:'100vh', overflowY:'auto' }}>
         <div style={{ padding:'20px 20px 16px', borderBottom:'1px solid #1a2f52' }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <img src="/logo192.png" alt="iCali" style={{ width:36, height:36, borderRadius:9, objectFit:'cover', flexShrink:0 }} />

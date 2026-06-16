@@ -311,7 +311,7 @@ export default function Dashboard() {
                         </div>
                       )}
                       {!['SOLICITUD_EQUIPO','EQUIPO_LISTO_LABORATORIO','DEVOLUCION_EQUIPO','VALORACION_RETOMA','RECOGIDA_RETOMA','VALOR_RETOMA_CONFIRMADO'].includes(n.tipo) && (
-                        <button onClick={() => responderNotif(n.id,'leida')} style={{ padding:'5px 10px', background:'#1a2f52', border:'none', borderRadius:6, color:'#8aabcc', fontSize:11, cursor:'pointer' }}>✓ Leída</button>
+                        <button onClick={() => responderNotif(n.id,'leida')} style={{ padding:'5px 10px', background:'#1a2f52', border:'none', borderRadius:6, color:'#6366f1', fontSize:11, cursor:'pointer' }}>✓ Leída</button>
                       )}
                     </div>
                   )}
@@ -338,7 +338,7 @@ export default function Dashboard() {
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))', gap:10, marginBottom:20 }}>
                 {kpis.map(k => (
-                  <div key={k.label} style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:12, padding:'16px 18px' }}>
+                  <div key={k.label} style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:12, padding:'16px 18px' }}>
                     <div style={{ color:'#5a7aaa', fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'.07em', marginBottom:8 }}>{k.label}</div>
                     <div style={{ color:'#fff', fontSize: k.big?32:22, fontWeight:800, letterSpacing:'-1px', lineHeight:1 }}>{k.val}</div>
                     {k.sub && <div style={{ color:'#4a6a8a', fontSize:11, marginTop:4 }}>{k.sub}</div>}
@@ -356,7 +356,7 @@ export default function Dashboard() {
                 <div style={{ color:'#3a5a7a', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em' }}>Ventas recientes</div>
                 <button onClick={() => navigate('/ventas')} style={{ background:'transparent', border:'none', color:'#0066ff', fontSize:12, cursor:'pointer' }}>Ver todas →</button>
               </div>
-              <div style={{ background:'#0d1a35', border:'1px solid #1a2f52', borderRadius:12, overflow:'hidden' }}>
+              <div style={{ background:'#1a1740', border:'1px solid #2d2a6e', borderRadius:12, overflow:'hidden' }}>
                 {resumen.ventasRecientes.map((v,i) => (
                   <div key={i} style={{
                     display:'flex', alignItems:'center', gap:12, padding:'12px 16px',
@@ -364,7 +364,7 @@ export default function Dashboard() {
                   }}>
                     <div style={{ width:36, height:36, borderRadius:8, background:'linear-gradient(135deg,#0066ff22,#0066ff11)', border:'1px solid #1a2f52', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>📱</div>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ color:'#e2e8f0', fontSize:13, fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.nombre_cliente}</div>
+                      <div style={{ color:'#1e1b4b', fontSize:13, fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.nombre_cliente}</div>
                       <div style={{ color:'#4a6a8a', fontSize:11, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.producto}</div>
                     </div>
                     <div style={{ textAlign:'right', flexShrink:0 }}>
