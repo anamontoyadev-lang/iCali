@@ -219,7 +219,7 @@ export default function Ventas() {
                       <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' }}>
                         {puedeGestionarEstado(v) && !['anulada','desistida'].includes(v.estado) && (
                           <select value={v.estado} onChange={e => cambiarEstado(v, e.target.value)}
-                            style={{ background:'#ffffff', border:'1px solid #1a2f52', borderRadius:6, padding:'4px 8px', color:'#fff', fontSize:11, cursor:'pointer' }}>
+                            style={{ background:'#ffffff', border:'1px solid #d1d5db', borderRadius:6, padding:'4px 8px', color:'#111827', fontSize:11, cursor:'pointer' }}>
                             {estadosDisponibles(v).map(([k, est]) => (
                               <option key={k} value={k}>{est.label}</option>
                             ))}
