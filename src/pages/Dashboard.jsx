@@ -188,20 +188,20 @@ export default function Dashboard() {
   ].filter(Boolean)
 
   return (
-    <div style={{ padding:'clamp(16px,4vw,32px) clamp(12px,4vw,32px) 80px', fontFamily:"'DM Sans', system-ui", minHeight:'100vh' }}>
+    <div style={{ padding:'clamp(16px,4vw,32px) clamp(12px,4vw,32px) 80px', fontFamily:"'DM Sans', system-ui", minHeight:'100vh', background:'#f8fafc' }}>
 
       {/* HEADER */}
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:28 }}>
         <div>
-          <h1 style={{ color:'var(--color-text-primary)', fontSize:20, fontWeight:500, margin:'0 0 4px', letterSpacing:'-0.2px' }}>
+          <h1 style={{ color:'#111827', fontSize:20, fontWeight:500, margin:'0 0 4px', letterSpacing:'-0.2px' }}>
             Hola{nombre ? `, ${nombre}` : ''} 👋
           </h1>
-          <p style={{ color:'var(--color-text-secondary)', fontSize:13, margin:0, textTransform:'capitalize' }}>{fecha}</p>
+          <p style={{ color:'#6b7280', fontSize:13, margin:0, textTransform:'capitalize' }}>{fecha}</p>
         </div>
         <div style={{ display:'flex', gap:8, alignItems:'center' }}>
           {notifs.filter(n=>!n.respondida).length > 0 && (
             <div style={{ position:'relative' }}>
-              <div style={{ width:36, height:36, borderRadius:8, border:'0.5px solid var(--color-border-secondary)', background:'var(--color-background-primary)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'var(--color-text-secondary)', fontSize:18 }}>
+              <div style={{ width:36, height:36, borderRadius:8, border:'0.5px solid var(--color-border-secondary)', background:'var(--color-background-primary)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#6b7280', fontSize:18 }}>
                 🔔
                 <div style={{ position:'absolute', top:6, right:6, width:8, height:8, background:'#ef4444', borderRadius:'50%', border:'2px solid var(--color-background-primary)' }} />
               </div>
@@ -217,11 +217,11 @@ export default function Dashboard() {
       {!loading && kpis.length > 0 && (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))', gap:12, marginBottom:28 }}>
           {kpis.map(k => (
-            <div key={k.label} style={{ background:'var(--color-background-primary)', border:'0.5px solid var(--color-border-tertiary)', borderRadius:12, padding:'16px', position:'relative', overflow:'hidden' }}>
+            <div key={k.label} style={{ background:'#ffffff', border:'1px solid #e5e7eb', borderRadius:12, padding:'16px', position:'relative', overflow:'hidden', boxShadow:'0 1px 3px rgba(0,0,0,0.04)' }}>
               <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:k.color, borderRadius:'12px 12px 0 0' }} />
-              <div style={{ color:'var(--color-text-secondary)', fontSize:11, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:8 }}>{k.label}</div>
-              <div style={{ color:'var(--color-text-primary)', fontSize: k.big?28:22, fontWeight:500, lineHeight:1 }}>{k.val}</div>
-              {k.sub && <div style={{ color:'var(--color-text-secondary)', fontSize:11, marginTop:6 }}>{k.sub}</div>}
+              <div style={{ color:'#6b7280', fontSize:11, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:8 }}>{k.label}</div>
+              <div style={{ color:'#111827', fontSize: k.big?28:22, fontWeight:500, lineHeight:1 }}>{k.val}</div>
+              {k.sub && <div style={{ color:'#6b7280', fontSize:11, marginTop:6 }}>{k.sub}</div>}
             </div>
           ))}
         </div>
@@ -229,23 +229,23 @@ export default function Dashboard() {
 
       {/* MÓDULOS */}
       <div style={{ marginBottom:28 }}>
-        <div style={{ color:'var(--color-text-secondary)', fontSize:10, fontWeight:500, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:12 }}>Módulos</div>
+        <div style={{ color:'#6b7280', fontSize:10, fontWeight:500, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:12 }}>Módulos</div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(120px, 1fr))', gap:10 }}>
           {modulos.map(m => (
             <button key={m.key} onClick={() => navigate(m.path)}
-              style={{ background:'var(--color-background-primary)', border:'0.5px solid var(--color-border-tertiary)', borderRadius:12, padding:'14px', cursor:'pointer', textAlign:'left', transition:'border-color .15s' }}
+              style={{ background:'#ffffff', border:'1px solid #e5e7eb', borderRadius:12, padding:'14px', cursor:'pointer', textAlign:'left', transition:'all .15s', boxShadow:'0 1px 3px rgba(0,0,0,0.04)' }}
               onMouseEnter={e => e.currentTarget.style.borderColor = m.color}
               onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--color-border-tertiary)'}
             >
               <div style={{ width:36, height:36, borderRadius:8, background:m.color+'22', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, marginBottom:10 }}>{m.icon}</div>
-              <div style={{ color:'var(--color-text-primary)', fontSize:13, fontWeight:500, marginBottom:4 }}>{m.label}</div>
+              <div style={{ color:'#111827', fontSize:13, fontWeight:500, marginBottom:4 }}>{m.label}</div>
               {m.badge != null && m.badge > 0 ? (
                 <div style={{ display:'flex', alignItems:'center', gap:5 }}>
                   <span style={{ background:m.color+'22', color:m.color, fontSize:11, fontWeight:500, padding:'2px 7px', borderRadius:4 }}>{m.badge}</span>
-                  <span style={{ color:'var(--color-text-secondary)', fontSize:10 }}>{m.badgeLabel}</span>
+                  <span style={{ color:'#6b7280', fontSize:10 }}>{m.badgeLabel}</span>
                 </div>
               ) : (
-                <div style={{ color:'var(--color-text-tertiary)', fontSize:11 }}>Ver módulo →</div>
+                <div style={{ color:'#9ca3af', fontSize:11 }}>Ver módulo →</div>
               )}
             </button>
           ))}
@@ -256,27 +256,27 @@ export default function Dashboard() {
       <div style={{ display:'grid', gridTemplateColumns:'1fr 340px', gap:16, alignItems:'start' }}>
 
         {/* Ventas recientes */}
-        <div style={{ background:'var(--color-background-primary)', border:'0.5px solid var(--color-border-tertiary)', borderRadius:12, overflow:'hidden' }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', borderBottom:'0.5px solid var(--color-border-tertiary)' }}>
-            <div style={{ color:'var(--color-text-primary)', fontSize:13, fontWeight:500 }}>Ventas recientes</div>
+        <div style={{ background:'#ffffff', border:'1px solid #e5e7eb', borderRadius:12, overflow:'hidden', boxShadow:'0 1px 3px rgba(0,0,0,0.04)' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', borderBottom:'1px solid #f3f4f6' }}>
+            <div style={{ color:'#111827', fontSize:13, fontWeight:500 }}>Ventas recientes</div>
             <button onClick={() => navigate('/ventas')} style={{ background:'transparent', border:'none', color:'#6366f1', fontSize:12, cursor:'pointer' }}>Ver todas →</button>
           </div>
           {loading ? (
-            <div style={{ padding:32, textAlign:'center', color:'var(--color-text-secondary)', fontSize:13 }}>Cargando...</div>
+            <div style={{ padding:32, textAlign:'center', color:'#6b7280', fontSize:13 }}>Cargando...</div>
           ) : resumen.ventasRecientes?.filter(v => v.nombre_cliente && v.nombre_cliente !== 'Borrador' && v.valor_venta > 0).length > 0 ? (
             resumen.ventasRecientes.filter(v => v.nombre_cliente && v.nombre_cliente !== 'Borrador' && v.valor_venta > 0).map((v,i,arr) => (
               <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 16px', borderBottom: i < arr.length-1 ? '0.5px solid var(--color-border-tertiary)' : 'none' }}>
                 <div style={{ width:34, height:34, borderRadius:8, background:'#eeedfe', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color:'#534ab7', fontSize:17 }}>📱</div>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ color:'var(--color-text-primary)', fontSize:13, fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                  <div style={{ color:'#111827', fontSize:13, fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                     {v.producto || v.nombre_cliente}
                   </div>
-                  <div style={{ color:'var(--color-text-secondary)', fontSize:11, marginTop:1 }}>
+                  <div style={{ color:'#6b7280', fontSize:11, marginTop:1 }}>
                     {v.nombre_cliente !== 'Borrador' ? `${v.nombre_cliente} · ` : ''}{v.asesor_nombre?.split('.')[0]} · {v.canal==='mostrador'?'Mostrador':'Call'}
                   </div>
                 </div>
                 <div style={{ textAlign:'right', flexShrink:0 }}>
-                  <div style={{ color:'var(--color-text-primary)', fontSize:13, fontWeight:500 }}>{fmtK(v.valor_venta)}</div>
+                  <div style={{ color:'#111827', fontSize:13, fontWeight:500 }}>{fmtK(v.valor_venta)}</div>
                   <span style={{
                     display:'inline-block', marginTop:3,
                     background: v.estado==='entregada'?'#eaf3de':v.estado==='registrada'?'#eeedfe':v.estado==='desistida'?'var(--color-background-secondary)':'#faeeda',
@@ -289,26 +289,26 @@ export default function Dashboard() {
               </div>
             ))
           ) : (
-            <div style={{ padding:32, textAlign:'center', color:'var(--color-text-secondary)', fontSize:13 }}>Sin ventas recientes</div>
+            <div style={{ padding:32, textAlign:'center', color:'#6b7280', fontSize:13 }}>Sin ventas recientes</div>
           )}
         </div>
 
         {/* Notificaciones */}
-        <div style={{ background:'var(--color-background-primary)', border:'0.5px solid var(--color-border-tertiary)', borderRadius:12, overflow:'hidden' }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', borderBottom:'0.5px solid var(--color-border-tertiary)' }}>
+        <div style={{ background:'#ffffff', border:'1px solid #e5e7eb', borderRadius:12, overflow:'hidden', boxShadow:'0 1px 3px rgba(0,0,0,0.04)' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', borderBottom:'1px solid #f3f4f6' }}>
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ color:'var(--color-text-primary)', fontSize:13, fontWeight:500 }}>Notificaciones</span>
+              <span style={{ color:'#111827', fontSize:13, fontWeight:500 }}>Notificaciones</span>
               {notifs.filter(n=>!n.respondida).length > 0 && (
                 <span style={{ background:'#4f46e5', color:'#fff', fontSize:10, fontWeight:600, padding:'2px 8px', borderRadius:10, letterSpacing:'.02em' }}>
                   {notifs.filter(n=>!n.respondida).length} nueva{notifs.filter(n=>!n.respondida).length>1?'s':''}
                 </span>
               )}
             </div>
-            <span style={{ color:'var(--color-text-secondary)', fontSize:11 }}>Últimas {notifs.length}</span>
+            <span style={{ color:'#6b7280', fontSize:11 }}>Últimas {notifs.length}</span>
           </div>
           <div style={{ display:'flex', flexDirection:'column', maxHeight:480, overflowY:'auto' }}>
             {notifs.length === 0 ? (
-              <div style={{ padding:24, textAlign:'center', color:'var(--color-text-secondary)', fontSize:13 }}>Sin notificaciones</div>
+              <div style={{ padding:24, textAlign:'center', color:'#6b7280', fontSize:13 }}>Sin notificaciones</div>
             ) : notifs.map(n => {
               const pendiente = !n.respondida
               const icono = n.tipo==='EQUIPO_LISTO_LABORATORIO'?'🔬':n.tipo==='SOLICITUD_EQUIPO'?'🔔':n.tipo==='DEVOLUCION_EQUIPO'?'📤':n.tipo==='VALORACION_RETOMA'?'🔄':n.tipo==='RECOGIDA_RETOMA'?'📦':n.tipo==='DIEGO_EN_CAMINO'?'🚶':n.tipo==='VALOR_RETOMA_CONFIRMADO'?'💰':'📌'
@@ -318,8 +318,8 @@ export default function Dashboard() {
               return (
                 <div key={n.id} style={{
                   padding:'10px 14px',
-                  borderBottom:'0.5px solid var(--color-border-tertiary)',
-                  background: pendiente ? 'var(--color-background-primary)' : 'var(--color-background-secondary)',
+                  borderBottom:'1px solid #f3f4f6',
+                  background: pendiente ? '#ffffff' : '#f9fafb',
                   borderLeft: `3px solid ${accentColor}`,
                   opacity: pendiente ? 1 : 0.7,
                 }}>
@@ -327,7 +327,7 @@ export default function Dashboard() {
                     <span style={{ fontSize:14, flexShrink:0, marginTop:1 }}>{icono}</span>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:6 }}>
-                        <div style={{ color: pendiente?'var(--color-text-primary)':'var(--color-text-secondary)', fontSize:12, fontWeight: pendiente?500:400, lineHeight:1.4 }}>{n.mensaje}</div>
+                        <div style={{ color: pendiente?'#111827':'#9ca3af', fontSize:12, fontWeight: pendiente?500:400, lineHeight:1.4 }}>{n.mensaje}</div>
                         {pendiente ? (
                           <span style={{
                             background: n.tipo==='SOLICITUD_EQUIPO'?'#fef3c7':n.tipo?.includes('RETOMA')?'#ede9fe':'#dbeafe',
@@ -337,20 +337,20 @@ export default function Dashboard() {
                             {n.tipo==='SOLICITUD_EQUIPO'?'Solicitud':n.tipo==='VALORACION_RETOMA'?'Valorar':n.tipo==='RECOGIDA_RETOMA'?'Recoger':n.tipo==='DEVOLUCION_EQUIPO'?'Devolución':'Nuevo'}
                           </span>
                         ) : (
-                          <span style={{ background:'var(--color-background-tertiary)', color:'var(--color-text-tertiary)', fontSize:9, padding:'2px 6px', borderRadius:10, flexShrink:0 }}>
+                          <span style={{ background:'var(--color-background-tertiary)', color:'#9ca3af', fontSize:9, padding:'2px 6px', borderRadius:10, flexShrink:0 }}>
                             {n.respuesta==='si'?'✓ Atendido':n.respuesta==='recogido'?'✓ Recogido':n.respuesta==='en_camino'?'En camino':'Leída'}
                           </span>
                         )}
                       </div>
                       {(n.datos?.imei || n.datos?.producto || n.datos?.referencia || n.datos?.asesor) && (
-                        <div style={{ color:'var(--color-text-secondary)', fontSize:10, marginTop:3, display:'flex', gap:4, flexWrap:'wrap' }}>
+                        <div style={{ color:'#6b7280', fontSize:10, marginTop:3, display:'flex', gap:4, flexWrap:'wrap' }}>
                           {n.datos?.asesor && <span style={{ fontWeight:500 }}>{n.datos.asesor?.split('.')[0]}</span>}
                           {n.datos?.referencia && <span>{(n.datos.asesor?'· ':'')+n.datos.referencia}</span>}
                           {n.datos?.producto && !n.datos?.referencia && <span>{n.datos.producto}</span>}
-                          {n.datos?.imei && <span style={{ fontFamily:'monospace', color:'var(--color-text-tertiary)' }}>· {String(n.datos.imei).slice(0,10)}...</span>}
+                          {n.datos?.imei && <span style={{ fontFamily:'monospace', color:'#9ca3af' }}>· {String(n.datos.imei).slice(0,10)}...</span>}
                         </div>
                       )}
-                      <div style={{ color:'var(--color-text-tertiary)', fontSize:10, marginTop:3 }}>
+                      <div style={{ color:'#9ca3af', fontSize:10, marginTop:3 }}>
                         {new Date(n.created_at).toLocaleDateString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
                       </div>
                       {pendiente && (
@@ -377,7 +377,7 @@ export default function Dashboard() {
                             <button onClick={() => responderNotif(n.id,'leida')} style={{ padding:'4px 10px', background:'#8b5cf6', border:'none', borderRadius:6, color:'#fff', fontSize:11, cursor:'pointer' }}>✓ Entendido</button>
                           )}
                           {!['SOLICITUD_EQUIPO','EQUIPO_LISTO_LABORATORIO','DEVOLUCION_EQUIPO','VALORACION_RETOMA','RECOGIDA_RETOMA','VALOR_RETOMA_CONFIRMADO'].includes(n.tipo) && (
-                            <button onClick={() => responderNotif(n.id,'leida')} style={{ padding:'4px 10px', background:'transparent', border:'0.5px solid var(--color-border-secondary)', borderRadius:6, color:'var(--color-text-secondary)', fontSize:11, cursor:'pointer' }}>✓ Leída</button>
+                            <button onClick={() => responderNotif(n.id,'leida')} style={{ padding:'4px 10px', background:'transparent', border:'0.5px solid var(--color-border-secondary)', borderRadius:6, color:'#6b7280', fontSize:11, cursor:'pointer' }}>✓ Leída</button>
                           )}
                         </div>
                       )}
