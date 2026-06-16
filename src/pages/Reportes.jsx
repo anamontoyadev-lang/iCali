@@ -67,7 +67,9 @@ const td = { padding:'10px 14px', color:'#cbd5e1', fontSize:13, borderBottom:'1p
 
 export default function Reportes() {
   const { esAsesor, esAsesorMostrador, esAsesorCall, esAdmin, esLiderAdmin, esLiderCom, esInventarioRol, esRetomas, perfil } = useAuth()
-  const tabDefault = (esInventarioRol && !esAdmin) ? 'inv_detalle' : 'dashboard'
+  const esAsesorPuro  = (esAsesor || esAsesorMostrador || esAsesorCall) && !esAdmin && !esLiderAdmin && !esLiderCom
+  const esRetomasPuro = esRetomas && !esAdmin && !esLiderAdmin && !esLiderCom
+  const tabDefault = esAsesorPuro ? 'dashboard' : esRetomasPuro ? 'retomas_rep' : (esInventarioRol && !esAdmin) ? 'inv_detalle' : 'dashboard'
   const [tab, setTab]         = useState(tabDefault)
   const [periodo, setPeriodo] = useState(new Date().toISOString().slice(0,7))
   const [loading, setLoading] = useState(true)
